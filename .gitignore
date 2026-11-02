@@ -1,0 +1,29 @@
+
+/BK7258_SMP.si4project/
+# 大型原始压缩包
+/sample_project-release-v3.1.1.8.tar.gz
+
+# 大型测试视频
+/sample_project-release-v3.1.1.8/multimedia/avi/display_lcd_RGB565/test.avi
+
+# 大型工具缓存
+*.sip_sym
+*.sip_xab
+
+# 临时编译文件
+*.o
+*.obj
+*.tmp
+# BK7258 编译输出目录
+**/output/
+**/build/
+
+# Python 缓存
+__pycache__/
+*.pyc
+
+# 编译中间文件
+*.o
+*.obj
+*.d
+*.tmp

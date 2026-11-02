@@ -1,0 +1,5 @@
+menu "BEKEN kws"
+	config BEKEN_KWS
+		bool "Enable CONFIG_BEKEN_KWS"
+		default n
+endmenu

@@ -1,0 +1,24 @@
+# ap/CMakeLists.txt - BLE Printer Service (Armino SDK)
+# 使用 armino_component_register 注册组件（禁止使用 target_sources，脚本模式下不可用）
+
+set(srcs
+    "ap_main.c"
+    "ble_printer_service.c"
+    "printer_protocol.c"
+    "hw_printer_stub.c"
+)
+
+set(includes
+    "."
+    "app_bluetooth/gatt"
+    "app_bluetooth/storage"
+)
+
+armino_component_register(
+    SRCS "${srcs}"
+    INCLUDE_DIRS "${includes}"
+    REQUIRES bk_bluetooth
+)
+
+# 处理子目录 (dm_gatts.c, f618, fa00, hogp, battery, dis, storage 等)
+armino_component_register_call_subdirs()

@@ -1,0 +1,131 @@
+// Copyright 2020-2021 Beken
+//
+// Licensed under the Apache License, Version 2.0 (the "License");
+// you may not use this file except in compliance with the License.
+// You may obtain a copy of the License at
+//
+//     http://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS IS" BASIS,
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+// See the License for the specific language governing permissions and
+// limitations under the License.
+
+#include <common/bk_include.h>
+#include <driver/lcd_types.h>
+
+#if 0
+static const lcd_qspi_init_cmd_t st7789v2_init_cmds_OLD[] =
+{
+    {0x01, {0x00}, 0},// {0x00, {0x78}, 0xFF},
+    {0x00, {0x78}, 0xFF},//120ms
+    {0x11, {0x00}, 0},
+    {0x00, {0x78}, 0xFF},//120ms
+    {0x3A, {0x05}, 1},//add
+    {0xC5, {0x1A}, 1},// {0x00, {0x78}, 0xFF},  
+    {0x36, {0x00}, 1},
+  //  {0x3A, {0x05}, 1},
+    {0xB2, {0x3F, 0x3F, 0x00, 0x33, 0x33}, 5},
+    {0xB7, {0x05}, 1},//{0xB7, {0x35}, 1},
+    {0xBB, {0x3F}, 1},//{0xBB, {0x2A}, 1},
+    {0xC0, {0x2C}, 1},
+    {0xC2, {0x01}, 1},
+    {0xC3, {0x0F}, 1},//{0xC3, {0x0B}, 1},
+    {0xC4, {0x20}, 1},
+    {0xC6, {0x01}, 1},//{0xC6, {0x1F}, 1},
+    {0XD0, {0xA4, 0xA1}, 2},
+    {0xE8, {0x03}, 1},
+    {0xE9, {0x09,0x09,0x08}, 3},//new
+    
+    //{0xE0, {0xD0, 0x01, 0x08, 0x0F, 0x11, 0x2A, 0x36, 0x55, 0x44, 0x3A, 0x0B, 0x06, 0x11, 0x20}, 14},
+	{0xE0, {0xD0,0x05,0x09,0x09,0x08,0x14,0x28,0x33,0x3F,0x07,0x13,0x14,0x28,0x30}, 14},
+	{0xE1, {0xD0, 0x02, 0x07, 0x0A, 0x0B, 0x18, 0x34, 0x43, 0x4A, 0x2B, 0x1B, 0x1C, 0x22, 0x1F}, 14},
+	// {0xE7, {0x10}, 1},
+   // {0x35, {0x00}, 0},
+    {0x20, {0x00}, 0},
+     {0x00, {0x78}, 0xFF},//120ms
+    {0x29, {0x00}, 0},
+};
+#endif
+/* ST7789V 屏幕初始化序列 (根据供应商提供参数移植) */
+static const lcd_qspi_init_cmd_t st7789v2_init_cmds[] =
+{
+    // 软件复位后延时 (根据供应商 delay_ms(100))
+    {0x00, {0x64}, 0xFF}, // 0x64 = 100ms
+
+    // 退出休眠 (Sleep Out)
+    {0x11, {0x00}, 0},
+    {0x00, {0x78}, 0xFF}, // 120ms delay
+
+    // 显存数据访问控制 (Memory Data Access Control) - 0x00 为竖屏模式
+    {0x36, {0x00}, 1},
+
+    // 接口像素格式 (Interface Pixel Format) - 0x05 为 16bit/pixel (RGB565)
+    {0x3A, {0x05}, 1},
+
+    // Porch Setting
+    {0xB2, {0x0C, 0x0C, 0x00, 0x33, 0x33}, 5},
+
+    // Gate Control
+    {0xB7, {0x35}, 1},
+
+    // VCOM Setting
+    {0xBB, {0x35}, 1},
+
+    // LCM Control
+    {0xC0, {0x2C}, 1},
+
+    // VDV and VRH Command Enable
+    {0xC2, {0x01}, 1},
+
+    // VRH Set
+    {0xC3, {0x13}, 1},
+
+    // VDV Set
+    {0xC4, {0x20}, 1},
+
+    // Frame Rate Control in Normal Mode
+    {0xC6, {0x0F}, 1},
+
+    // Power Control 1
+    {0xD0, {0xA4, 0xA1}, 2},
+
+    // (供应商代码自带寄存器，ST7789规格书中无详细说明，照搬保留)
+    {0xD6, {0xA1}, 1},
+
+    // Positive Voltage Gamma Control (正极性伽马校准)
+    {0xE0, {0xF0, 0x00, 0x04, 0x04, 0x04, 0x05, 0x29, 0x33, 0x3E, 0x38, 0x12, 0x12, 0x28, 0x30}, 14},
+
+    // Negative Voltage Gamma Control (负极性伽马校准)
+    {0xE1, {0xF0, 0x07, 0x0A, 0x0D, 0x0B, 0x07, 0x28, 0x33, 0x3E, 0x36, 0x14, 0x14, 0x29, 0x32}, 14},
+    
+    // 如果屏幕显示颜色反相（比如黑白颠倒），请取消下面这行注释 (0x21为颜色反转打开)
+     {0x21, {0x00}, 0},
+
+    // 唤醒后的延时准备显示
+    {0x00, {0x78}, 0xFF}, // 120ms delay
+
+    // 开启显示 (Display On)
+    {0x29, {0x00}, 0},
+};
+
+static const lcd_spi_t lcd_spi_st7789v2_config =
+{
+    .clk = LCD_QSPI_64M,
+    .init_cmd = st7789v2_init_cmds,
+    .device_init_cmd_len = sizeof(st7789v2_init_cmds) / sizeof (lcd_qspi_init_cmd_t),
+    .frame_len = 240 * 320 * CONFIG_LCD_SPI_COLOR_DEPTH_BYTE,
+};
+
+const lcd_device_t lcd_device_st7789v2 =
+{
+    .id = LCD_DEVICE_ST7789V2,
+    .name = "st7789v2",
+    .type = LCD_TYPE_SPI,
+    .width = 240,
+    .height = 320,
+    .spi = &lcd_spi_st7789v2_config,
+    .init = NULL,
+    .off = NULL,
+};

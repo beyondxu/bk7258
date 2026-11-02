@@ -1,0 +1,22 @@
+set(incs .
+         ./inc
+    )
+
+set(srcs
+    ap_main.c
+    )
+
+list(APPEND srcs
+    ./src/dev_lcd.c
+    ./src/dev_audio.c
+    ./src/fatfs_fs.c
+    ./src/cli_cmd.c
+    ./src/frame_buffer_app.c
+)
+
+set(priv_req  media_service multimedia avdk_utils bk_camera app_jpeg_hw_decode app_avi_player)
+
+armino_component_register(SRCS "${srcs}" INCLUDE_DIRS "${incs}" PRIV_REQUIRES "${priv_req}"
+)
+
+target_compile_options(${COMPONENT_LIB} PRIVATE -Wno-unused-variable -O3)

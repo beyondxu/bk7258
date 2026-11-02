@@ -1,0 +1,26 @@
+.
+├── ap
+│   ├── ap_main.c
+│   ├── app_bluetooth
+│   │   ├── gatt
+│   │   └── storage
+│   ├── CMakeLists.txt
+│   └── config
+│       └── bk7258_ap
+├── CMakeLists.txt
+├── cp
+│   ├── CMakeLists.txt
+│   ├── config
+│   │   └── bk7258
+│   └── cp_main.c
+├── dm_gatt_server_dir
+├── dm_gatt_server_dir.txt
+├── Makefile
+├── partitions
+│   └── bk7258
+│       ├── auto_partitions.csv
+│       ├── auto_partitions.csv.bak
+│       └── ram_regions.csv
+└── README.md
+
+12 directories, 12 files

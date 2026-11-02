@@ -1,0 +1,269 @@
+#include "bk_private/bk_init.h"
+#include <components/system.h>
+#include <os/os.h>
+#include <components/shell_task.h>
+#include <modules/pm.h>
+#include <driver/pwr_clk.h>
+#include "cli.h"
+#include "media_service.h"
+
+#include "dev_lcd.h"
+#include "dev_audio.h"
+#include "fatfs_fs.h"
+#include "jpeg_hw_decode.h"
+#include "bk_avi_player.h"
+#include "frame_buffer_app.h"
+#include "cli_cmd.h"
+
+#define TAG "ap_main"
+#define LOGI(...) BK_LOGI(TAG, ##__VA_ARGS__)
+#define LOGE(...) BK_LOGE(TAG, ##__VA_ARGS__)
+#define LOGD(...) BK_LOGD(TAG, ##__VA_ARGS__)
+#define LOGV(...) BK_LOGV(TAG, ##__VA_ARGS__)
+
+extern void user_app_main(void);
+extern void rtos_set_user_app_entry(beken_thread_function_t entry);
+
+#define TEST_PASS()     BK_LOGI(TAG,"%s:%d:%s:%s\r\n", __FILE__, __LINE__, __FUNCTION__, "PASS")
+#define TEST_FAIL()     BK_LOGE(TAG,"%s:%d:%s:%s\r\n", __FILE__, __LINE__, __FUNCTION__, "FAIL")
+
+static bool _is_play_end = false;
+
+/**
+ * @brief 给显示调用的callback，用于刷新LCD显示
+ * @return 无
+ */
+static void _lcd_cb(frame_buffer_t *display_frame, void *user_data)
+{
+    dev_lcd_flush(display_frame, display_free_callback);
+}
+
+/**
+ * @brief 给音频调用的callback，用于分配音频数据内存
+ * @param size 音频数据大小
+ * @return 成功返回分配的音频数据指针，失败返回NULL
+ */
+static uint8_t *_voice_malloc_cb(uint32_t size)
+{
+    return os_malloc(size);
+}
+/**
+ * @brief 给音频调用的callback，用于释放音频数据内存
+ * @param audio_frame 音频数据指针
+ * @return 无
+ */
+static void _voice_free_cb(uint8_t *audio_frame)
+{
+    if(audio_frame)
+    {
+        os_free(audio_frame);
+        audio_frame = NULL;
+    }
+}
+/**
+ * @brief 给音频调用的callback，用于释放已播放的音频数据
+ * @return 无
+ */
+static void speaker_free_callback(void *data)
+{
+    _voice_free_cb(data);
+}
+
+/**
+ * @brief 给音频调用的callback，用于播放音频数据
+ * @return 无
+ */
+static void _speaker_cb(uint8_t *data, uint32_t size, void *user_data)
+{
+    dev_audio_sendto_speaker(data, size, speaker_free_callback);
+}
+
+static void _finish_cb(void *user_data)
+{
+    _is_play_end = true;
+}
+
+
+static bk_err_t _jpeg_in_complete(frame_buffer_t *in_frame)
+{
+    return BK_OK;
+}
+
+static bk_err_t _jpeg_decode_complete(uint32_t format_type, uint32_t result, frame_buffer_t *out_frame)
+{
+    if (result == BK_OK) 
+    {
+        //LOGD("[%s][%d] jpeg decode success! format_type: %d, out_frame: %p\n", __func__, __LINE__, format_type, out_frame);
+    } 
+    else 
+    {
+        LOGE("[%s][%d] jpeg decode failed! format_type: %d, result: %d, out_frame: %p\n", __func__, __LINE__, format_type, result, out_frame);
+    }
+
+    return BK_OK;
+}
+
+static bk_jpeg_decode_hw_handle_t g_jpeg_decode_handle = NULL;
+static bk_jpeg_decode_hw_config_t g_jpeg_decode_config = {
+    .decode_cbs = {
+        .in_complete = _jpeg_in_complete,
+        .out_complete = _jpeg_decode_complete,
+    }
+};
+
+//硬解码初始化
+static bk_err_t _jpeg_hw_decode_init(void)
+{
+    bk_err_t ret = BK_FAIL;
+
+    do{
+        ret = bk_hardware_jpeg_decode_new(&g_jpeg_decode_handle, &g_jpeg_decode_config);
+        if(BK_OK != ret)
+        {
+            LOGE("[%s][%d] jpeg hw new fail\r\n", __FUNCTION__, __LINE__);
+            break;
+        }
+
+        ret = bk_jpeg_decode_hw_open(g_jpeg_decode_handle);
+        if(BK_OK != ret)
+        {
+            LOGE("[%s][%d] jpeg hw open fail\r\n", __FUNCTION__, __LINE__);
+            break;
+        }
+    }while(0);
+
+    return ret;
+}
+
+//硬解码反初始化
+static bk_err_t _jpeg_hw_decode_deinit(void)
+{
+    if(g_jpeg_decode_handle)
+    {
+        bk_jpeg_decode_hw_close(g_jpeg_decode_handle);
+        bk_jpeg_decode_hw_delete(g_jpeg_decode_handle);
+
+        g_jpeg_decode_handle = NULL;
+    }
+    return BK_OK;
+}
+
+int avi_player_test()
+{
+    int ret = BK_OK;
+    //初始化硬解码
+    ret = _jpeg_hw_decode_init();
+    if(ret != BK_OK)
+    {
+        LOGE("[%s][%d] jpeg_hw_decode_init failed: %d\r\n", __func__, __LINE__, ret);
+        return BK_FAIL;
+    }
+    
+    //挂载SD卡
+    ret = sdcard_fatfs_mount();
+    if(ret != BK_OK)
+    {
+        LOGE("[%s][%d] sdcard_source_mount failed: %d\r\n", __func__, __LINE__, ret);
+        return BK_FAIL;
+    }
+
+    //初始化AVI播放器
+    avi_player_config_t avi_player_config = {0};
+    avi_player_config.jpeg_hw_decode_config.jpeg_decode_handle = g_jpeg_decode_handle;
+    avi_player_config.jpeg_hw_decode_config.jpeg_frame_malloc = jpeg_frame_malloc;
+    avi_player_config.jpeg_hw_decode_config.jpeg_frame_free = jpeg_frame_free;
+    avi_player_config.jpeg_hw_decode_config.decode_frame_malloc = decode_frame_malloc;
+    avi_player_config.jpeg_hw_decode_config.decode_frame_free = decode_frame_free;
+    avi_player_config.jpeg_hw_decode_config.output_width = 0;
+    avi_player_config.jpeg_hw_decode_config.output_height = 0;
+    avi_player_config.jpeg_hw_decode_config.use_dma2d = false;
+    avi_player_config.jpeg_hw_decode_config.byte_swap = false;
+    avi_player_config.decode_format = AVI_PLAYER_DECODE_FORMAT_YUV422;
+    avi_player_config.sync_time_threshold_ms = 65;
+    avi_player_config.lcd_cb = _lcd_cb;
+
+    avi_player_config.voice_malloc_cb = _voice_malloc_cb;
+    avi_player_config.voice_free_cb = _voice_free_cb;
+    avi_player_config.speaker_cb = _speaker_cb;
+    avi_player_config.audio_frame_size = 640;
+
+    avi_player_config.finish_cb = _finish_cb;
+    avi_player_config.user_data = NULL;
+
+    ret = avi_player_init(&avi_player_config);
+    if(ret != BK_OK)
+    {
+        LOGE("[%s][%d] avi_player_init failed: %d\r\n", __func__, __LINE__, ret);
+        return BK_FAIL;
+    }
+
+    //打开AVI文件
+    char path[255];
+    snprintf(path, sizeof(path), "/test.avi");
+    ret = avi_player_file_open(path);
+    if(ret != BK_OK)
+    {
+        LOGE("[%s][%d] avi_player_file_open failed: %d\r\n", __func__, __LINE__, ret);
+        return BK_FAIL;
+    }
+
+    //开始播放AVI文件
+    ret = avi_player_start();
+    if(ret != BK_OK)
+    {
+        LOGE("[%s][%d] avi_player_start failed: %d\r\n", __func__, __LINE__, ret);
+        return BK_FAIL;
+    }
+    //等待播放结束
+    while(!_is_play_end)
+    {
+        rtos_delay_milliseconds(100);
+    }
+    avi_player_stop();
+    avi_player_deinit();
+    _jpeg_hw_decode_deinit();
+    sdcard_fatfs_umount();
+    return BK_OK;
+}
+
+int main(void)
+{
+    bk_init();
+
+    media_service_init();
+
+    cli_avi_player_init();
+
+    if(1/*0 == ate_is_enabled()*/)   //非ATE模式才启动应用代码
+    {
+        int ret = BK_OK;
+        //打开LCD 并设置背光
+        ret = dev_lcd_open();
+        if(ret != BK_OK)
+        {
+            LOGE("[%s][%d] test_display_turn_on failed: %d\r\n", __func__, __LINE__, ret);
+            TEST_FAIL();
+            return BK_FAIL;
+        }
+        dev_lcd_backlight_ctrl(100);
+
+        //打开音频设备
+        ret = dev_audio_open(0, 1, 16000, AUDIO_ENC_TYPE_PCM);
+        if(ret != BK_OK)
+        {
+            LOGE("[%s][%d] dev_audio_open failed: %d\r\n", __func__, __LINE__, ret);
+            TEST_FAIL();
+            return BK_FAIL;
+        }
+        ret = avi_player_test();
+        if(ret != BK_OK)
+        {
+            TEST_FAIL();
+            return BK_FAIL;
+        }
+        dev_audio_close();
+        dev_lcd_close();
+        TEST_PASS();
+    }
+    return 0;
+}

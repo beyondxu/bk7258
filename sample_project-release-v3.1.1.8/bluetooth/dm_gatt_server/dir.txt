@@ -1,0 +1,3580 @@
+.
+├── ap
+│   ├── ap_main.c
+│   ├── ap_main - 副本c
+│   ├── app_bluetooth
+│   │   ├── gatt
+│   │   │   ├── battery
+│   │   │   │   ├── battery_server.c
+│   │   │   │   └── battery_server.h
+│   │   │   ├── dis
+│   │   │   │   ├── dis.c
+│   │   │   │   └── dis.h
+│   │   │   ├── dm_gap_utils.c
+│   │   │   ├── dm_gap_utils.h
+│   │   │   ├── dm_gatt.c
+│   │   │   ├── dm_gattc.c
+│   │   │   ├── dm_gattc.h
+│   │   │   ├── dm_gatt_cli.c
+│   │   │   ├── dm_gatt_connection.c
+│   │   │   ├── dm_gatt_connection.h
+│   │   │   ├── dm_gatt.h
+│   │   │   ├── dm_gatts.c
+│   │   │   ├── dm_gatts.h
+│   │   │   ├── f618
+│   │   │   │   ├── f618_server.c
+│   │   │   │   └── f618_server.h
+│   │   │   ├── fa00
+│   │   │   │   ├── fa00_server.c
+│   │   │   │   └── fa00_server.h
+│   │   │   ├── hogp
+│   │   │   │   ├── hogpd.c
+│   │   │   │   └── hogpd.h
+│   │   │   └── printer
+│   │   │       ├── ble_printer_service.c
+│   │   │       ├── ble_printer_servicec
+│   │   │       ├── ble_printer_service.h
+│   │   │       ├── hw_printer_stub.c
+│   │   │       ├── printer_protocol.c
+│   │   │       └── printer_protocol.h
+│   │   └── storage
+│   │       ├── bluetooth_storage.c
+│   │       └── bluetooth_storage.h
+│   ├── ble_printer_service.c
+│   ├── CMakeLists.txt
+│   ├── CMakeListstxt
+│   ├── CMakeLists - 副本 - 副本.txt
+│   └── config
+│       └── bk7258_ap
+│           ├── config
+│           ├── config.old
+│           └── usr_gpio_cfg.h
+├── build
+│   └── bk7258
+│       └── dm_gatt_server
+│           ├── bk7258
+│           │   ├── app.bin
+│           │   ├── app.elf
+│           │   ├── app.map
+│           │   ├── app_memory.txt
+│           │   ├── app.nm
+│           │   ├── app.txt
+│           │   ├── armino
+│           │   │   ├── adc_key
+│           │   │   │   ├── CMakeFiles
+│           │   │   │   └── cmake_install.cmake
+│           │   │   ├── app
+│           │   │   │   ├── CMakeFiles
+│           │   │   │   └── cmake_install.cmake
+│           │   │   ├── at
+│           │   │   │   ├── CMakeFiles
+│           │   │   │   └── cmake_install.cmake
+│           │   │   ├── at_server
+│           │   │   │   ├── CMakeFiles
+│           │   │   │   │   └── __armino_at_server.dir
+│           │   │   │   │       ├── _at_server
+│           │   │   │   │       │   └── _at_server.c.obj
+│           │   │   │   │       ├── at_server.c.obj
+│           │   │   │   │       ├── at_server_func
+│           │   │   │   │       │   └── _atsvr_func.c.obj
+│           │   │   │   │       ├── _at_server_port
+│           │   │   │   │       │   ├── atsvr_core.c.obj
+│           │   │   │   │       │   └── atsvr_port.c.obj
+│           │   │   │   │       └── at_task.c.obj
+│           │   │   │   ├── cmake_install.cmake
+│           │   │   │   └── libat_server.a
+│           │   │   ├── base64
+│           │   │   │   ├── CMakeFiles
+│           │   │   │   │   └── __armino_base64.dir
+│           │   │   │   │       └── base_64.c.obj
+│           │   │   │   ├── cmake_install.cmake
+│           │   │   │   └── libbase64.a
+│           │   │   ├── bk7258
+│           │   │   │   ├── bk7258_out.ld
+│           │   │   │   ├── CMakeFiles
+│           │   │   │   │   └── __armino_bk7258.dir
+│           │   │   │   │       ├── hal
+│           │   │   │   │       │   ├── adc_hal_debug.c.obj
+│           │   │   │   │       │   ├── adc_ll.c.obj
+│           │   │   │   │       │   ├── aon_pmu_hal.c.obj
+│           │   │   │   │       │   ├── aon_pmu_hal_debug.c.obj
+│           │   │   │   │       │   ├── aon_rtc_hal_debug.c.obj
+│           │   │   │   │       │   ├── calendar_hal_debug.c.obj
+│           │   │   │   │       │   ├── calendar_ll.c.obj
+│           │   │   │   │       │   ├── ckmn_hal_debug.c.obj
+│           │   │   │   │       │   ├── ckmn_ll.c.obj
+│           │   │   │   │       │   ├── dma_hal_debug.c.obj
+│           │   │   │   │       │   ├── dma_ll.c.obj
+│           │   │   │   │       │   ├── efuse_hal_debug.c.obj
+│           │   │   │   │       │   ├── efuse_ll.c.obj
+│           │   │   │   │       │   ├── flash_hal_debug.c.obj
+│           │   │   │   │       │   ├── flash_ll.c.obj
+│           │   │   │   │       │   ├── gpio_hal_debug.c.obj
+│           │   │   │   │       │   ├── gpio_ll.c.obj
+│           │   │   │   │       │   ├── i2s_hal.c.obj
+│           │   │   │   │       │   ├── icu_hal_debug.c.obj
+│           │   │   │   │       │   ├── icu_ll.c.obj
+│           │   │   │   │       │   ├── lin_hal_debug.c.obj
+│           │   │   │   │       │   ├── lin_ll.c.obj
+│           │   │   │   │       │   ├── psram_ll.c.obj
+│           │   │   │   │       │   ├── qspi_hal_debug.c.obj
+│           │   │   │   │       │   ├── sdio_hal_debug.c.obj
+│           │   │   │   │       │   ├── sdmadc_hal_debug.c.obj
+│           │   │   │   │       │   ├── spi_hal_debug.c.obj
+│           │   │   │   │       │   ├── spi_ll.c.obj
+│           │   │   │   │       │   ├── sys_clock_hal_debug.c.obj
+│           │   │   │   │       │   ├── sys_hal.c.obj
+│           │   │   │   │       │   ├── sys_hal_debug.c.obj
+│           │   │   │   │       │   ├── sys_pm_hal.c.obj
+│           │   │   │   │       │   ├── sys_pm_hal_ctrl.c.obj
+│           │   │   │   │       │   ├── sys_pm_hal_debug.c.obj
+│           │   │   │   │       │   ├── timer_hal.c.obj
+│           │   │   │   │       │   ├── timer_hal_debug.c.obj
+│           │   │   │   │       │   ├── timer_ll.c.obj
+│           │   │   │   │       │   ├── trng_hal_debug.c.obj
+│           │   │   │   │       │   ├── trng_ll.c.obj
+│           │   │   │   │       │   ├── uart_hal_debug.c.obj
+│           │   │   │   │       │   ├── uart_ll.c.obj
+│           │   │   │   │       │   ├── wdt_hal_debug.c.obj
+│           │   │   │   │       │   └── wdt_ll.c.obj
+│           │   │   │   │       └── mpu_cfg.c.obj
+│           │   │   │   ├── cmake_install.cmake
+│           │   │   │   └── libbk7258.a
+│           │   │   ├── bk_adapter
+│           │   │   │   ├── CMakeFiles
+│           │   │   │   │   └── __armino_bk_adapter.dir
+│           │   │   │   │       └── lib_adapter.c.obj
+│           │   │   │   ├── cmake_install.cmake
+│           │   │   │   └── libbk_adapter.a
+│           │   │   ├── bk_ate
+│           │   │   │   ├── CMakeFiles
+│           │   │   │   │   └── __armino_bk_ate.dir
+│           │   │   │   │       └── ate.c.obj
+│           │   │   │   ├── cmake_install.cmake
+│           │   │   │   └── libbk_ate.a
+│           │   │   ├── bk_bluetooth
+│           │   │   │   ├── CMakeFiles
+│           │   │   │   │   └── __armino_bk_bluetooth.dir
+│           │   │   │   │       ├── api
+│           │   │   │   │       │   ├── bk_a2dp_api.c.obj
+│           │   │   │   │       │   ├── bk_cli_ble.c.obj
+│           │   │   │   │       │   ├── bk_hfp_api.c.obj
+│           │   │   │   │       │   ├── ble_gap_export_api.c.obj
+│           │   │   │   │       │   ├── bt_gap_export_api.c.obj
+│           │   │   │   │       │   ├── bt_hidd_export_api.c.obj
+│           │   │   │   │       │   ├── bt_hidh_export_api.c.obj
+│           │   │   │   │       │   ├── bt_l2cap_export_api.c.obj
+│           │   │   │   │       │   ├── bt_main.c.obj
+│           │   │   │   │       │   └── bt_spp_export_api.c.obj
+│           │   │   │   │       ├── feat_config
+│           │   │   │   │       │   └── bt_feature_config.c.obj
+│           │   │   │   │       ├── hci
+│           │   │   │   │       │   ├── hal_hci_core.c.obj
+│           │   │   │   │       │   ├── hci_distinguish.c.obj
+│           │   │   │   │       │   └── hci_parse.c.obj
+│           │   │   │   │       ├── ipc
+│           │   │   │   │       │   └── src
+│           │   │   │   │       │       └── bt_ipc_core.c.obj
+│           │   │   │   │       └── soc
+│           │   │   │   │           └── bk7236
+│           │   │   │   │               └── bluetooth.c.obj
+│           │   │   │   ├── cmake_install.cmake
+│           │   │   │   └── libbk_bluetooth.a
+│           │   │   ├── bk_cli
+│           │   │   │   ├── CMakeFiles
+│           │   │   │   │   └── __armino_bk_cli.dir
+│           │   │   │   │       ├── cli_aon_rtc.c.obj
+│           │   │   │   │       ├── cli_ckmn.c.obj
+│           │   │   │   │       ├── cli_common.c.obj
+│           │   │   │   │       ├── cli_dma.c.obj
+│           │   │   │   │       ├── cli_dwt.c.obj
+│           │   │   │   │       ├── cli_easyflash.c.obj
+│           │   │   │   │       ├── cli_efuse.c.obj
+│           │   │   │   │       ├── cli_event.c.obj
+│           │   │   │   │       ├── cli_exception.c.obj
+│           │   │   │   │       ├── cli_flash.c.obj
+│           │   │   │   │       ├── cli_flash_test.c.obj
+│           │   │   │   │       ├── cli_fpb.c.obj
+│           │   │   │   │       ├── cli_gpio.c.obj
+│           │   │   │   │       ├── cli_interrupt.c.obj
+│           │   │   │   │       ├── cli_iperf.c.obj
+│           │   │   │   │       ├── cli_lwip.c.obj
+│           │   │   │   │       ├── cli_main.c.obj
+│           │   │   │   │       ├── cli_mem.c.obj
+│           │   │   │   │       ├── cli_mico.c.obj
+│           │   │   │   │       ├── cli_misc.c.obj
+│           │   │   │   │       ├── cli_netif.c.obj
+│           │   │   │   │       ├── cli_os.c.obj
+│           │   │   │   │       ├── cli_psram.c.obj
+│           │   │   │   │       ├── cli_puf.c.obj
+│           │   │   │   │       ├── cli_pwr.c.obj
+│           │   │   │   │       ├── cli_reg.c.obj
+│           │   │   │   │       ├── cli_rpc.c.obj
+│           │   │   │   │       ├── cli_timer.c.obj
+│           │   │   │   │       ├── cli_touch.c.obj
+│           │   │   │   │       ├── cli_trng.c.obj
+│           │   │   │   │       ├── cli_uart.c.obj
+│           │   │   │   │       ├── cli_uid.c.obj
+│           │   │   │   │       ├── cli_wdt.c.obj
+│           │   │   │   │       ├── cli_wifi.c.obj
+│           │   │   │   │       ├── rpc_client_gpio.c.obj
+│           │   │   │   │       ├── shell_mailbox_ipc.c.obj
+│           │   │   │   │       ├── shell_task.c.obj
+│           │   │   │   │       └── shell_uart.c.obj
+│           │   │   │   ├── cmake_install.cmake
+│           │   │   │   └── libbk_cli.a
+│           │   │   ├── bk_common
+│           │   │   │   ├── CMakeFiles
+│           │   │   │   │   └── __armino_bk_common.dir
+│           │   │   │   │       ├── bk_crc.c.obj
+│           │   │   │   │       └── bk_feature.c.obj
+│           │   │   │   ├── cmake_install.cmake
+│           │   │   │   └── libbk_common.a
+│           │   │   ├── bk_event
+│           │   │   │   ├── CMakeFiles
+│           │   │   │   │   └── __armino_bk_event.dir
+│           │   │   │   │       └── event.c.obj
+│           │   │   │   ├── cmake_install.cmake
+│           │   │   │   └── libbk_event.a
+│           │   │   ├── bk_httpc
+│           │   │   │   ├── CMakeFiles
+│           │   │   │   └── cmake_install.cmake
+│           │   │   ├── bk_init
+│           │   │   │   ├── CMakeFiles
+│           │   │   │   │   └── __armino_bk_init.dir
+│           │   │   │   │       ├── bk_init.c.obj
+│           │   │   │   │       └── components_init.c.obj
+│           │   │   │   ├── cmake_install.cmake
+│           │   │   │   └── libbk_init.a
+│           │   │   ├── bk_libs
+│           │   │   │   ├── CMakeFiles
+│           │   │   │   └── cmake_install.cmake
+│           │   │   ├── bk_log
+│           │   │   │   ├── CMakeFiles
+│           │   │   │   │   └── __armino_bk_log.dir
+│           │   │   │   │       └── log.c.obj
+│           │   │   │   ├── cmake_install.cmake
+│           │   │   │   └── libbk_log.a
+│           │   │   ├── bk_netif
+│           │   │   │   ├── CMakeFiles
+│           │   │   │   │   └── __armino_bk_netif.dir
+│           │   │   │   │       ├── bk_at_netif.c.obj
+│           │   │   │   │       └── bk_netif.c.obj
+│           │   │   │   ├── cmake_install.cmake
+│           │   │   │   └── libbk_netif.a
+│           │   │   ├── bk_phy
+│           │   │   │   ├── CMakeFiles
+│           │   │   │   │   └── __armino_bk_phy.dir
+│           │   │   │   │       └── src
+│           │   │   │   │           ├── bk_phy_adapter.c.obj
+│           │   │   │   │           ├── bk_phy_api.c.obj
+│           │   │   │   │           ├── bk_phy_notify.c.obj
+│           │   │   │   │           ├── bk_phy_server.c.obj
+│           │   │   │   │           ├── bk_rf_adapter.c.obj
+│           │   │   │   │           └── cli_phy.c.obj
+│           │   │   │   ├── cmake_install.cmake
+│           │   │   │   └── libbk_phy.a
+│           │   │   ├── bk_pm
+│           │   │   │   ├── CMakeFiles
+│           │   │   │   │   └── __armino_bk_pm.dir
+│           │   │   │   │       ├── low_vol.c.obj
+│           │   │   │   │       ├── pm.c.obj
+│           │   │   │   │       ├── pm_misc.c.obj
+│           │   │   │   │       └── pm_model.c.obj
+│           │   │   │   ├── cmake_install.cmake
+│           │   │   │   └── libbk_pm.a
+│           │   │   ├── bk_ps
+│           │   │   │   ├── CMakeFiles
+│           │   │   │   └── cmake_install.cmake
+│           │   │   ├── bk_rtos
+│           │   │   │   ├── CMakeFiles
+│           │   │   │   │   └── __armino_bk_rtos.dir
+│           │   │   │   │       ├── freertos
+│           │   │   │   │       │   ├── mem_arch.c.obj
+│           │   │   │   │       │   ├── posix
+│           │   │   │   │       │   │   └── freertos_impl
+│           │   │   │   │       │   │       └── source
+│           │   │   │   │       │   │           └── pthread_local_storage.c.obj
+│           │   │   │   │       │   ├── str_arch.c.obj
+│           │   │   │   │       │   └── v10
+│           │   │   │   │       │       ├── rtos_debug.c.obj
+│           │   │   │   │       │       └── rtos_pub.c.obj
+│           │   │   │   │       ├── platform_stub.c.obj
+│           │   │   │   │       └── rtos_ext.c.obj
+│           │   │   │   ├── cmake_install.cmake
+│           │   │   │   └── libbk_rtos.a
+│           │   │   ├── bk_startup
+│           │   │   │   ├── CMakeFiles
+│           │   │   │   │   └── __armino_bk_startup.dir
+│           │   │   │   │       ├── freertos
+│           │   │   │   │       │   └── rtos_init.c.obj
+│           │   │   │   │       └── system_main.c.obj
+│           │   │   │   ├── cmake_install.cmake
+│           │   │   │   └── libbk_startup.a
+│           │   │   ├── bk_system
+│           │   │   │   ├── CMakeFiles
+│           │   │   │   │   └── __armino_bk_system.dir
+│           │   │   │   │       ├── bk_system_at.c.obj
+│           │   │   │   │       ├── delay.c.obj
+│           │   │   │   │       ├── mac.c.obj
+│           │   │   │   │       ├── os
+│           │   │   │   │       │   └── freertos
+│           │   │   │   │       │       └── tick.c.obj
+│           │   │   │   │       ├── printf_base.c.obj
+│           │   │   │   │       ├── printf.c.obj
+│           │   │   │   │       └── reboot.c.obj
+│           │   │   │   ├── cmake_install.cmake
+│           │   │   │   └── libbk_system.a
+│           │   │   ├── bk_uid
+│           │   │   │   ├── CMakeFiles
+│           │   │   │   │   └── __armino_bk_uid.dir
+│           │   │   │   │       ├── bk_uid_adaptor.c.obj
+│           │   │   │   │       └── bk_uid.c.obj
+│           │   │   │   ├── cmake_install.cmake
+│           │   │   │   └── libbk_uid.a
+│           │   │   ├── bk_wifi
+│           │   │   │   ├── CMakeFiles
+│           │   │   │   │   └── __armino_bk_wifi.dir
+│           │   │   │   │       └── src
+│           │   │   │   │           ├── bk_wifi_adapter.c.obj
+│           │   │   │   │           ├── bk_workqueue.c.obj
+│           │   │   │   │           ├── hostapd_intf.c.obj
+│           │   │   │   │           ├── lsig_monitor.c.obj
+│           │   │   │   │           ├── net_param.c.obj
+│           │   │   │   │           ├── pbuf.c.obj
+│           │   │   │   │           ├── phy.c.obj
+│           │   │   │   │           ├── rw_ieee80211.c.obj
+│           │   │   │   │           ├── rwm_proto.c.obj
+│           │   │   │   │           ├── rw_msdu.c.obj
+│           │   │   │   │           ├── rw_msg_rx.c.obj
+│           │   │   │   │           ├── rw_msg_tx.c.obj
+│           │   │   │   │           ├── rwnx_misc.c.obj
+│           │   │   │   │           ├── rwnx_params.c.obj
+│           │   │   │   │           ├── rwnx_rx.c.obj
+│           │   │   │   │           ├── rwnx_td.c.obj
+│           │   │   │   │           ├── rwnx_tx.c.obj
+│           │   │   │   │           ├── rwnx_txq.c.obj
+│           │   │   │   │           ├── rwnx_utils.c.obj
+│           │   │   │   │           ├── rw_task.c.obj
+│           │   │   │   │           ├── rw_tx_buffering.c.obj
+│           │   │   │   │           ├── sa_ap.c.obj
+│           │   │   │   │           ├── sa_station.c.obj
+│           │   │   │   │           ├── skbuff.c.obj
+│           │   │   │   │           ├── soft_encrypt.c.obj
+│           │   │   │   │           ├── wifi_api.c.obj
+│           │   │   │   │           ├── wifi_at.c.obj
+│           │   │   │   │           ├── wifi_config.c.obj
+│           │   │   │   │           ├── wifi_frame.c.obj
+│           │   │   │   │           ├── wifi_init.c.obj
+│           │   │   │   │           ├── wifi_netif.c.obj
+│           │   │   │   │           ├── wifi_v2.c.obj
+│           │   │   │   │           └── wifi_wpa_cmd.c.obj
+│           │   │   │   ├── cmake_install.cmake
+│           │   │   │   └── libbk_wifi.a
+│           │   │   ├── bt
+│           │   │   │   ├── CMakeFiles
+│           │   │   │   └── cmake_install.cmake
+│           │   │   ├── cm33
+│           │   │   │   ├── CMakeFiles
+│           │   │   │   │   └── __armino_cm33.dir
+│           │   │   │   │       ├── arch_delay.c.obj
+│           │   │   │   │       ├── arch_interrupt.c.obj
+│           │   │   │   │       ├── arm.c.obj
+│           │   │   │   │       ├── dwt.c.obj
+│           │   │   │   │       ├── fpb.c.obj
+│           │   │   │   │       ├── jump.c.obj
+│           │   │   │   │       ├── mpu.c.obj
+│           │   │   │   │       ├── os
+│           │   │   │   │       │   └── freertos
+│           │   │   │   │       │       └── cpu.c.obj
+│           │   │   │   │       ├── stack_base.c.obj
+│           │   │   │   │       └── trap_base.c.obj
+│           │   │   │   ├── cmake_install.cmake
+│           │   │   │   └── libcm33.a
+│           │   │   ├── CMakeFiles
+│           │   │   ├── cmake_install.cmake
+│           │   │   ├── cmsis
+│           │   │   │   ├── CMakeFiles
+│           │   │   │   │   └── __armino_cmsis.dir
+│           │   │   │   │       └── CMSIS_5
+│           │   │   │   │           └── Device
+│           │   │   │   │               └── Beken
+│           │   │   │   │                   └── bk7236xx
+│           │   │   │   │                       └── Source
+│           │   │   │   │                           ├── startup_bk7236.c.obj
+│           │   │   │   │                           └── system_bk7236xx.c.obj
+│           │   │   │   ├── cmake_install.cmake
+│           │   │   │   └── libcmsis.a
+│           │   │   ├── common
+│           │   │   │   ├── CMakeFiles
+│           │   │   │   │   └── __armino_common.dir
+│           │   │   │   │       └── hal
+│           │   │   │   │           ├── adc_hal.c.obj
+│           │   │   │   │           ├── aon_rtc_hal_64bit.c.obj
+│           │   │   │   │           ├── aon_wdt_hal.c.obj
+│           │   │   │   │           ├── ckmn_hal.c.obj
+│           │   │   │   │           ├── dma_hal.c.obj
+│           │   │   │   │           ├── efuse_hal.c.obj
+│           │   │   │   │           ├── flash_hal.c.obj
+│           │   │   │   │           ├── gpio_hal.c.obj
+│           │   │   │   │           ├── icu_hal.c.obj
+│           │   │   │   │           ├── mbox0_hal.c.obj
+│           │   │   │   │           ├── otp_hal.c.obj
+│           │   │   │   │           ├── psram_hal.c.obj
+│           │   │   │   │           ├── sdmadc_hal.c.obj
+│           │   │   │   │           ├── spi_hal.c.obj
+│           │   │   │   │           ├── timer_hal.c.obj
+│           │   │   │   │           ├── trng_hal.c.obj
+│           │   │   │   │           ├── uart_hal.c.obj
+│           │   │   │   │           └── wdt_hal.c.obj
+│           │   │   │   ├── cmake_install.cmake
+│           │   │   │   └── libcommon.a
+│           │   │   ├── compal
+│           │   │   │   ├── CMakeFiles
+│           │   │   │   └── cmake_install.cmake
+│           │   │   ├── console
+│           │   │   │   ├── CMakeFiles
+│           │   │   │   │   └── __armino_console.dir
+│           │   │   │   │       └── argtable3
+│           │   │   │   │           ├── arg_cmd.c.obj
+│           │   │   │   │           ├── arg_date.c.obj
+│           │   │   │   │           ├── arg_dbl.c.obj
+│           │   │   │   │           ├── arg_dstr.c.obj
+│           │   │   │   │           ├── arg_end.c.obj
+│           │   │   │   │           ├── arg_file.c.obj
+│           │   │   │   │           ├── arg_hashtable.c.obj
+│           │   │   │   │           ├── arg_int.c.obj
+│           │   │   │   │           ├── arg_lit.c.obj
+│           │   │   │   │           ├── arg_rem.c.obj
+│           │   │   │   │           ├── arg_rex.c.obj
+│           │   │   │   │           ├── arg_str.c.obj
+│           │   │   │   │           ├── argtable3.c.obj
+│           │   │   │   │           └── arg_utils.c.obj
+│           │   │   │   ├── cmake_install.cmake
+│           │   │   │   └── libconsole.a
+│           │   │   ├── controller_if
+│           │   │   │   ├── CMakeFiles
+│           │   │   │   │   └── __armino_controller_if.dir
+│           │   │   │   │       ├── cif_cntrl.c.obj
+│           │   │   │   │       ├── cif_co_list.c.obj
+│           │   │   │   │       ├── cif_ipc.c.obj
+│           │   │   │   │       ├── cif_main.c.obj
+│           │   │   │   │       ├── cif_mem_mgmt.c.obj
+│           │   │   │   │       ├── cif_ps.c.obj
+│           │   │   │   │       ├── cif_wifi_api.c.obj
+│           │   │   │   │       └── cif_wifi_dp.c.obj
+│           │   │   │   ├── cmake_install.cmake
+│           │   │   │   └── libcontroller_if.a
+│           │   │   ├── coredump
+│           │   │   │   ├── CMakeFiles
+│           │   │   │   │   └── __armino_coredump.dir
+│           │   │   │   │       └── cm_backtrace
+│           │   │   │   │           └── cm_backtrace.c.obj
+│           │   │   │   ├── cmake_install.cmake
+│           │   │   │   └── libcoredump.a
+│           │   │   ├── cp
+│           │   │   │   ├── CMakeFiles
+│           │   │   │   │   └── __armino_cp.dir
+│           │   │   │   │       └── cp_main.c.obj
+│           │   │   │   ├── cmake_install.cmake
+│           │   │   │   └── libcp.a
+│           │   │   ├── driver
+│           │   │   │   ├── CMakeFiles
+│           │   │   │   │   └── __armino_driver.dir
+│           │   │   │   │       ├── aon_wdt
+│           │   │   │   │       │   └── aon_wdt_driver.c.obj
+│           │   │   │   │       ├── bk7258
+│           │   │   │   │       │   ├── gpio_driver.c.obj
+│           │   │   │   │       │   ├── interrupt.c.obj
+│           │   │   │   │       │   └── interrupt_statis.c.obj
+│           │   │   │   │       ├── chip_support
+│           │   │   │   │       │   └── chip_support.c.obj
+│           │   │   │   │       ├── ckmn
+│           │   │   │   │       │   └── ckmn_driver.c.obj
+│           │   │   │   │       ├── common
+│           │   │   │   │       │   ├── dd.c.obj
+│           │   │   │   │       │   ├── driver.c.obj
+│           │   │   │   │       │   └── drv_model.c.obj
+│           │   │   │   │       ├── dsp
+│           │   │   │   │       │   └── dsp.c.obj
+│           │   │   │   │       ├── efuse
+│           │   │   │   │       │   └── efuse_driver.c.obj
+│           │   │   │   │       ├── flash
+│           │   │   │   │       │   ├── flash_bypass.c.obj
+│           │   │   │   │       │   ├── flash_driver.c.obj
+│           │   │   │   │       │   ├── flash_driver_ext.c.obj
+│           │   │   │   │       │   ├── flash_notify.c.obj
+│           │   │   │   │       │   ├── flash_partition.c.obj
+│           │   │   │   │       │   ├── flash_server.c.obj
+│           │   │   │   │       │   └── flash_svr_test.c.obj
+│           │   │   │   │       ├── general_dma
+│           │   │   │   │       │   └── dma_driver.c.obj
+│           │   │   │   │       ├── gpio
+│           │   │   │   │       │   └── gpio_driver_base.c.obj
+│           │   │   │   │       ├── icu
+│           │   │   │   │       │   ├── icu_driver.c.obj
+│           │   │   │   │       │   └── interrupt_base.c.obj
+│           │   │   │   │       ├── irda
+│           │   │   │   │       │   └── irda.c.obj
+│           │   │   │   │       ├── mailbox
+│           │   │   │   │       │   ├── bk_api_ipc.c.obj
+│           │   │   │   │       │   ├── bk_api_ipc_test.c.obj
+│           │   │   │   │       │   ├── bk_api_rpc_server.c.obj
+│           │   │   │   │       │   ├── mailbox_channel.c.obj
+│           │   │   │   │       │   ├── mb_chnl_buff.c.obj
+│           │   │   │   │       │   ├── mb_ipc_cmd.c.obj
+│           │   │   │   │       │   ├── mb_ipc.c.obj
+│           │   │   │   │       │   ├── mb_ipc_heartbeat.c.obj
+│           │   │   │   │       │   ├── mbox0_adapter.c.obj
+│           │   │   │   │       │   ├── mbox0_drv.c.obj
+│           │   │   │   │       │   └── mb_uart_driver.c.obj
+│           │   │   │   │       ├── otp
+│           │   │   │   │       │   └── otp_driver_v1_1.c.obj
+│           │   │   │   │       ├── pmu
+│           │   │   │   │       │   └── aon_pmu_driver.c.obj
+│           │   │   │   │       ├── psram
+│           │   │   │   │       │   └── psram_driver.c.obj
+│           │   │   │   │       ├── pwr_clk
+│           │   │   │   │       │   ├── low_pwr_core.c.obj
+│           │   │   │   │       │   ├── low_pwr_misc.c.obj
+│           │   │   │   │       │   ├── pwr_clk.c.obj
+│           │   │   │   │       │   ├── rosc_32k.c.obj
+│           │   │   │   │       │   └── rosc_ppm.c.obj
+│           │   │   │   │       ├── reset_reason
+│           │   │   │   │       │   └── reset_reason.c.obj
+│           │   │   │   │       ├── rtc
+│           │   │   │   │       │   └── aon_rtc_driver_64bit.c.obj
+│           │   │   │   │       ├── saradc
+│           │   │   │   │       │   ├── adc_cmd_api.c.obj
+│           │   │   │   │       │   ├── adc_driver.c.obj
+│           │   │   │   │       │   ├── adc_statis.c.obj
+│           │   │   │   │       │   ├── cli_adc_api.c.obj
+│           │   │   │   │       │   ├── cli_sadc_api.c.obj
+│           │   │   │   │       │   ├── saradc_notify.c.obj
+│           │   │   │   │       │   └── saradc_server.c.obj
+│           │   │   │   │       ├── sdmadc
+│           │   │   │   │       │   └── sdmadc_driver.c.obj
+│           │   │   │   │       ├── spinlock
+│           │   │   │   │       │   ├── amp_res_lock.c.obj
+│           │   │   │   │       │   └── spinlock.c.obj
+│           │   │   │   │       ├── sys_ctrl
+│           │   │   │   │       │   ├── sys_audio_driver.c.obj
+│           │   │   │   │       │   ├── sys_bt_driver.c.obj
+│           │   │   │   │       │   ├── sys_clock_driver.c.obj
+│           │   │   │   │       │   ├── sys_ctrl.c.obj
+│           │   │   │   │       │   ├── sys_driver.c.obj
+│           │   │   │   │       │   ├── sys_driver_common.c.obj
+│           │   │   │   │       │   ├── sys_int_driver.c.obj
+│           │   │   │   │       │   ├── sys_ps_driver.c.obj
+│           │   │   │   │       │   ├── sys_psram_driver.c.obj
+│           │   │   │   │       │   ├── sys_touch_driver.c.obj
+│           │   │   │   │       │   ├── sys_video_driver.c.obj
+│           │   │   │   │       │   └── sys_wifi_driver.c.obj
+│           │   │   │   │       ├── timer
+│           │   │   │   │       │   └── timer_driver.c.obj
+│           │   │   │   │       ├── touch
+│           │   │   │   │       │   └── touch_driver_v1_1.c.obj
+│           │   │   │   │       ├── trng
+│           │   │   │   │       │   └── trng_driver.c.obj
+│           │   │   │   │       ├── uart
+│           │   │   │   │       │   ├── printf.c.obj
+│           │   │   │   │       │   ├── uart_driver.c.obj
+│           │   │   │   │       │   └── uart_statis.c.obj
+│           │   │   │   │       └── wdt
+│           │   │   │   │           └── wdt_driver.c.obj
+│           │   │   │   ├── cmake_install.cmake
+│           │   │   │   ├── device
+│           │   │   │   │   ├── CMakeFiles
+│           │   │   │   │   └── cmake_install.cmake
+│           │   │   │   ├── libdriver.a
+│           │   │   │   └── lin
+│           │   │   │       ├── CMakeFiles
+│           │   │   │       └── cmake_install.cmake
+│           │   │   ├── easy_flash
+│           │   │   │   ├── CMakeFiles
+│           │   │   │   │   └── __armino_easy_flash.dir
+│           │   │   │   │       ├── bk_ef.c.obj
+│           │   │   │   │       └── easy_flash_V4.X
+│           │   │   │   │           ├── port
+│           │   │   │   │           │   └── ef_port.c.obj
+│           │   │   │   │           └── src
+│           │   │   │   │               ├── easyflash.c.obj
+│           │   │   │   │               ├── ef_env.c.obj
+│           │   │   │   │               ├── ef_env_legacy.c.obj
+│           │   │   │   │               ├── ef_env_legacy_wl.c.obj
+│           │   │   │   │               ├── ef_iap.c.obj
+│           │   │   │   │               ├── ef_log.c.obj
+│           │   │   │   │               └── ef_utils.c.obj
+│           │   │   │   ├── cmake_install.cmake
+│           │   │   │   └── libeasy_flash.a
+│           │   │   ├── embeded_gcov
+│           │   │   │   ├── CMakeFiles
+│           │   │   │   └── cmake_install.cmake
+│           │   │   ├── hmac_sha_256
+│           │   │   │   ├── CMakeFiles
+│           │   │   │   │   └── __armino_hmac_sha_256.dir
+│           │   │   │   │       └── pbkdf2_sha256.c.obj
+│           │   │   │   ├── cmake_install.cmake
+│           │   │   │   └── libhmac_sha_256.a
+│           │   │   ├── include
+│           │   │   │   ├── CMakeFiles
+│           │   │   │   └── cmake_install.cmake
+│           │   │   ├── iperf
+│           │   │   │   ├── CMakeFiles
+│           │   │   │   │   └── __armino_iperf.dir
+│           │   │   │   │       └── iperf.c.obj
+│           │   │   │   ├── cmake_install.cmake
+│           │   │   │   └── libiperf.a
+│           │   │   ├── json
+│           │   │   │   ├── CMakeFiles
+│           │   │   │   └── cmake_install.cmake
+│           │   │   ├── key_handle
+│           │   │   │   ├── CMakeFiles
+│           │   │   │   └── cmake_install.cmake
+│           │   │   ├── lwip_intf_v2_1
+│           │   │   │   ├── CMakeFiles
+│           │   │   │   │   └── __armino_lwip_intf_v2_1.dir
+│           │   │   │   │       ├── dhcpd
+│           │   │   │   │       │   ├── dhcp-server.c.obj
+│           │   │   │   │       │   └── dhcp-server-main.c.obj
+│           │   │   │   │       └── lwip-2.1.2
+│           │   │   │   │           ├── port
+│           │   │   │   │           │   ├── net.c.obj
+│           │   │   │   │           │   ├── sys_arch.c.obj
+│           │   │   │   │           │   └── wlanif.c.obj
+│           │   │   │   │           └── src
+│           │   │   │   │               ├── api
+│           │   │   │   │               │   ├── api_lib.c.obj
+│           │   │   │   │               │   ├── api_msg.c.obj
+│           │   │   │   │               │   ├── err.c.obj
+│           │   │   │   │               │   ├── netbuf.c.obj
+│           │   │   │   │               │   ├── netdb.c.obj
+│           │   │   │   │               │   ├── netifapi.c.obj
+│           │   │   │   │               │   ├── sockets.c.obj
+│           │   │   │   │               │   └── tcpip.c.obj
+│           │   │   │   │               ├── apps
+│           │   │   │   │               │   ├── mdns
+│           │   │   │   │               │   │   └── mdns.c.obj
+│           │   │   │   │               │   └── ping
+│           │   │   │   │               │       └── ping.c.obj
+│           │   │   │   │               ├── core
+│           │   │   │   │               │   ├── debug.c.obj
+│           │   │   │   │               │   ├── def.c.obj
+│           │   │   │   │               │   ├── dns.c.obj
+│           │   │   │   │               │   ├── inet_chksum.c.obj
+│           │   │   │   │               │   ├── init.c.obj
+│           │   │   │   │               │   ├── ip.c.obj
+│           │   │   │   │               │   ├── ipv4
+│           │   │   │   │               │   │   ├── autoip.c.obj
+│           │   │   │   │               │   │   ├── dhcp.c.obj
+│           │   │   │   │               │   │   ├── etharp.c.obj
+│           │   │   │   │               │   │   ├── icmp.c.obj
+│           │   │   │   │               │   │   ├── igmp.c.obj
+│           │   │   │   │               │   │   ├── ip4_addr.c.obj
+│           │   │   │   │               │   │   ├── ip4.c.obj
+│           │   │   │   │               │   │   ├── ip4_frag.c.obj
+│           │   │   │   │               │   │   └── ip4_napt.c.obj
+│           │   │   │   │               │   ├── ipv6
+│           │   │   │   │               │   │   ├── dhcp6.c.obj
+│           │   │   │   │               │   │   ├── ethip6.c.obj
+│           │   │   │   │               │   │   ├── icmp6.c.obj
+│           │   │   │   │               │   │   ├── inet6.c.obj
+│           │   │   │   │               │   │   ├── ip6_addr.c.obj
+│           │   │   │   │               │   │   ├── ip6.c.obj
+│           │   │   │   │               │   │   ├── ip6_frag.c.obj
+│           │   │   │   │               │   │   ├── mld6.c.obj
+│           │   │   │   │               │   │   └── nd6.c.obj
+│           │   │   │   │               │   ├── mem.c.obj
+│           │   │   │   │               │   ├── memp.c.obj
+│           │   │   │   │               │   ├── netif.c.obj
+│           │   │   │   │               │   ├── pbuf.c.obj
+│           │   │   │   │               │   ├── raw.c.obj
+│           │   │   │   │               │   ├── stats.c.obj
+│           │   │   │   │               │   ├── sys.c.obj
+│           │   │   │   │               │   ├── tcp.c.obj
+│           │   │   │   │               │   ├── tcp_in.c.obj
+│           │   │   │   │               │   ├── tcp_out.c.obj
+│           │   │   │   │               │   ├── timeouts.c.obj
+│           │   │   │   │               │   └── udp.c.obj
+│           │   │   │   │               └── netif
+│           │   │   │   │                   └── ethernet.c.obj
+│           │   │   │   ├── cmake_install.cmake
+│           │   │   │   └── liblwip_intf_v2_1.a
+│           │   │   ├── mesh
+│           │   │   │   ├── CMakeFiles
+│           │   │   │   └── cmake_install.cmake
+│           │   │   ├── os
+│           │   │   │   ├── CMakeFiles
+│           │   │   │   └── cmake_install.cmake
+│           │   │   ├── os_source
+│           │   │   │   ├── CMakeFiles
+│           │   │   │   │   └── __armino_os_source.dir
+│           │   │   │   │       └── freertos_v10
+│           │   │   │   │           ├── croutine.c.obj
+│           │   │   │   │           ├── event_groups.c.obj
+│           │   │   │   │           ├── list.c.obj
+│           │   │   │   │           ├── portable
+│           │   │   │   │           │   ├── Common
+│           │   │   │   │           │   │   └── mpu_wrappers.c.obj
+│           │   │   │   │           │   ├── GCC
+│           │   │   │   │           │   │   └── ARM_CM33_NTZ
+│           │   │   │   │           │   │       └── non_secure
+│           │   │   │   │           │   │           ├── portasm.c.obj
+│           │   │   │   │           │   │           └── port.c.obj
+│           │   │   │   │           │   └── MemMang
+│           │   │   │   │           │       └── heap_4.c.obj
+│           │   │   │   │           ├── queue.c.obj
+│           │   │   │   │           ├── stream_buffer.c.obj
+│           │   │   │   │           ├── tasks.c.obj
+│           │   │   │   │           └── timers.c.obj
+│           │   │   │   ├── cmake_install.cmake
+│           │   │   │   └── libos_source.a
+│           │   │   ├── partitions
+│           │   │   │   ├── _build
+│           │   │   │   │   ├── auto_partitions.csv
+│           │   │   │   │   ├── bl1_control.json
+│           │   │   │   │   ├── bl1_ec256_privkey.pem
+│           │   │   │   │   ├── bl1_ec256_pubkey.pem
+│           │   │   │   │   ├── bl2_root_rsa3072.pem
+│           │   │   │   │   ├── gpio_dev.csv
+│           │   │   │   │   ├── mpc.csv
+│           │   │   │   │   ├── _mpc.h
+│           │   │   │   │   ├── ota.csv
+│           │   │   │   │   ├── _ota.h
+│           │   │   │   │   ├── otp1.csv
+│           │   │   │   │   ├── otp2.csv
+│           │   │   │   │   ├── _otp.c
+│           │   │   │   │   ├── _otp.h
+│           │   │   │   │   ├── ppc_config.bin
+│           │   │   │   │   ├── ppc.csv
+│           │   │   │   │   ├── _ppc.h
+│           │   │   │   │   ├── ppro_ap.csv
+│           │   │   │   │   ├── ppro_default.csv
+│           │   │   │   │   ├── ppro_sec.csv
+│           │   │   │   │   ├── ram_regions.csv
+│           │   │   │   │   ├── security.csv
+│           │   │   │   │   ├── security_ctrl.csv
+│           │   │   │   │   ├── security.h
+│           │   │   │   │   └── tfm_hal_ppc.h
+│           │   │   │   ├── CMakeFiles
+│           │   │   │   └── cmake_install.cmake
+│           │   │   ├── part_table
+│           │   │   │   ├── CMakeFiles
+│           │   │   │   └── cmake_install.cmake
+│           │   │   ├── psa_mbedtls
+│           │   │   │   ├── CMakeFiles
+│           │   │   │   │   └── __armino_psa_mbedtls.dir
+│           │   │   │   │       ├── mbedtls
+│           │   │   │   │       │   ├── library
+│           │   │   │   │       │   │   ├── aes.c.obj
+│           │   │   │   │       │   │   ├── aesni.c.obj
+│           │   │   │   │       │   │   ├── aria.c.obj
+│           │   │   │   │       │   │   ├── asn1parse.c.obj
+│           │   │   │   │       │   │   ├── asn1write.c.obj
+│           │   │   │   │       │   │   ├── base64.c.obj
+│           │   │   │   │       │   │   ├── bignum.c.obj
+│           │   │   │   │       │   │   ├── bignum_core.c.obj
+│           │   │   │   │       │   │   ├── camellia.c.obj
+│           │   │   │   │       │   │   ├── ccm.c.obj
+│           │   │   │   │       │   │   ├── chacha20.c.obj
+│           │   │   │   │       │   │   ├── chachapoly.c.obj
+│           │   │   │   │       │   │   ├── cipher.c.obj
+│           │   │   │   │       │   │   ├── cipher_wrap.c.obj
+│           │   │   │   │       │   │   ├── cmac.c.obj
+│           │   │   │   │       │   │   ├── constant_time.c.obj
+│           │   │   │   │       │   │   ├── ctr_drbg.c.obj
+│           │   │   │   │       │   │   ├── debug.c.obj
+│           │   │   │   │       │   │   ├── des.c.obj
+│           │   │   │   │       │   │   ├── dhm.c.obj
+│           │   │   │   │       │   │   ├── ecdh.c.obj
+│           │   │   │   │       │   │   ├── ecdsa.c.obj
+│           │   │   │   │       │   │   ├── ecjpake.c.obj
+│           │   │   │   │       │   │   ├── ecp.c.obj
+│           │   │   │   │       │   │   ├── ecp_curves_new.c.obj
+│           │   │   │   │       │   │   ├── entropy.c.obj
+│           │   │   │   │       │   │   ├── entropy_poll.c.obj
+│           │   │   │   │       │   │   ├── error.c.obj
+│           │   │   │   │       │   │   ├── gcm.c.obj
+│           │   │   │   │       │   │   ├── hmac_drbg.c.obj
+│           │   │   │   │       │   │   ├── md5.c.obj
+│           │   │   │   │       │   │   ├── md.c.obj
+│           │   │   │   │       │   │   ├── mps_reader.c.obj
+│           │   │   │   │       │   │   ├── mps_trace.c.obj
+│           │   │   │   │       │   │   ├── nist_kw.c.obj
+│           │   │   │   │       │   │   ├── oid.c.obj
+│           │   │   │   │       │   │   ├── pem.c.obj
+│           │   │   │   │       │   │   ├── pk.c.obj
+│           │   │   │   │       │   │   ├── pkcs12.c.obj
+│           │   │   │   │       │   │   ├── pkcs5.c.obj
+│           │   │   │   │       │   │   ├── pkcs7.c.obj
+│           │   │   │   │       │   │   ├── pkparse.c.obj
+│           │   │   │   │       │   │   ├── pk_wrap.c.obj
+│           │   │   │   │       │   │   ├── pkwrite.c.obj
+│           │   │   │   │       │   │   ├── platform_util.c.obj
+│           │   │   │   │       │   │   ├── poly1305.c.obj
+│           │   │   │   │       │   │   ├── psa_crypto_aead.c.obj
+│           │   │   │   │       │   │   ├── psa_crypto_cipher.c.obj
+│           │   │   │   │       │   │   ├── psa_crypto_client.c.obj
+│           │   │   │   │       │   │   ├── psa_crypto.c.obj
+│           │   │   │   │       │   │   ├── psa_crypto_driver_wrappers_no_static.c.obj
+│           │   │   │   │       │   │   ├── psa_crypto_ecp.c.obj
+│           │   │   │   │       │   │   ├── psa_crypto_ffdh.c.obj
+│           │   │   │   │       │   │   ├── psa_crypto_hash.c.obj
+│           │   │   │   │       │   │   ├── psa_crypto_mac.c.obj
+│           │   │   │   │       │   │   ├── psa_crypto_pake.c.obj
+│           │   │   │   │       │   │   ├── psa_crypto_rsa.c.obj
+│           │   │   │   │       │   │   ├── psa_crypto_se.c.obj
+│           │   │   │   │       │   │   ├── psa_crypto_slot_management.c.obj
+│           │   │   │   │       │   │   ├── psa_crypto_storage.c.obj
+│           │   │   │   │       │   │   ├── psa_util.c.obj
+│           │   │   │   │       │   │   ├── ripemd160.c.obj
+│           │   │   │   │       │   │   ├── rsa_alt_helpers.c.obj
+│           │   │   │   │       │   │   ├── rsa.c.obj
+│           │   │   │   │       │   │   ├── sha1.c.obj
+│           │   │   │   │       │   │   ├── sha256.c.obj
+│           │   │   │   │       │   │   ├── sha3.c.obj
+│           │   │   │   │       │   │   ├── sha512.c.obj
+│           │   │   │   │       │   │   ├── ssl_cache.c.obj
+│           │   │   │   │       │   │   ├── ssl_ciphersuites.c.obj
+│           │   │   │   │       │   │   ├── ssl_client.c.obj
+│           │   │   │   │       │   │   ├── ssl_cookie.c.obj
+│           │   │   │   │       │   │   ├── ssl_debug_helpers_generated.c.obj
+│           │   │   │   │       │   │   ├── ssl_msg.c.obj
+│           │   │   │   │       │   │   ├── ssl_ticket.c.obj
+│           │   │   │   │       │   │   ├── ssl_tls12_client.c.obj
+│           │   │   │   │       │   │   ├── ssl_tls12_server.c.obj
+│           │   │   │   │       │   │   ├── ssl_tls13_client.c.obj
+│           │   │   │   │       │   │   ├── ssl_tls13_generic.c.obj
+│           │   │   │   │       │   │   ├── ssl_tls13_keys.c.obj
+│           │   │   │   │       │   │   ├── ssl_tls13_server.c.obj
+│           │   │   │   │       │   │   ├── ssl_tls.c.obj
+│           │   │   │   │       │   │   ├── x509.c.obj
+│           │   │   │   │       │   │   ├── x509_create.c.obj
+│           │   │   │   │       │   │   ├── x509_crl.c.obj
+│           │   │   │   │       │   │   ├── x509_crt.c.obj
+│           │   │   │   │       │   │   ├── x509_csr.c.obj
+│           │   │   │   │       │   │   ├── x509write.c.obj
+│           │   │   │   │       │   │   ├── x509write_crt.c.obj
+│           │   │   │   │       │   │   └── x509write_csr.c.obj
+│           │   │   │   │       │   └── tests
+│           │   │   │   │       │       └── src
+│           │   │   │   │       │           └── certs.c.obj
+│           │   │   │   │       └── mbedtls_port
+│           │   │   │   │           ├── mbedtls
+│           │   │   │   │           │   ├── library
+│           │   │   │   │           │   │   ├── ecp_curves.c.obj
+│           │   │   │   │           │   │   ├── net_sockets.c.obj
+│           │   │   │   │           │   │   ├── platform.c.obj
+│           │   │   │   │           │   │   └── threading.c.obj
+│           │   │   │   │           │   └── programs
+│           │   │   │   │           │       └── test
+│           │   │   │   │           │           └── selftest.c.obj
+│           │   │   │   │           └── src
+│           │   │   │   │               ├── tls_connect.c.obj
+│           │   │   │   │               ├── tls_hardware.c.obj
+│           │   │   │   │               └── tls_mem.c.obj
+│           │   │   │   ├── cmake_install.cmake
+│           │   │   │   └── libpsa_mbedtls.a
+│           │   │   ├── release
+│           │   │   │   ├── CMakeFiles
+│           │   │   │   └── cmake_install.cmake
+│           │   │   ├── saradc_intf
+│           │   │   │   ├── CMakeFiles
+│           │   │   │   └── cmake_install.cmake
+│           │   │   ├── temp_detect
+│           │   │   │   ├── CMakeFiles
+│           │   │   │   │   └── __armino_temp_detect.dir
+│           │   │   │   │       ├── bk_sensor.c.obj
+│           │   │   │   │       ├── cli_temp_detect.c.obj
+│           │   │   │   │       ├── temp_detect.c.obj
+│           │   │   │   │       └── volt_detect.c.obj
+│           │   │   │   ├── cmake_install.cmake
+│           │   │   │   └── libtemp_detect.a
+│           │   │   ├── touch
+│           │   │   │   ├── CMakeFiles
+│           │   │   │   │   └── __armino_touch.dir
+│           │   │   │   │       └── touch_demo.c.obj
+│           │   │   │   ├── cmake_install.cmake
+│           │   │   │   └── libtouch.a
+│           │   │   ├── uart_debug
+│           │   │   │   ├── CMakeFiles
+│           │   │   │   │   └── __armino_uart_debug.dir
+│           │   │   │   │       ├── cmd_help.c.obj
+│           │   │   │   │       ├── cmd_reg.c.obj
+│           │   │   │   │       ├── command_ate_adc.c.obj
+│           │   │   │   │       ├── command_ate_audio.c.obj
+│           │   │   │   │       ├── command_ate.c.obj
+│           │   │   │   │       ├── command_ate_memcheck.c.obj
+│           │   │   │   │       ├── command_ate_vdddig.c.obj
+│           │   │   │   │       ├── command_line.c.obj
+│           │   │   │   │       ├── command_table.c.obj
+│           │   │   │   │       └── udebug.c.obj
+│           │   │   │   ├── cmake_install.cmake
+│           │   │   │   └── libuart_debug.a
+│           │   │   ├── unity
+│           │   │   │   ├── CMakeFiles
+│           │   │   │   │   └── __armino_unity.dir
+│           │   │   │   │       ├── extras
+│           │   │   │   │       │   └── fixture
+│           │   │   │   │       │       └── src
+│           │   │   │   │       │           └── unity_fixture.c.obj
+│           │   │   │   │       └── src
+│           │   │   │   │           └── unity.c.obj
+│           │   │   │   ├── cmake_install.cmake
+│           │   │   │   └── libunity.a
+│           │   │   ├── utf8
+│           │   │   │   ├── CMakeFiles
+│           │   │   │   │   └── __armino_utf8.dir
+│           │   │   │   │       └── conv_utf8.c.obj
+│           │   │   │   ├── cmake_install.cmake
+│           │   │   │   └── libutf8.a
+│           │   │   ├── vnd_cal
+│           │   │   │   ├── CMakeFiles
+│           │   │   │   │   └── __armino_vnd_cal.dir
+│           │   │   │   │       └── vnd_cal.c.obj
+│           │   │   │   ├── cmake_install.cmake
+│           │   │   │   └── libvnd_cal.a
+│           │   │   ├── webclient
+│           │   │   │   ├── CMakeFiles
+│           │   │   │   └── cmake_install.cmake
+│           │   │   └── wpa_supplicant-2.10
+│           │   │       ├── CMakeFiles
+│           │   │       │   └── __armino_wpa_supplicant-2.10.dir
+│           │   │       │       ├── bk_patch
+│           │   │       │       │   ├── ddrv.c.obj
+│           │   │       │       │   ├── fake_socket.c.obj
+│           │   │       │       │   ├── signal.c.obj
+│           │   │       │       │   └── sk_intf.c.obj
+│           │   │       │       ├── hostapd
+│           │   │       │       │   └── main_none.c.obj
+│           │   │       │       ├── src
+│           │   │       │       │   ├── ap
+│           │   │       │       │   │   ├── ap_config.c.obj
+│           │   │       │       │   │   ├── ap_drv_ops.c.obj
+│           │   │       │       │   │   ├── ap_list.c.obj
+│           │   │       │       │   │   ├── ap_mlme.c.obj
+│           │   │       │       │   │   ├── beacon.c.obj
+│           │   │       │       │   │   ├── dfs.c.obj
+│           │   │       │       │   │   ├── drv_callbacks.c.obj
+│           │   │       │       │   │   ├── hostapd.c.obj
+│           │   │       │       │   │   ├── hw_features.c.obj
+│           │   │       │       │   │   ├── ieee802_11_auth.c.obj
+│           │   │       │       │   │   ├── ieee802_11.c.obj
+│           │   │       │       │   │   ├── ieee802_11_he.c.obj
+│           │   │       │       │   │   ├── ieee802_11_ht.c.obj
+│           │   │       │       │   │   ├── ieee802_11_shared.c.obj
+│           │   │       │       │   │   ├── ieee802_11_vht.c.obj
+│           │   │       │       │   │   ├── ieee802_1x.c.obj
+│           │   │       │       │   │   ├── pmksa_cache_auth.c.obj
+│           │   │       │       │   │   ├── sta_info.c.obj
+│           │   │       │       │   │   ├── tkip_countermeasures.c.obj
+│           │   │       │       │   │   ├── utils.c.obj
+│           │   │       │       │   │   ├── wmm.c.obj
+│           │   │       │       │   │   ├── wpa_auth.c.obj
+│           │   │       │       │   │   ├── wpa_auth_glue.c.obj
+│           │   │       │       │   │   └── wpa_auth_ie.c.obj
+│           │   │       │       │   ├── common
+│           │   │       │       │   │   ├── dragonfly.c.obj
+│           │   │       │       │   │   ├── hw_features_common.c.obj
+│           │   │       │       │   │   ├── ieee802_11_common.c.obj
+│           │   │       │       │   │   ├── ocv.c.obj
+│           │   │       │       │   │   ├── sae.c.obj
+│           │   │       │       │   │   ├── wpa_common.c.obj
+│           │   │       │       │   │   └── wpa_psk_cache.c.obj
+│           │   │       │       │   ├── crypto
+│           │   │       │       │   │   ├── aes-siv.c.obj
+│           │   │       │       │   │   ├── crypto_mbedtls.c.obj
+│           │   │       │       │   │   ├── dh_group5.c.obj
+│           │   │       │       │   │   ├── dh_groups.c.obj
+│           │   │       │       │   │   ├── sha1-prf.c.obj
+│           │   │       │       │   │   ├── sha256-kdf.c.obj
+│           │   │       │       │   │   ├── sha256-prf.c.obj
+│           │   │       │       │   │   ├── sha384-kdf.c.obj
+│           │   │       │       │   │   ├── sha384-prf.c.obj
+│           │   │       │       │   │   ├── sha512-kdf.c.obj
+│           │   │       │       │   │   ├── sha512-prf.c.obj
+│           │   │       │       │   │   └── tls_none.c.obj
+│           │   │       │       │   ├── drivers
+│           │   │       │       │   │   ├── driver_beken.c.obj
+│           │   │       │       │   │   ├── driver_common.c.obj
+│           │   │       │       │   │   └── drivers.c.obj
+│           │   │       │       │   ├── l2_packet
+│           │   │       │       │   │   └── l2_packet_none.c.obj
+│           │   │       │       │   ├── rsn_supp
+│           │   │       │       │   │   ├── pmksa_cache.c.obj
+│           │   │       │       │   │   ├── wpa.c.obj
+│           │   │       │       │   │   └── wpa_ie.c.obj
+│           │   │       │       │   └── utils
+│           │   │       │       │       ├── common.c.obj
+│           │   │       │       │       ├── crc32.c.obj
+│           │   │       │       │       ├── eloop.c.obj
+│           │   │       │       │       ├── os_none.c.obj
+│           │   │       │       │       ├── wpabuf.c.obj
+│           │   │       │       │       └── wpa_debug.c.obj
+│           │   │       │       └── wpa_supplicant
+│           │   │       │           ├── bss.c.obj
+│           │   │       │           ├── bssid_ignore.c.obj
+│           │   │       │           ├── config.c.obj
+│           │   │       │           ├── config_none.c.obj
+│           │   │       │           ├── ctrl_iface.c.obj
+│           │   │       │           ├── events.c.obj
+│           │   │       │           ├── main_supplicant.c.obj
+│           │   │       │           ├── notify.c.obj
+│           │   │       │           ├── op_classes.c.obj
+│           │   │       │           ├── sme.c.obj
+│           │   │       │           ├── wmm_ac.c.obj
+│           │   │       │           ├── wnm_sta.c.obj
+│           │   │       │           ├── wpa_scan.c.obj
+│           │   │       │           ├── wpas_glue.c.obj
+│           │   │       │           └── wpa_supplicant.c.obj
+│           │   │       ├── cmake_install.cmake
+│           │   │       └── libwpa_supplicant-2.10.a
+│           │   ├── armino_as_lib
+│           │   │   ├── bk7258
+│           │   │   │   ├── config
+│           │   │   │   │   ├── sdkconfig.h
+│           │   │   │   │   └── sdkconfig.h.properties
+│           │   │   │   └── libs
+│           │   │   │       ├── libate_phy.a
+│           │   │   │       ├── libate_phy_nspe.a
+│           │   │   │       ├── libat_server.a
+│           │   │   │       ├── libbase64.a
+│           │   │   │       ├── libbk7258.a
+│           │   │   │       ├── libbk_adapter.a
+│           │   │   │       ├── libbk_ate.a
+│           │   │   │       ├── libbk_bluetooth.a
+│           │   │   │       ├── libbk_cli.a
+│           │   │   │       ├── libbk_coex.a
+│           │   │   │       ├── libbk_common.a
+│           │   │   │       ├── libbk_event.a
+│           │   │   │       ├── libbk_init.a
+│           │   │   │       ├── libbk_log.a
+│           │   │   │       ├── libbk_netif.a
+│           │   │   │       ├── libbk_phy.a
+│           │   │   │       ├── libbk_phy_info.a
+│           │   │   │       ├── libbk_phy_nspe.a
+│           │   │   │       ├── libbk_pm.a
+│           │   │   │       ├── libbk_rtos.a
+│           │   │   │       ├── libbk_startup.a
+│           │   │   │       ├── libbk_system.a
+│           │   │   │       ├── libbk_uid.a
+│           │   │   │       ├── libbk_wifi.a
+│           │   │   │       ├── libble_wifi_exchange.a
+│           │   │   │       ├── libbluetooth_controller.a
+│           │   │   │       ├── libbluetooth_controller_ble.a
+│           │   │   │       ├── libbluetooth_controller_ble_cp_slave_observer.a
+│           │   │   │       ├── libbluetooth_controller_ble_cp_slave_observer_nspe.a
+│           │   │   │       ├── libbluetooth_controller_ble_cp_slave_only.a
+│           │   │   │       ├── libbluetooth_controller_ble_cp_slave_only_nspe.a
+│           │   │   │       ├── libbluetooth_controller_ble_non_calibration.a
+│           │   │   │       ├── libbluetooth_controller_ble_non_calibration_nspe.a
+│           │   │   │       ├── libbluetooth_controller_ble_nspe.a
+│           │   │   │       ├── libbluetooth_controller_ble_reduce.a
+│           │   │   │       ├── libbluetooth_controller_ble_reduce_nspe.a
+│           │   │   │       ├── libbluetooth_controller_ble_slave_only.a
+│           │   │   │       ├── libbluetooth_controller_ble_slave_only_nspe.a
+│           │   │   │       ├── libbluetooth_controller_bt.a
+│           │   │   │       ├── libbluetooth_controller_bt_nspe.a
+│           │   │   │       ├── libbluetooth_controller_controller_only_ble.a
+│           │   │   │       ├── libbluetooth_controller_controller_only_ble_nspe.a
+│           │   │   │       ├── libbluetooth_controller_controller_only_dual.a
+│           │   │   │       ├── libbluetooth_controller_controller_only_dual_nspe.a
+│           │   │   │       ├── libbluetooth_controller_dual.a
+│           │   │   │       ├── libbluetooth_controller_dual_nspe.a
+│           │   │   │       ├── libbluetooth_host_ble.a
+│           │   │   │       ├── libbluetooth_host_ble_only.a
+│           │   │   │       ├── libbluetooth_host_ble_reduce.a
+│           │   │   │       ├── libbluetooth_host_ble_slave_only.a
+│           │   │   │       ├── libbluetooth_host_dm.a
+│           │   │   │       ├── libbluetooth_host_dm_bt.a
+│           │   │   │       ├── libbluetooth_host_dm_dual.a
+│           │   │   │       ├── libcm33.a
+│           │   │   │       ├── libcmsis.a
+│           │   │   │       ├── libcommon.a
+│           │   │   │       ├── libcom_phy.a
+│           │   │   │       ├── libcom_phy_nspe.a
+│           │   │   │       ├── libconsole.a
+│           │   │   │       ├── libcontroller_if.a
+│           │   │   │       ├── libcoredump.a
+│           │   │   │       ├── libcp.a
+│           │   │   │       ├── libdriver.a
+│           │   │   │       ├── libeasy_flash.a
+│           │   │   │       ├── libhmac_sha_256.a
+│           │   │   │       ├── libiperf.a
+│           │   │   │       ├── liblwip_intf_v2_1.a
+│           │   │   │       ├── libos_source.a
+│           │   │   │       ├── libpsa_mbedtls.a
+│           │   │   │       ├── libtemp_detect.a
+│           │   │   │       ├── libtouch.a
+│           │   │   │       ├── libuart_debug.a
+│           │   │   │       ├── libuid.a
+│           │   │   │       ├── libunity.a
+│           │   │   │       ├── libutf8.a
+│           │   │   │       ├── libvnd_cal.a
+│           │   │   │       ├── libwifi.a
+│           │   │   │       ├── libwifi_csi.a
+│           │   │   │       ├── libwifi_csi_nspe.a
+│           │   │   │       ├── libwifi_nspe.a
+│           │   │   │       └── libwpa_supplicant-2.10.a
+│           │   │   └── include
+│           │   │       ├── CMakeLists.txt
+│           │   │       ├── common
+│           │   │       │   ├── bk_assert.h
+│           │   │       │   ├── bk_compiler.h
+│           │   │       │   ├── bk_crc.h
+│           │   │       │   ├── bk_err.h
+│           │   │       │   ├── bk_generic.h
+│           │   │       │   ├── bk_include.h
+│           │   │       │   ├── bk_kernel_err.h
+│           │   │       │   ├── bk_section.h
+│           │   │       │   ├── bk_typedef.h
+│           │   │       │   ├── bk_utils.h
+│           │   │       │   └── sys_config.h
+│           │   │       ├── components
+│           │   │       │   ├── app_time_intf.h
+│           │   │       │   ├── ate.h
+│           │   │       │   ├── bk_uid.h
+│           │   │       │   ├── bluetooth
+│           │   │       │   │   ├── bk_ble.h
+│           │   │       │   │   ├── bk_ble_types.h
+│           │   │       │   │   ├── bk_dm_a2dp.h
+│           │   │       │   │   ├── bk_dm_a2dp_types.h
+│           │   │       │   │   ├── bk_dm_avrcp.h
+│           │   │       │   │   ├── bk_dm_avrcp_types.h
+│           │   │       │   │   ├── bk_dm_ble.h
+│           │   │       │   │   ├── bk_dm_ble_types.h
+│           │   │       │   │   ├── bk_dm_bluetooth.h
+│           │   │       │   │   ├── bk_dm_bluetooth_types.h
+│           │   │       │   │   ├── bk_dm_bt.h
+│           │   │       │   │   ├── bk_dm_bt_types.h
+│           │   │       │   │   ├── bk_dm_gap_ble.h
+│           │   │       │   │   ├── bk_dm_gap_ble_types.h
+│           │   │       │   │   ├── bk_dm_gap_bt.h
+│           │   │       │   │   ├── bk_dm_gap_bt_types.h
+│           │   │       │   │   ├── bk_dm_gattc.h
+│           │   │       │   │   ├── bk_dm_gatt_common.h
+│           │   │       │   │   ├── bk_dm_gatts.h
+│           │   │       │   │   ├── bk_dm_gatt_types.h
+│           │   │       │   │   ├── bk_dm_hfp.h
+│           │   │       │   │   ├── bk_dm_hfp_types.h
+│           │   │       │   │   ├── bk_dm_hidd.h
+│           │   │       │   │   ├── bk_dm_hidh.h
+│           │   │       │   │   ├── bk_dm_l2cap.h
+│           │   │       │   │   └── bk_dm_spp.h
+│           │   │       │   ├── event.h
+│           │   │       │   ├── init.h
+│           │   │       │   ├── log.h
+│           │   │       │   ├── netif.h
+│           │   │       │   ├── netif_types.h
+│           │   │       │   ├── sensor.h
+│           │   │       │   ├── shell_task.h
+│           │   │       │   ├── spidma.h
+│           │   │       │   ├── system.h
+│           │   │       │   └── webclient.h
+│           │   │       ├── driver
+│           │   │       │   ├── adc.h
+│           │   │       │   ├── adc_types.h
+│           │   │       │   ├── aon_rtc.h
+│           │   │       │   ├── aon_rtc_types.h
+│           │   │       │   ├── aon_wdt.h
+│           │   │       │   ├── aon_wdt_types.h
+│           │   │       │   ├── aud_adc.h
+│           │   │       │   ├── aud_adc_types.h
+│           │   │       │   ├── aud_common.h
+│           │   │       │   ├── aud_dac.h
+│           │   │       │   ├── aud_dac_types.h
+│           │   │       │   ├── aud_dmic.h
+│           │   │       │   ├── aud_dmic_types.h
+│           │   │       │   ├── aud_dtmf.h
+│           │   │       │   ├── aud_dtmf_types.h
+│           │   │       │   ├── aud.h
+│           │   │       │   ├── audio_ring_buff.h
+│           │   │       │   ├── aud_types.h
+│           │   │       │   ├── bk_queue.h
+│           │   │       │   ├── calendar.h
+│           │   │       │   ├── calendar_types.h
+│           │   │       │   ├── can.h
+│           │   │       │   ├── can_types.h
+│           │   │       │   ├── ckmn.h
+│           │   │       │   ├── ckmn_types.h
+│           │   │       │   ├── dma.h
+│           │   │       │   ├── dma_types.h
+│           │   │       │   ├── driver.h
+│           │   │       │   ├── drv_tp.h
+│           │   │       │   ├── efuse.h
+│           │   │       │   ├── efuse_types.h
+│           │   │       │   ├── fft.h
+│           │   │       │   ├── fft_types.h
+│           │   │       │   ├── flash.h
+│           │   │       │   ├── flash_partition.h
+│           │   │       │   ├── flash_types.h
+│           │   │       │   ├── gpio.h
+│           │   │       │   ├── gpio_types.h
+│           │   │       │   ├── hal
+│           │   │       │   │   ├── hal_adc_types.h
+│           │   │       │   │   ├── hal_aon_rtc_types.h
+│           │   │       │   │   ├── hal_aud_types.h
+│           │   │       │   │   ├── hal_calendar_types.h
+│           │   │       │   │   ├── hal_can_types.h
+│           │   │       │   │   ├── hal_ckmn_types.h
+│           │   │       │   │   ├── hal_dma_types.h
+│           │   │       │   │   ├── hal_efuse_types.h
+│           │   │       │   │   ├── hal_flash_types.h
+│           │   │       │   │   ├── hal_gpio_types.h
+│           │   │       │   │   ├── hal_h264_types.h
+│           │   │       │   │   ├── hal_int_types.h
+│           │   │       │   │   ├── hal_jpeg_dec_types.h
+│           │   │       │   │   ├── hal_jpeg_types.h
+│           │   │       │   │   ├── hal_lcd_types.h
+│           │   │       │   │   ├── hal_lin_types.h
+│           │   │       │   │   ├── hal_mailbox_types.h
+│           │   │       │   │   ├── hal_mpc_types.h
+│           │   │       │   │   ├── hal_otp_types.h
+│           │   │       │   │   ├── hal_prro_types.h
+│           │   │       │   │   ├── hal_pwm_types.h
+│           │   │       │   │   ├── hal_qspi_types.h
+│           │   │       │   │   ├── hal_sdio_host_types.h
+│           │   │       │   │   ├── hal_sdmadc_types.h
+│           │   │       │   │   ├── hal_spi_types.h
+│           │   │       │   │   ├── hal_timer_types.h
+│           │   │       │   │   ├── hal_trng_types.h
+│           │   │       │   │   ├── hal_uart_types.h
+│           │   │       │   │   ├── hal_vault_types.h
+│           │   │       │   │   ├── hal_wdt_types.h
+│           │   │       │   │   └── hal_yuv_buf_types.h
+│           │   │       │   ├── i2s.h
+│           │   │       │   ├── i2s_types.h
+│           │   │       │   ├── int.h
+│           │   │       │   ├── int_types.h
+│           │   │       │   ├── lin.h
+│           │   │       │   ├── lin_types.h
+│           │   │       │   ├── low_pwr_core.h
+│           │   │       │   ├── mailbox_channel.h
+│           │   │       │   ├── mailbox.h
+│           │   │       │   ├── mailbox_types.h
+│           │   │       │   ├── mb_chnl_buff.h
+│           │   │       │   ├── mb_ipc.h
+│           │   │       │   ├── mb_ipc_port_cfg.h
+│           │   │       │   ├── mb_uart_driver.h
+│           │   │       │   ├── media_co_list.h
+│           │   │       │   ├── otp.h
+│           │   │       │   ├── otp_types.h
+│           │   │       │   ├── psram.h
+│           │   │       │   ├── psram_types.h
+│           │   │       │   ├── pwr_clk.h
+│           │   │       │   ├── rosc_32k.h
+│           │   │       │   ├── rosc_ppm.h
+│           │   │       │   ├── rott_driver.h
+│           │   │       │   ├── rott_types.h
+│           │   │       │   ├── sbc.h
+│           │   │       │   ├── sbc_types.h
+│           │   │       │   ├── scr_types.h
+│           │   │       │   ├── sd_card.h
+│           │   │       │   ├── sd_card_types.h
+│           │   │       │   ├── sdio_host.h
+│           │   │       │   ├── sdio_host_types.h
+│           │   │       │   ├── sdio_types.h
+│           │   │       │   ├── sdmadc.h
+│           │   │       │   ├── sdmadc_types.h
+│           │   │       │   ├── securityip.h
+│           │   │       │   ├── securityip_types.h
+│           │   │       │   ├── slcd.h
+│           │   │       │   ├── slcd_types.h
+│           │   │       │   ├── sys_pm.h
+│           │   │       │   ├── sys_pm_types.h
+│           │   │       │   ├── timer.h
+│           │   │       │   ├── timer_types.h
+│           │   │       │   ├── touch.h
+│           │   │       │   ├── touch_types.h
+│           │   │       │   ├── trng.h
+│           │   │       │   ├── trng_types.h
+│           │   │       │   ├── uac.h
+│           │   │       │   ├── uart.h
+│           │   │       │   ├── uart_types.h
+│           │   │       │   ├── vault.h
+│           │   │       │   ├── vault_types.h
+│           │   │       │   ├── wdt.h
+│           │   │       │   └── wdt_types.h
+│           │   │       ├── modules
+│           │   │       │   ├── avilib.h
+│           │   │       │   ├── bk_musb.h
+│           │   │       │   ├── chip_support.h
+│           │   │       │   ├── dr_wav.h
+│           │   │       │   ├── freetype
+│           │   │       │   │   ├── freetype
+│           │   │       │   │   │   ├── config
+│           │   │       │   │   │   │   ├── ftconfig.h
+│           │   │       │   │   │   │   ├── ftheader.h
+│           │   │       │   │   │   │   ├── ftmodule.h
+│           │   │       │   │   │   │   ├── ftoption.h
+│           │   │       │   │   │   │   ├── ftstdlib.h
+│           │   │       │   │   │   │   ├── integer-types.h
+│           │   │       │   │   │   │   ├── mac-support.h
+│           │   │       │   │   │   │   └── public-macros.h
+│           │   │       │   │   │   ├── freetype.h
+│           │   │       │   │   │   ├── ftadvanc.h
+│           │   │       │   │   │   ├── ftbbox.h
+│           │   │       │   │   │   ├── ftbdf.h
+│           │   │       │   │   │   ├── ftbitmap.h
+│           │   │       │   │   │   ├── ftbzip2.h
+│           │   │       │   │   │   ├── ftcache.h
+│           │   │       │   │   │   ├── ftchapters.h
+│           │   │       │   │   │   ├── ftcid.h
+│           │   │       │   │   │   ├── ftcolor.h
+│           │   │       │   │   │   ├── ftdriver.h
+│           │   │       │   │   │   ├── fterrdef.h
+│           │   │       │   │   │   ├── fterrors.h
+│           │   │       │   │   │   ├── ftfntfmt.h
+│           │   │       │   │   │   ├── ftgasp.h
+│           │   │       │   │   │   ├── ftglyph.h
+│           │   │       │   │   │   ├── ftgxval.h
+│           │   │       │   │   │   ├── ftgzip.h
+│           │   │       │   │   │   ├── ftimage.h
+│           │   │       │   │   │   ├── ftincrem.h
+│           │   │       │   │   │   ├── ftlcdfil.h
+│           │   │       │   │   │   ├── ftlist.h
+│           │   │       │   │   │   ├── ftlogging.h
+│           │   │       │   │   │   ├── ftlzw.h
+│           │   │       │   │   │   ├── ftmac.h
+│           │   │       │   │   │   ├── ftmm.h
+│           │   │       │   │   │   ├── ftmodapi.h
+│           │   │       │   │   │   ├── ftmoderr.h
+│           │   │       │   │   │   ├── ftotval.h
+│           │   │       │   │   │   ├── ftoutln.h
+│           │   │       │   │   │   ├── ftparams.h
+│           │   │       │   │   │   ├── ftpfr.h
+│           │   │       │   │   │   ├── ftrender.h
+│           │   │       │   │   │   ├── ftsizes.h
+│           │   │       │   │   │   ├── ftsnames.h
+│           │   │       │   │   │   ├── ftstroke.h
+│           │   │       │   │   │   ├── ftsynth.h
+│           │   │       │   │   │   ├── ftsystem.h
+│           │   │       │   │   │   ├── fttrigon.h
+│           │   │       │   │   │   ├── fttypes.h
+│           │   │       │   │   │   ├── ftwinfnt.h
+│           │   │       │   │   │   ├── otsvg.h
+│           │   │       │   │   │   ├── t1tables.h
+│           │   │       │   │   │   ├── ttnameid.h
+│           │   │       │   │   │   ├── tttables.h
+│           │   │       │   │   │   └── tttags.h
+│           │   │       │   │   └── ft2build.h
+│           │   │       │   ├── image_scale.h
+│           │   │       │   ├── image_scale_types.h
+│           │   │       │   ├── jpeg_enc_sw.h
+│           │   │       │   ├── lcd_font.h
+│           │   │       │   ├── libjpeg_dec.h
+│           │   │       │   ├── ota.h
+│           │   │       │   ├── pm.h
+│           │   │       │   ├── qrcodegen.h
+│           │   │       │   ├── raw_link.h
+│           │   │       │   ├── sbc_encoder.h
+│           │   │       │   ├── sbc_encoder_types.h
+│           │   │       │   ├── securityip
+│           │   │       │   │   ├── api_val_asset.h
+│           │   │       │   │   ├── api_val_asym.h
+│           │   │       │   │   ├── api_val_aunlock.h
+│           │   │       │   │   ├── api_val_buffers.h
+│           │   │       │   │   ├── api_val_claim.h
+│           │   │       │   │   ├── api_val_emmc.h
+│           │   │       │   │   ├── api_val.h
+│           │   │       │   │   ├── api_val_hardware.h
+│           │   │       │   │   ├── api_val_nop.h
+│           │   │       │   │   ├── api_val_random.h
+│           │   │       │   │   ├── api_val_result.h
+│           │   │       │   │   ├── api_val_securetimer.h
+│           │   │       │   │   ├── api_val_service.h
+│           │   │       │   │   ├── api_val_specfuncs.h
+│           │   │       │   │   ├── api_val_sym.h
+│           │   │       │   │   ├── api_val_symkeywrap.h
+│           │   │       │   │   ├── api_val_system.h
+│           │   │       │   │   ├── basic_defs.h
+│           │   │       │   │   └── clib.h
+│           │   │       │   ├── uidlib.h
+│           │   │       │   ├── wifi.h
+│           │   │       │   └── wifi_types.h
+│           │   │       ├── os
+│           │   │       │   ├── mem.h
+│           │   │       │   ├── os.h
+│           │   │       │   ├── rtos_ext.h
+│           │   │       │   └── str.h
+│           │   │       ├── posix
+│           │   │       │   ├── errno.h
+│           │   │       │   ├── fcntl.h
+│           │   │       │   ├── mqueue.h
+│           │   │       │   ├── pthread.h
+│           │   │       │   ├── sched.h
+│           │   │       │   ├── semaphore.h
+│           │   │       │   ├── signal.h
+│           │   │       │   ├── sys
+│           │   │       │   │   └── types.h
+│           │   │       │   ├── time.h
+│           │   │       │   ├── unistd.h
+│           │   │       │   └── utils.h
+│           │   │       └── soc
+│           │   │           ├── bk7257
+│           │   │           │   ├── adc_cap.h
+│           │   │           │   ├── aon_rtc_cap.h
+│           │   │           │   ├── aon_wdt_cap.h
+│           │   │           │   ├── aud_cap.h
+│           │   │           │   ├── calendar_cap.h
+│           │   │           │   ├── dma_cap.h
+│           │   │           │   ├── efuse_cap.h
+│           │   │           │   ├── flash_cap.h
+│           │   │           │   ├── gpio_cap.h
+│           │   │           │   ├── i2c_cap.h
+│           │   │           │   ├── i2s_cap.h
+│           │   │           │   ├── icu_cap.h
+│           │   │           │   ├── jpeg_cap.h
+│           │   │           │   ├── mailbox_cap.h
+│           │   │           │   ├── mapping.h
+│           │   │           │   ├── qspi_cap.h
+│           │   │           │   ├── reg_base.h
+│           │   │           │   ├── soc_cap.h
+│           │   │           │   ├── soc_debug.h
+│           │   │           │   ├── soc.h
+│           │   │           │   ├── spi_cap.h
+│           │   │           │   ├── sys_cap.h
+│           │   │           │   ├── timer_cap.h
+│           │   │           │   ├── trng_cap.h
+│           │   │           │   ├── uart_cap.h
+│           │   │           │   └── wdt_cap.h
+│           │   │           ├── bk7258
+│           │   │           │   ├── adc_cap.h
+│           │   │           │   ├── aon_rtc_cap.h
+│           │   │           │   ├── aon_wdt_cap.h
+│           │   │           │   ├── aud_cap.h
+│           │   │           │   ├── calendar_cap.h
+│           │   │           │   ├── dma_cap.h
+│           │   │           │   ├── efuse_cap.h
+│           │   │           │   ├── flash_cap.h
+│           │   │           │   ├── gpio_cap.h
+│           │   │           │   ├── i2c_cap.h
+│           │   │           │   ├── i2s_cap.h
+│           │   │           │   ├── icu_cap.h
+│           │   │           │   ├── jpeg_cap.h
+│           │   │           │   ├── mailbox_cap.h
+│           │   │           │   ├── mapping.h
+│           │   │           │   ├── qspi_cap.h
+│           │   │           │   ├── reg_base.h
+│           │   │           │   ├── soc_cap.h
+│           │   │           │   ├── soc_debug.h
+│           │   │           │   ├── soc.h
+│           │   │           │   ├── spi_cap.h
+│           │   │           │   ├── sys_cap.h
+│           │   │           │   ├── timer_cap.h
+│           │   │           │   ├── trng_cap.h
+│           │   │           │   ├── uart_cap.h
+│           │   │           │   └── wdt_cap.h
+│           │   │           ├── mapping.h
+│           │   │           ├── reg_base.h
+│           │   │           ├── soc.h
+│           │   │           └── soc_port.h
+│           │   ├── build.ninja
+│           │   ├── CMakeCache.txt
+│           │   ├── CMakeFiles
+│           │   │   ├── 3.16.3
+│           │   │   │   ├── CMakeASMCompiler.cmake
+│           │   │   │   ├── CMakeCCompiler.cmake
+│           │   │   │   ├── CMakeCXXCompiler.cmake
+│           │   │   │   ├── CMakeDetermineCompilerABI_C.bin
+│           │   │   │   ├── CMakeDetermineCompilerABI_CXX.bin
+│           │   │   │   ├── CMakeSystem.cmake
+│           │   │   │   ├── CompilerIdASM
+│           │   │   │   ├── CompilerIdC
+│           │   │   │   │   ├── a.out
+│           │   │   │   │   ├── CMakeCCompilerId.c
+│           │   │   │   │   └── tmp
+│           │   │   │   └── CompilerIdCXX
+│           │   │   │       ├── a.out
+│           │   │   │       ├── CMakeCXXCompilerId.cpp
+│           │   │   │       └── tmp
+│           │   │   ├── app.elf.dir
+│           │   │   │   └── project_elf_src.c.obj
+│           │   │   ├── cmake.check_cache
+│           │   │   ├── CMakeOutput.log
+│           │   │   ├── CMakeTmp
+│           │   │   └── TargetDirectories.txt
+│           │   ├── cmake_install.cmake
+│           │   ├── compile_commands.json
+│           │   ├── components_kconfigs.in
+│           │   ├── config
+│           │   │   ├── kconfig_menus.json
+│           │   │   ├── sdkconfig.cmake
+│           │   │   ├── sdkconfig.h
+│           │   │   └── sdkconfig.json
+│           │   ├── config.env
+│           │   ├── extra_kconfigs.in
+│           │   ├── group_kconfigs
+│           │   │   └── group_index.kconfig
+│           │   ├── kconfigs.in
+│           │   ├── kconfigs_projbuild.in
+│           │   ├── middleware_kconfigs.in
+│           │   ├── project_description.json
+│           │   ├── project_elf_src.c
+│           │   ├── projects_kconfigs.in
+│           │   ├── properties_kconfigs.in
+│           │   ├── rules.ninja
+│           │   ├── size_map_detail.csv
+│           │   ├── size_map_total.csv
+│           │   └── size_map.txt
+│           ├── bk7258_ap
+│           │   ├── app.bin
+│           │   ├── app.elf
+│           │   ├── app.lst
+│           │   ├── app.map
+│           │   ├── app_memory.txt
+│           │   ├── app.nm
+│           │   ├── app.txt
+│           │   ├── armino
+│           │   │   ├── aac_encoder
+│           │   │   │   ├── CMakeFiles
+│           │   │   │   └── cmake_install.cmake
+│           │   │   ├── acc_decoder
+│           │   │   │   ├── CMakeFiles
+│           │   │   │   └── cmake_install.cmake
+│           │   │   ├── adc_key
+│           │   │   │   ├── CMakeFiles
+│           │   │   │   └── cmake_install.cmake
+│           │   │   ├── aec_algorithm
+│           │   │   │   ├── CMakeFiles
+│           │   │   │   └── cmake_install.cmake
+│           │   │   ├── aec_v3_algorithm
+│           │   │   │   ├── CMakeFiles
+│           │   │   │   └── cmake_install.cmake
+│           │   │   ├── agc_algorithm
+│           │   │   │   ├── CMakeFiles
+│           │   │   │   └── cmake_install.cmake
+│           │   │   ├── agora-iot-sdk
+│           │   │   │   ├── CMakeFiles
+│           │   │   │   └── cmake_install.cmake
+│           │   │   ├── ap
+│           │   │   │   ├── CMakeFiles
+│           │   │   │   │   └── __armino_ap.dir
+│           │   │   │   │       ├── ap_main.c.obj
+│           │   │   │   │       ├── app_bluetooth
+│           │   │   │   │       │   ├── gatt
+│           │   │   │   │       │   │   ├── battery
+│           │   │   │   │       │   │   │   └── battery_server.c.obj
+│           │   │   │   │       │   │   ├── dis
+│           │   │   │   │       │   │   │   └── dis.c.obj
+│           │   │   │   │       │   │   ├── dm_gap_utils.c.obj
+│           │   │   │   │       │   │   ├── dm_gattc.c.obj
+│           │   │   │   │       │   │   ├── dm_gatt_cli.c.obj
+│           │   │   │   │       │   │   ├── dm_gatt.c.obj
+│           │   │   │   │       │   │   ├── dm_gatt_connection.c.obj
+│           │   │   │   │       │   │   ├── dm_gatts.c.obj
+│           │   │   │   │       │   │   ├── f618
+│           │   │   │   │       │   │   │   └── f618_server.c.obj
+│           │   │   │   │       │   │   ├── fa00
+│           │   │   │   │       │   │   │   └── fa00_server.c.obj
+│           │   │   │   │       │   │   ├── hogp
+│           │   │   │   │       │   │   │   └── hogpd.c.obj
+│           │   │   │   │       │   │   └── printer
+│           │   │   │   │       │   │       ├── ble_printer_service.c.obj
+│           │   │   │   │       │   │       ├── hw_printer_stub.c.obj
+│           │   │   │   │       │   │       └── printer_protocol.c.obj
+│           │   │   │   │       │   └── storage
+│           │   │   │   │       │       └── bluetooth_storage.c.obj
+│           │   │   │   │       ├── ble_printer_service.c.obj
+│           │   │   │   │       ├── hw_printer_stub.c.obj
+│           │   │   │   │       └── printer_protocol.c.obj
+│           │   │   │   ├── cmake_install.cmake
+│           │   │   │   └── libap.a
+│           │   │   ├── app
+│           │   │   │   ├── CMakeFiles
+│           │   │   │   └── cmake_install.cmake
+│           │   │   ├── array_stream
+│           │   │   │   ├── CMakeFiles
+│           │   │   │   └── cmake_install.cmake
+│           │   │   ├── at_server
+│           │   │   │   ├── CMakeFiles
+│           │   │   │   │   └── __armino_at_server.dir
+│           │   │   │   │       ├── _at_server
+│           │   │   │   │       │   └── _at_server.c.obj
+│           │   │   │   │       ├── at_server.c.obj
+│           │   │   │   │       ├── at_server_func
+│           │   │   │   │       │   └── _atsvr_func.c.obj
+│           │   │   │   │       ├── _at_server_port
+│           │   │   │   │       │   ├── atsvr_core.c.obj
+│           │   │   │   │       │   └── atsvr_port.c.obj
+│           │   │   │   │       └── at_task.c.obj
+│           │   │   │   ├── cmake_install.cmake
+│           │   │   │   └── libat_server.a
+│           │   │   ├── audio_pipeline
+│           │   │   │   ├── CMakeFiles
+│           │   │   │   └── cmake_install.cmake
+│           │   │   ├── audio_play
+│           │   │   │   ├── CMakeFiles
+│           │   │   │   └── cmake_install.cmake
+│           │   │   ├── audio_record
+│           │   │   │   ├── CMakeFiles
+│           │   │   │   └── cmake_install.cmake
+│           │   │   ├── audio_utils
+│           │   │   │   ├── CMakeFiles
+│           │   │   │   └── cmake_install.cmake
+│           │   │   ├── avdk_utils
+│           │   │   │   ├── CMakeFiles
+│           │   │   │   │   └── __armino_avdk_utils.dir
+│           │   │   │   │       └── src
+│           │   │   │   │           └── avdk_crc.c.obj
+│           │   │   │   ├── cmake_install.cmake
+│           │   │   │   └── libavdk_utils.a
+│           │   │   ├── base64
+│           │   │   │   ├── CMakeFiles
+│           │   │   │   │   └── __armino_base64.dir
+│           │   │   │   │       └── base_64.c.obj
+│           │   │   │   ├── cmake_install.cmake
+│           │   │   │   └── libbase64.a
+│           │   │   ├── bk7258_ap
+│           │   │   │   ├── bk7258_ap_out.ld
+│           │   │   │   ├── CMakeFiles
+│           │   │   │   │   └── __armino_bk7258_ap.dir
+│           │   │   │   │       ├── hal
+│           │   │   │   │       │   ├── adc_hal_debug.c.obj
+│           │   │   │   │       │   ├── adc_ll.c.obj
+│           │   │   │   │       │   ├── aon_pmu_hal.c.obj
+│           │   │   │   │       │   ├── aon_pmu_hal_debug.c.obj
+│           │   │   │   │       │   ├── calendar_hal_debug.c.obj
+│           │   │   │   │       │   ├── calendar_ll.c.obj
+│           │   │   │   │       │   ├── ckmn_hal_debug.c.obj
+│           │   │   │   │       │   ├── ckmn_ll.c.obj
+│           │   │   │   │       │   ├── dma2d_hal_debug.c.obj
+│           │   │   │   │       │   ├── dma_hal_debug.c.obj
+│           │   │   │   │       │   ├── dma_ll.c.obj
+│           │   │   │   │       │   ├── efuse_hal_debug.c.obj
+│           │   │   │   │       │   ├── efuse_ll.c.obj
+│           │   │   │   │       │   ├── flash_hal_debug.c.obj
+│           │   │   │   │       │   ├── flash_ll.c.obj
+│           │   │   │   │       │   ├── gpio_hal_debug.c.obj
+│           │   │   │   │       │   ├── gpio_ll.c.obj
+│           │   │   │   │       │   ├── i2c_hal_debug.c.obj
+│           │   │   │   │       │   ├── i2c_ll.c.obj
+│           │   │   │   │       │   ├── i2s_hal.c.obj
+│           │   │   │   │       │   ├── icu_hal_debug.c.obj
+│           │   │   │   │       │   ├── icu_ll.c.obj
+│           │   │   │   │       │   ├── jpeg_hal_debug.c.obj
+│           │   │   │   │       │   ├── jpeg_ll.c.obj
+│           │   │   │   │       │   ├── lin_hal_debug.c.obj
+│           │   │   │   │       │   ├── lin_ll.c.obj
+│           │   │   │   │       │   ├── psram_ll.c.obj
+│           │   │   │   │       │   ├── pwm_hal_debug.c.obj
+│           │   │   │   │       │   ├── pwm_ll.c.obj
+│           │   │   │   │       │   ├── qspi_hal_debug.c.obj
+│           │   │   │   │       │   ├── sdio_hal_debug.c.obj
+│           │   │   │   │       │   ├── sdmadc_hal_debug.c.obj
+│           │   │   │   │       │   ├── spi_hal_debug.c.obj
+│           │   │   │   │       │   ├── spi_ll.c.obj
+│           │   │   │   │       │   ├── sys_clock_hal_debug.c.obj
+│           │   │   │   │       │   ├── sys_hal.c.obj
+│           │   │   │   │       │   ├── sys_hal_debug.c.obj
+│           │   │   │   │       │   ├── sys_pm_hal.c.obj
+│           │   │   │   │       │   ├── sys_pm_hal_ctrl.c.obj
+│           │   │   │   │       │   ├── sys_pm_hal_debug.c.obj
+│           │   │   │   │       │   ├── timer_hal.c.obj
+│           │   │   │   │       │   ├── timer_hal_debug.c.obj
+│           │   │   │   │       │   ├── timer_ll.c.obj
+│           │   │   │   │       │   ├── trng_hal_debug.c.obj
+│           │   │   │   │       │   ├── trng_ll.c.obj
+│           │   │   │   │       │   ├── uart_hal_debug.c.obj
+│           │   │   │   │       │   ├── uart_ll.c.obj
+│           │   │   │   │       │   ├── wdt_hal_debug.c.obj
+│           │   │   │   │       │   ├── wdt_ll.c.obj
+│           │   │   │   │       │   └── yuv_buf_hal_debug.c.obj
+│           │   │   │   │       └── mpu_cfg.c.obj
+│           │   │   │   ├── cmake_install.cmake
+│           │   │   │   └── libbk7258_ap.a
+│           │   │   ├── bk_adapter
+│           │   │   │   ├── CMakeFiles
+│           │   │   │   │   └── __armino_bk_adapter.dir
+│           │   │   │   │       └── lib_adapter.c.obj
+│           │   │   │   ├── cmake_install.cmake
+│           │   │   │   └── libbk_adapter.a
+│           │   │   ├── bk_asr_service
+│           │   │   │   ├── CMakeFiles
+│           │   │   │   └── cmake_install.cmake
+│           │   │   ├── bk_aud_param_ctrl
+│           │   │   │   ├── CMakeFiles
+│           │   │   │   │   └── __armino_bk_aud_param_ctrl.dir
+│           │   │   │   │       ├── audio_dbgtool_intf.c.obj
+│           │   │   │   │       └── audio_param_ctrl.c.obj
+│           │   │   │   ├── cmake_install.cmake
+│           │   │   │   └── libbk_aud_param_ctrl.a
+│           │   │   ├── bk_batt_monitor
+│           │   │   │   ├── CMakeFiles
+│           │   │   │   └── cmake_install.cmake
+│           │   │   ├── bk_bluetooth
+│           │   │   │   ├── CMakeFiles
+│           │   │   │   │   └── __armino_bk_bluetooth.dir
+│           │   │   │   │       ├── api
+│           │   │   │   │       │   ├── bk_a2dp_api.c.obj
+│           │   │   │   │       │   ├── bk_at_ble.c.obj
+│           │   │   │   │       │   ├── bk_at_bt.c.obj
+│           │   │   │   │       │   ├── bk_at_gatt
+│           │   │   │   │       │   │   ├── bk_at_dm_performance_test.c.obj
+│           │   │   │   │       │   │   ├── dm_gap_utils.c.obj
+│           │   │   │   │       │   │   ├── dm_gattc.c.obj
+│           │   │   │   │       │   │   ├── dm_gatt.c.obj
+│           │   │   │   │       │   │   ├── dm_gatt_connection.c.obj
+│           │   │   │   │       │   │   └── dm_gatts.c.obj
+│           │   │   │   │       │   ├── bk_cli_ble.c.obj
+│           │   │   │   │       │   ├── bk_hfp_api.c.obj
+│           │   │   │   │       │   ├── bk_pan_api.c.obj
+│           │   │   │   │       │   ├── ble_gap_export_api.c.obj
+│           │   │   │   │       │   ├── bt_gap_export_api.c.obj
+│           │   │   │   │       │   ├── bt_hidd_export_api.c.obj
+│           │   │   │   │       │   ├── bt_hidh_export_api.c.obj
+│           │   │   │   │       │   ├── bt_l2cap_export_api.c.obj
+│           │   │   │   │       │   ├── bt_main.c.obj
+│           │   │   │   │       │   └── bt_spp_export_api.c.obj
+│           │   │   │   │       ├── feat_config
+│           │   │   │   │       │   └── bt_feature_config.c.obj
+│           │   │   │   │       ├── hci
+│           │   │   │   │       │   ├── hal_hci_core.c.obj
+│           │   │   │   │       │   ├── hci_distinguish.c.obj
+│           │   │   │   │       │   └── hci_parse.c.obj
+│           │   │   │   │       ├── ipc
+│           │   │   │   │       │   └── src
+│           │   │   │   │       │       └── bt_ipc_core.c.obj
+│           │   │   │   │       └── soc
+│           │   │   │   │           └── bk7236
+│           │   │   │   │               └── bluetooth.c.obj
+│           │   │   │   ├── cmake_install.cmake
+│           │   │   │   └── libbk_bluetooth.a
+│           │   │   ├── bk_camera
+│           │   │   │   ├── CMakeFiles
+│           │   │   │   │   └── __armino_bk_camera.dir
+│           │   │   │   │       └── src
+│           │   │   │   │           └── bk_camera.c.obj
+│           │   │   │   ├── cmake_install.cmake
+│           │   │   │   └── libbk_camera.a
+│           │   │   ├── bk_cli
+│           │   │   │   ├── CMakeFiles
+│           │   │   │   │   └── __armino_bk_cli.dir
+│           │   │   │   │       ├── cli_aon_rtc.c.obj
+│           │   │   │   │       ├── cli_common.c.obj
+│           │   │   │   │       ├── cli_dma.c.obj
+│           │   │   │   │       ├── cli_dwt.c.obj
+│           │   │   │   │       ├── cli_easyflash.c.obj
+│           │   │   │   │       ├── cli_event.c.obj
+│           │   │   │   │       ├── cli_exception.c.obj
+│           │   │   │   │       ├── cli_fatfs.c.obj
+│           │   │   │   │       ├── cli_flash.c.obj
+│           │   │   │   │       ├── cli_flash_test.c.obj
+│           │   │   │   │       ├── cli_fpb.c.obj
+│           │   │   │   │       ├── cli_gpio.c.obj
+│           │   │   │   │       ├── cli_gsensor.c.obj
+│           │   │   │   │       ├── cli_i2c.c.obj
+│           │   │   │   │       ├── cli_interrupt.c.obj
+│           │   │   │   │       ├── cli_iperf.c.obj
+│           │   │   │   │       ├── cli_lwip.c.obj
+│           │   │   │   │       ├── cli_main.c.obj
+│           │   │   │   │       ├── cli_mem.c.obj
+│           │   │   │   │       ├── cli_mico.c.obj
+│           │   │   │   │       ├── cli_misc.c.obj
+│           │   │   │   │       ├── cli_netif.c.obj
+│           │   │   │   │       ├── cli_os.c.obj
+│           │   │   │   │       ├── cli_ota.c.obj
+│           │   │   │   │       ├── cli_pwr.c.obj
+│           │   │   │   │       ├── cli_qspi.c.obj
+│           │   │   │   │       ├── cli_reg.c.obj
+│           │   │   │   │       ├── cli_rpc.c.obj
+│           │   │   │   │       ├── cli_sd.c.obj
+│           │   │   │   │       ├── cli_sdio_host.c.obj
+│           │   │   │   │       ├── cli_spi.c.obj
+│           │   │   │   │       ├── cli_timer.c.obj
+│           │   │   │   │       ├── cli_trng.c.obj
+│           │   │   │   │       ├── cli_uart.c.obj
+│           │   │   │   │       ├── cli_vfs.c.obj
+│           │   │   │   │       ├── cli_wifi.c.obj
+│           │   │   │   │       ├── rpc_client_gpio.c.obj
+│           │   │   │   │       ├── shell_mailbox_cp1.c.obj
+│           │   │   │   │       ├── shell_task.c.obj
+│           │   │   │   │       └── shell_uart.c.obj
+│           │   │   │   ├── cmake_install.cmake
+│           │   │   │   └── libbk_cli.a
+│           │   │   ├── bk_common
+│           │   │   │   ├── CMakeFiles
+│           │   │   │   │   └── __armino_bk_common.dir
+│           │   │   │   │       └── bk_feature.c.obj
+│           │   │   │   ├── cmake_install.cmake
+│           │   │   │   └── libbk_common.a
+│           │   │   ├── bk_display
+│           │   │   │   ├── CMakeFiles
+│           │   │   │   └── cmake_install.cmake
+│           │   │   ├── bk_dma2d
+│           │   │   │   ├── CMakeFiles
+│           │   │   │   └── cmake_install.cmake
+│           │   │   ├── bk_draw_osd
+│           │   │   │   ├── CMakeFiles
+│           │   │   │   └── cmake_install.cmake
+│           │   │   ├── bk_dvp
+│           │   │   │   ├── CMakeFiles
+│           │   │   │   └── cmake_install.cmake
+│           │   │   ├── bk_event
+│           │   │   │   ├── CMakeFiles
+│           │   │   │   │   └── __armino_bk_event.dir
+│           │   │   │   │       └── event.c.obj
+│           │   │   │   ├── cmake_install.cmake
+│           │   │   │   └── libbk_event.a
+│           │   │   ├── bk_gsensor
+│           │   │   │   ├── CMakeFiles
+│           │   │   │   └── cmake_install.cmake
+│           │   │   ├── bk_httpc
+│           │   │   │   ├── CMakeFiles
+│           │   │   │   └── cmake_install.cmake
+│           │   │   ├── bk_https
+│           │   │   │   ├── CMakeFiles
+│           │   │   │   └── cmake_install.cmake
+│           │   │   ├── bk_init
+│           │   │   │   ├── CMakeFiles
+│           │   │   │   │   └── __armino_bk_init.dir
+│           │   │   │   │       ├── bk_init.c.obj
+│           │   │   │   │       └── components_init.c.obj
+│           │   │   │   ├── cmake_install.cmake
+│           │   │   │   └── libbk_init.a
+│           │   │   ├── bk_jpeg_decoder
+│           │   │   │   ├── CMakeFiles
+│           │   │   │   └── cmake_install.cmake
+│           │   │   ├── bk_libs
+│           │   │   │   ├── CMakeFiles
+│           │   │   │   └── cmake_install.cmake
+│           │   │   ├── bk_log
+│           │   │   │   ├── CMakeFiles
+│           │   │   │   │   └── __armino_bk_log.dir
+│           │   │   │   │       └── log.c.obj
+│           │   │   │   ├── cmake_install.cmake
+│           │   │   │   └── libbk_log.a
+│           │   │   ├── bk_modem
+│           │   │   │   ├── CMakeFiles
+│           │   │   │   └── cmake_install.cmake
+│           │   │   ├── bk_netif
+│           │   │   │   ├── CMakeFiles
+│           │   │   │   │   └── __armino_bk_netif.dir
+│           │   │   │   │       ├── bk_at_netif.c.obj
+│           │   │   │   │       └── bk_netif.c.obj
+│           │   │   │   ├── cmake_install.cmake
+│           │   │   │   └── libbk_netif.a
+│           │   │   ├── bk_network_provisioning
+│           │   │   │   ├── CMakeFiles
+│           │   │   │   └── cmake_install.cmake
+│           │   │   ├── bk_network_transfer
+│           │   │   │   ├── CMakeFiles
+│           │   │   │   │   └── __armino_bk_network_transfer.dir
+│           │   │   │   │       ├── bk_network_service
+│           │   │   │   │       │   ├── bk_ntwk_socket
+│           │   │   │   │       │   │   └── ntwk_socket.c.obj
+│           │   │   │   │       │   ├── bk_ntwk_tcp_service
+│           │   │   │   │       │   │   ├── bk_tcp_service.c.obj
+│           │   │   │   │       │   │   └── ntwk_tcp_service.c.obj
+│           │   │   │   │       │   └── bk_ntwk_udp_service
+│           │   │   │   │       │       ├── bk_udp_service.c.obj
+│           │   │   │   │       │       └── ntwk_udp_service.c.obj
+│           │   │   │   │       ├── common
+│           │   │   │   │       │   ├── bk_ntwk_pack
+│           │   │   │   │       │   │   ├── ntwk_fragmentation.c.obj
+│           │   │   │   │       │   │   └── ntwk_pack.c.obj
+│           │   │   │   │       │   ├── bk_ntwk_sdp
+│           │   │   │   │       │   │   └── ntwk_sdp.c.obj
+│           │   │   │   │       │   ├── bk_video_drop_policy
+│           │   │   │   │       │   │   └── video_drop.c.obj
+│           │   │   │   │       │   └── transfer_list
+│           │   │   │   │       │       └── trans_list.c.obj
+│           │   │   │   │       ├── network_transfer.c.obj
+│           │   │   │   │       └── network_transfer_internal.c.obj
+│           │   │   │   ├── cmake_install.cmake
+│           │   │   │   └── libbk_network_transfer.a
+│           │   │   ├── bk_nfc
+│           │   │   │   ├── CMakeFiles
+│           │   │   │   └── cmake_install.cmake
+│           │   │   ├── bk_pan
+│           │   │   │   ├── CMakeFiles
+│           │   │   │   └── cmake_install.cmake
+│           │   │   ├── bk_peripheral
+│           │   │   │   ├── CMakeFiles
+│           │   │   │   │   └── __armino_bk_peripheral.dir
+│           │   │   │   │       └── src
+│           │   │   │   │           └── bk_peripheral.c.obj
+│           │   │   │   ├── cmake_install.cmake
+│           │   │   │   └── libbk_peripheral.a
+│           │   │   ├── bk_player_service
+│           │   │   │   ├── CMakeFiles
+│           │   │   │   └── cmake_install.cmake
+│           │   │   ├── bk_pm
+│           │   │   │   ├── CMakeFiles
+│           │   │   │   │   └── __armino_bk_pm.dir
+│           │   │   │   │       ├── low_vol.c.obj
+│           │   │   │   │       ├── pm.c.obj
+│           │   │   │   │       ├── pm_misc.c.obj
+│           │   │   │   │       └── pm_model.c.obj
+│           │   │   │   ├── cmake_install.cmake
+│           │   │   │   └── libbk_pm.a
+│           │   │   ├── bk_ps
+│           │   │   │   ├── CMakeFiles
+│           │   │   │   └── cmake_install.cmake
+│           │   │   ├── bk_rtos
+│           │   │   │   ├── CMakeFiles
+│           │   │   │   │   └── __armino_bk_rtos.dir
+│           │   │   │   │       ├── freertos
+│           │   │   │   │       │   ├── mem_arch.c.obj
+│           │   │   │   │       │   ├── posix
+│           │   │   │   │       │   │   └── freertos_impl
+│           │   │   │   │       │   │       └── source
+│           │   │   │   │       │   │           └── pthread_local_storage.c.obj
+│           │   │   │   │       │   ├── str_arch.c.obj
+│           │   │   │   │       │   └── v10
+│           │   │   │   │       │       ├── rtos_debug.c.obj
+│           │   │   │   │       │       └── rtos_pub_smp.c.obj
+│           │   │   │   │       ├── platform_stub.c.obj
+│           │   │   │   │       └── rtos_ext.c.obj
+│           │   │   │   ├── cmake_install.cmake
+│           │   │   │   └── libbk_rtos.a
+│           │   │   ├── bk_startup
+│           │   │   │   ├── CMakeFiles
+│           │   │   │   │   └── __armino_bk_startup.dir
+│           │   │   │   │       ├── freertos
+│           │   │   │   │       │   └── rtos_init.c.obj
+│           │   │   │   │       └── system_main.c.obj
+│           │   │   │   ├── cmake_install.cmake
+│           │   │   │   └── libbk_startup.a
+│           │   │   ├── bk_system
+│           │   │   │   ├── CMakeFiles
+│           │   │   │   │   └── __armino_bk_system.dir
+│           │   │   │   │       ├── bk_system_at.c.obj
+│           │   │   │   │       ├── delay.c.obj
+│           │   │   │   │       ├── mac.c.obj
+│           │   │   │   │       ├── os
+│           │   │   │   │       │   └── freertos
+│           │   │   │   │       │       └── tick.c.obj
+│           │   │   │   │       ├── printf_base.c.obj
+│           │   │   │   │       ├── printf.c.obj
+│           │   │   │   │       └── reboot.c.obj
+│           │   │   │   ├── cmake_install.cmake
+│           │   │   │   └── libbk_system.a
+│           │   │   ├── bk_uid
+│           │   │   │   ├── CMakeFiles
+│           │   │   │   └── cmake_install.cmake
+│           │   │   ├── bk_usb
+│           │   │   │   ├── CMakeFiles
+│           │   │   │   └── cmake_install.cmake
+│           │   │   ├── bk_uvc
+│           │   │   │   ├── CMakeFiles
+│           │   │   │   └── cmake_install.cmake
+│           │   │   ├── bk_vfs
+│           │   │   │   ├── CMakeFiles
+│           │   │   │   │   └── __armino_bk_vfs.dir
+│           │   │   │   │       ├── bk_fdtable.c.obj
+│           │   │   │   │       ├── bk_filesystem.c.obj
+│           │   │   │   │       ├── bk_file_utils.c.obj
+│           │   │   │   │       ├── bk_partition.c.obj
+│           │   │   │   │       ├── bk_vfs.c.obj
+│           │   │   │   │       ├── fatfs_adapter.c.obj
+│           │   │   │   │       └── littlefs_adapter.c.obj
+│           │   │   │   ├── cmake_install.cmake
+│           │   │   │   └── libbk_vfs.a
+│           │   │   ├── bk_video_pipeline
+│           │   │   │   ├── CMakeFiles
+│           │   │   │   └── cmake_install.cmake
+│           │   │   ├── bk_video_player
+│           │   │   │   ├── CMakeFiles
+│           │   │   │   └── cmake_install.cmake
+│           │   │   ├── bk_voice_service
+│           │   │   │   ├── CMakeFiles
+│           │   │   │   └── cmake_install.cmake
+│           │   │   ├── bk_websocket
+│           │   │   │   ├── CMakeFiles
+│           │   │   │   └── cmake_install.cmake
+│           │   │   ├── bk_wifi
+│           │   │   │   ├── CMakeFiles
+│           │   │   │   │   └── __armino_bk_wifi.dir
+│           │   │   │   │       └── src
+│           │   │   │   │           ├── net_param.c.obj
+│           │   │   │   │           ├── phy_client.c.obj
+│           │   │   │   │           ├── phy_notify.c.obj
+│           │   │   │   │           ├── wifi_api.c.obj
+│           │   │   │   │           ├── wifi_api_ipc.c.obj
+│           │   │   │   │           ├── wifi_at.c.obj
+│           │   │   │   │           └── wifi_demo.c.obj
+│           │   │   │   ├── cmake_install.cmake
+│           │   │   │   └── libbk_wifi.a
+│           │   │   ├── bk_wifi_driver
+│           │   │   │   ├── CMakeFiles
+│           │   │   │   │   └── __armino_bk_wifi_driver.dir
+│           │   │   │   │       ├── wdrv_cntrl.c.obj
+│           │   │   │   │       ├── wdrv_co_list.c.obj
+│           │   │   │   │       ├── wdrv_debug.c.obj
+│           │   │   │   │       ├── wdrv_ipc.c.obj
+│           │   │   │   │       ├── wdrv_main.c.obj
+│           │   │   │   │       ├── wdrv_rx.c.obj
+│           │   │   │   │       └── wdrv_tx.c.obj
+│           │   │   │   ├── cmake_install.cmake
+│           │   │   │   └── libbk_wifi_driver.a
+│           │   │   ├── bt
+│           │   │   │   ├── CMakeFiles
+│           │   │   │   │   └── __armino_bt.dir
+│           │   │   │   │       └── ble_boarding
+│           │   │   │   │           ├── ble_boarding.c.obj
+│           │   │   │   │           └── dm_ble_boarding.c.obj
+│           │   │   │   ├── cmake_install.cmake
+│           │   │   │   └── libbt.a
+│           │   │   ├── cm33
+│           │   │   │   ├── CMakeFiles
+│           │   │   │   │   └── __armino_cm33.dir
+│           │   │   │   │       ├── arch_delay.c.obj
+│           │   │   │   │       ├── arch_interrupt.c.obj
+│           │   │   │   │       ├── arm.c.obj
+│           │   │   │   │       ├── dwt.c.obj
+│           │   │   │   │       ├── fpb.c.obj
+│           │   │   │   │       ├── jump.c.obj
+│           │   │   │   │       ├── mpu.c.obj
+│           │   │   │   │       ├── os
+│           │   │   │   │       │   └── freertos
+│           │   │   │   │       │       └── cpu.c.obj
+│           │   │   │   │       ├── stack_base.c.obj
+│           │   │   │   │       └── trap_base_smp.c.obj
+│           │   │   │   ├── cmake_install.cmake
+│           │   │   │   └── libcm33.a
+│           │   │   ├── CMakeFiles
+│           │   │   ├── cmake_install.cmake
+│           │   │   ├── cmsis
+│           │   │   │   ├── CMakeFiles
+│           │   │   │   │   └── __armino_cmsis.dir
+│           │   │   │   │       └── CMSIS_5
+│           │   │   │   │           └── Device
+│           │   │   │   │               └── Beken
+│           │   │   │   │                   └── bk7236xx
+│           │   │   │   │                       └── Source
+│           │   │   │   │                           └── smp
+│           │   │   │   │                               ├── smp.c.obj
+│           │   │   │   │                               ├── startup_cpu0.c.obj
+│           │   │   │   │                               ├── startup_cpu1.c.obj
+│           │   │   │   │                               ├── startup_cpu2.c.obj
+│           │   │   │   │                               ├── system_cpu0.c.obj
+│           │   │   │   │                               ├── system_cpu1.c.obj
+│           │   │   │   │                               └── system_cpu2.c.obj
+│           │   │   │   ├── cmake_install.cmake
+│           │   │   │   └── libcmsis.a
+│           │   │   ├── common
+│           │   │   │   ├── CMakeFiles
+│           │   │   │   │   └── __armino_common.dir
+│           │   │   │   │       └── hal
+│           │   │   │   │           ├── adc_hal.c.obj
+│           │   │   │   │           ├── dma_hal.c.obj
+│           │   │   │   │           ├── flash_hal.c.obj
+│           │   │   │   │           ├── gpio_hal.c.obj
+│           │   │   │   │           ├── i2c_hal.c.obj
+│           │   │   │   │           ├── icu_hal.c.obj
+│           │   │   │   │           ├── mbox0_hal.c.obj
+│           │   │   │   │           ├── psram_hal.c.obj
+│           │   │   │   │           ├── qspi_hal.c.obj
+│           │   │   │   │           ├── scale0_hal.c.obj
+│           │   │   │   │           ├── scale1_hal.c.obj
+│           │   │   │   │           ├── sdio_hal.c.obj
+│           │   │   │   │           ├── sdio_host_hal.c.obj
+│           │   │   │   │           ├── sdmadc_hal.c.obj
+│           │   │   │   │           ├── spi_hal.c.obj
+│           │   │   │   │           ├── timer_hal.c.obj
+│           │   │   │   │           ├── trng_hal.c.obj
+│           │   │   │   │           ├── uart_hal.c.obj
+│           │   │   │   │           ├── wdt_hal.c.obj
+│           │   │   │   │           └── yuv_buf_hal.c.obj
+│           │   │   │   ├── cmake_install.cmake
+│           │   │   │   └── libcommon.a
+│           │   │   ├── compal
+│           │   │   │   ├── CMakeFiles
+│           │   │   │   └── cmake_install.cmake
+│           │   │   ├── compress
+│           │   │   │   ├── CMakeFiles
+│           │   │   │   │   └── __armino_compress.dir
+│           │   │   │   │       └── decompress.c.obj
+│           │   │   │   ├── cmake_install.cmake
+│           │   │   │   └── libcompress.a
+│           │   │   ├── console
+│           │   │   │   ├── CMakeFiles
+│           │   │   │   │   └── __armino_console.dir
+│           │   │   │   │       └── argtable3
+│           │   │   │   │           ├── arg_cmd.c.obj
+│           │   │   │   │           ├── arg_date.c.obj
+│           │   │   │   │           ├── arg_dbl.c.obj
+│           │   │   │   │           ├── arg_dstr.c.obj
+│           │   │   │   │           ├── arg_end.c.obj
+│           │   │   │   │           ├── arg_file.c.obj
+│           │   │   │   │           ├── arg_hashtable.c.obj
+│           │   │   │   │           ├── arg_int.c.obj
+│           │   │   │   │           ├── arg_lit.c.obj
+│           │   │   │   │           ├── arg_rem.c.obj
+│           │   │   │   │           ├── arg_rex.c.obj
+│           │   │   │   │           ├── arg_str.c.obj
+│           │   │   │   │           ├── argtable3.c.obj
+│           │   │   │   │           └── arg_utils.c.obj
+│           │   │   │   ├── cmake_install.cmake
+│           │   │   │   └── libconsole.a
+│           │   │   ├── coredump
+│           │   │   │   ├── CMakeFiles
+│           │   │   │   │   └── __armino_coredump.dir
+│           │   │   │   │       └── cm_backtrace
+│           │   │   │   │           └── cm_backtrace.c.obj
+│           │   │   │   ├── cmake_install.cmake
+│           │   │   │   └── libcoredump.a
+│           │   │   ├── cs2p2p
+│           │   │   │   ├── CMakeFiles
+│           │   │   │   └── cmake_install.cmake
+│           │   │   ├── driver
+│           │   │   │   ├── CMakeFiles
+│           │   │   │   │   └── __armino_driver.dir
+│           │   │   │   │       ├── bk7258_ap
+│           │   │   │   │       │   ├── gpio_driver.c.obj
+│           │   │   │   │       │   ├── interrupt.c.obj
+│           │   │   │   │       │   └── interrupt_statis.c.obj
+│           │   │   │   │       ├── chip_support
+│           │   │   │   │       │   └── chip_support.c.obj
+│           │   │   │   │       ├── common
+│           │   │   │   │       │   ├── dd.c.obj
+│           │   │   │   │       │   ├── driver.c.obj
+│           │   │   │   │       │   └── drv_model.c.obj
+│           │   │   │   │       ├── dsp
+│           │   │   │   │       │   └── dsp.c.obj
+│           │   │   │   │       ├── flash
+│           │   │   │   │       │   ├── flash_bypass.c.obj
+│           │   │   │   │       │   ├── flash_client.c.obj
+│           │   │   │   │       │   ├── flash_notify.c.obj
+│           │   │   │   │       │   ├── flash_partition.c.obj
+│           │   │   │   │       │   └── flash_svr_test.c.obj
+│           │   │   │   │       ├── general_dma
+│           │   │   │   │       │   └── dma_driver.c.obj
+│           │   │   │   │       ├── gpio
+│           │   │   │   │       │   └── gpio_driver_base.c.obj
+│           │   │   │   │       ├── hw_scale
+│           │   │   │   │       │   └── hw_scale_driver.c.obj
+│           │   │   │   │       ├── i2c
+│           │   │   │   │       │   ├── i2c_driver.c.obj
+│           │   │   │   │       │   ├── i2c_statis.c.obj
+│           │   │   │   │       │   └── i2c_unified.c.obj
+│           │   │   │   │       ├── icu
+│           │   │   │   │       │   ├── icu_driver.c.obj
+│           │   │   │   │       │   └── interrupt_base.c.obj
+│           │   │   │   │       ├── mailbox
+│           │   │   │   │       │   ├── bk_api_ipc.c.obj
+│           │   │   │   │       │   ├── bk_api_ipc_test.c.obj
+│           │   │   │   │       │   ├── bk_api_rpc_client.c.obj
+│           │   │   │   │       │   ├── mailbox_channel.c.obj
+│           │   │   │   │       │   ├── mb_chnl_buff.c.obj
+│           │   │   │   │       │   ├── mb_ipc_cmd.c.obj
+│           │   │   │   │       │   ├── mb_ipc.c.obj
+│           │   │   │   │       │   ├── mb_ipc_heartbeat.c.obj
+│           │   │   │   │       │   ├── mbox0_adapter.c.obj
+│           │   │   │   │       │   ├── mbox0_cross_core.c.obj
+│           │   │   │   │       │   ├── mbox0_drv.c.obj
+│           │   │   │   │       │   └── mb_uart_driver.c.obj
+│           │   │   │   │       ├── pmu
+│           │   │   │   │       │   └── aon_pmu_driver.c.obj
+│           │   │   │   │       ├── psram
+│           │   │   │   │       │   └── psram_driver.c.obj
+│           │   │   │   │       ├── pwr_clk
+│           │   │   │   │       │   ├── pm_ap_core.c.obj
+│           │   │   │   │       │   ├── pm_ap_demo.c.obj
+│           │   │   │   │       │   ├── pm_ap_misc.c.obj
+│           │   │   │   │       │   └── pwr_clk.c.obj
+│           │   │   │   │       ├── qspi
+│           │   │   │   │       │   ├── qspi_driver.c.obj
+│           │   │   │   │       │   ├── qspi_flash.c.obj
+│           │   │   │   │       │   ├── qspi_psram.c.obj
+│           │   │   │   │       │   └── qspi_statis.c.obj
+│           │   │   │   │       ├── reset_reason
+│           │   │   │   │       │   └── reset_reason.c.obj
+│           │   │   │   │       ├── rtc
+│           │   │   │   │       │   └── aon_rtc_driver_64bit.c.obj
+│           │   │   │   │       ├── saradc
+│           │   │   │   │       │   ├── saradc_client.c.obj
+│           │   │   │   │       │   ├── saradc_example.c.obj
+│           │   │   │   │       │   └── saradc_notify.c.obj
+│           │   │   │   │       ├── sd_card
+│           │   │   │   │       │   ├── sd_card_driver.c.obj
+│           │   │   │   │       │   └── sdcard_test.c.obj
+│           │   │   │   │       ├── sdio_host
+│           │   │   │   │       │   └── sdio_host_driver.c.obj
+│           │   │   │   │       ├── sdmadc
+│           │   │   │   │       │   └── sdmadc_driver.c.obj
+│           │   │   │   │       ├── spi
+│           │   │   │   │       │   ├── spi_driver.c.obj
+│           │   │   │   │       │   ├── spi_flash.c.obj
+│           │   │   │   │       │   └── spi_statis.c.obj
+│           │   │   │   │       ├── spinlock
+│           │   │   │   │       │   ├── amp_res_lock.c.obj
+│           │   │   │   │       │   └── spinlock.c.obj
+│           │   │   │   │       ├── sys_ctrl
+│           │   │   │   │       │   ├── sys_audio_driver.c.obj
+│           │   │   │   │       │   ├── sys_bt_driver.c.obj
+│           │   │   │   │       │   ├── sys_clock_driver.c.obj
+│           │   │   │   │       │   ├── sys_ctrl.c.obj
+│           │   │   │   │       │   ├── sys_driver.c.obj
+│           │   │   │   │       │   ├── sys_driver_common.c.obj
+│           │   │   │   │       │   ├── sys_int_driver.c.obj
+│           │   │   │   │       │   ├── sys_ps_driver.c.obj
+│           │   │   │   │       │   ├── sys_psram_driver.c.obj
+│           │   │   │   │       │   ├── sys_touch_driver.c.obj
+│           │   │   │   │       │   ├── sys_video_driver.c.obj
+│           │   │   │   │       │   └── sys_wifi_driver.c.obj
+│           │   │   │   │       ├── timer
+│           │   │   │   │       │   └── timer_driver.c.obj
+│           │   │   │   │       ├── trng
+│           │   │   │   │       │   └── trng_driver.c.obj
+│           │   │   │   │       ├── uart
+│           │   │   │   │       │   ├── printf.c.obj
+│           │   │   │   │       │   ├── uart_driver.c.obj
+│           │   │   │   │       │   └── uart_statis.c.obj
+│           │   │   │   │       ├── wdt
+│           │   │   │   │       │   └── wdt_driver.c.obj
+│           │   │   │   │       └── yuv_buf
+│           │   │   │   │           └── yuv_buf_driver.c.obj
+│           │   │   │   ├── cmake_install.cmake
+│           │   │   │   ├── device
+│           │   │   │   │   ├── CMakeFiles
+│           │   │   │   │   └── cmake_install.cmake
+│           │   │   │   ├── h264
+│           │   │   │   │   ├── CMakeFiles
+│           │   │   │   │   └── cmake_install.cmake
+│           │   │   │   ├── hw_rotate
+│           │   │   │   │   ├── CMakeFiles
+│           │   │   │   │   └── cmake_install.cmake
+│           │   │   │   ├── hw_scale
+│           │   │   │   │   ├── CMakeFiles
+│           │   │   │   │   └── cmake_install.cmake
+│           │   │   │   ├── libdriver.a
+│           │   │   │   ├── lin
+│           │   │   │   │   ├── CMakeFiles
+│           │   │   │   │   └── cmake_install.cmake
+│           │   │   │   └── yuv_buf
+│           │   │   │       ├── CMakeFiles
+│           │   │   │       └── cmake_install.cmake
+│           │   │   ├── easy_flash
+│           │   │   │   ├── CMakeFiles
+│           │   │   │   │   └── __armino_easy_flash.dir
+│           │   │   │   │       ├── bk_ef.c.obj
+│           │   │   │   │       └── easy_flash_V4.X
+│           │   │   │   │           ├── port
+│           │   │   │   │           │   └── ef_port.c.obj
+│           │   │   │   │           └── src
+│           │   │   │   │               ├── easyflash.c.obj
+│           │   │   │   │               ├── ef_env.c.obj
+│           │   │   │   │               ├── ef_env_legacy.c.obj
+│           │   │   │   │               ├── ef_env_legacy_wl.c.obj
+│           │   │   │   │               ├── ef_iap.c.obj
+│           │   │   │   │               ├── ef_log.c.obj
+│           │   │   │   │               └── ef_utils.c.obj
+│           │   │   │   ├── cmake_install.cmake
+│           │   │   │   └── libeasy_flash.a
+│           │   │   ├── embeded_gcov
+│           │   │   │   ├── CMakeFiles
+│           │   │   │   └── cmake_install.cmake
+│           │   │   ├── eq_algorithm
+│           │   │   │   ├── CMakeFiles
+│           │   │   │   └── cmake_install.cmake
+│           │   │   ├── fatfs
+│           │   │   │   ├── CMakeFiles
+│           │   │   │   │   └── __armino_fatfs.dir
+│           │   │   │   │       ├── cc936.c.obj
+│           │   │   │   │       ├── ccsbcs.c.obj
+│           │   │   │   │       ├── disk_io.c.obj
+│           │   │   │   │       ├── driver_udisk.c.obj
+│           │   │   │   │       ├── ff.c.obj
+│           │   │   │   │       ├── ffsystem.c.obj
+│           │   │   │   │       ├── ffunicode.c.obj
+│           │   │   │   │       └── test_fatfs.c.obj
+│           │   │   │   ├── cmake_install.cmake
+│           │   │   │   └── libfatfs.a
+│           │   │   ├── flashdb
+│           │   │   │   ├── CMakeFiles
+│           │   │   │   └── cmake_install.cmake
+│           │   │   ├── frame_array_stream
+│           │   │   │   ├── CMakeFiles
+│           │   │   │   └── cmake_install.cmake
+│           │   │   ├── g711_decoder
+│           │   │   │   ├── CMakeFiles
+│           │   │   │   └── cmake_install.cmake
+│           │   │   ├── g711_encoder
+│           │   │   │   ├── CMakeFiles
+│           │   │   │   └── cmake_install.cmake
+│           │   │   ├── g722_decoder
+│           │   │   │   ├── CMakeFiles
+│           │   │   │   └── cmake_install.cmake
+│           │   │   ├── g722_encoder
+│           │   │   │   ├── CMakeFiles
+│           │   │   │   └── cmake_install.cmake
+│           │   │   ├── hmac_sha_256
+│           │   │   │   ├── CMakeFiles
+│           │   │   │   │   └── __armino_hmac_sha_256.dir
+│           │   │   │   │       └── pbkdf2_sha256.c.obj
+│           │   │   │   ├── cmake_install.cmake
+│           │   │   │   └── libhmac_sha_256.a
+│           │   │   ├── http
+│           │   │   │   ├── CMakeFiles
+│           │   │   │   │   └── __armino_http.dir
+│           │   │   │   │       ├── lite-log.c.obj
+│           │   │   │   │       ├── utils_httpc.c.obj
+│           │   │   │   │       ├── utils_net.c.obj
+│           │   │   │   │       └── utils_timer.c.obj
+│           │   │   │   ├── cmake_install.cmake
+│           │   │   │   └── libhttp.a
+│           │   │   ├── i2s_stream
+│           │   │   │   ├── CMakeFiles
+│           │   │   │   └── cmake_install.cmake
+│           │   │   ├── image_convert
+│           │   │   │   ├── CMakeFiles
+│           │   │   │   │   └── __armino_image_convert.dir
+│           │   │   │   │       └── image_convert.c.obj
+│           │   │   │   ├── cmake_install.cmake
+│           │   │   │   └── libimage_convert.a
+│           │   │   ├── include
+│           │   │   │   ├── CMakeFiles
+│           │   │   │   └── cmake_install.cmake
+│           │   │   ├── iperf
+│           │   │   │   ├── CMakeFiles
+│           │   │   │   │   └── __armino_iperf.dir
+│           │   │   │   │       └── iperf.c.obj
+│           │   │   │   ├── cmake_install.cmake
+│           │   │   │   └── libiperf.a
+│           │   │   ├── json
+│           │   │   │   ├── CMakeFiles
+│           │   │   │   └── cmake_install.cmake
+│           │   │   ├── key
+│           │   │   │   ├── CMakeFiles
+│           │   │   │   └── cmake_install.cmake
+│           │   │   ├── key_handle
+│           │   │   │   ├── CMakeFiles
+│           │   │   │   └── cmake_install.cmake
+│           │   │   ├── littlefs
+│           │   │   │   ├── CMakeFiles
+│           │   │   │   └── cmake_install.cmake
+│           │   │   ├── lvgl
+│           │   │   │   ├── CMakeFiles
+│           │   │   │   └── cmake_install.cmake
+│           │   │   ├── lwip_intf_v2_1
+│           │   │   │   ├── CMakeFiles
+│           │   │   │   │   └── __armino_lwip_intf_v2_1.dir
+│           │   │   │   │       ├── dhcpd
+│           │   │   │   │       │   ├── dhcp-server.c.obj
+│           │   │   │   │       │   └── dhcp-server-main.c.obj
+│           │   │   │   │       └── lwip-2.1.2
+│           │   │   │   │           ├── port
+│           │   │   │   │           │   ├── hwcsum.c.obj
+│           │   │   │   │           │   ├── net.c.obj
+│           │   │   │   │           │   ├── sys_arch.c.obj
+│           │   │   │   │           │   └── wlanif.c.obj
+│           │   │   │   │           └── src
+│           │   │   │   │               ├── api
+│           │   │   │   │               │   ├── api_lib.c.obj
+│           │   │   │   │               │   ├── api_msg.c.obj
+│           │   │   │   │               │   ├── err.c.obj
+│           │   │   │   │               │   ├── if_api.c.obj
+│           │   │   │   │               │   ├── netbuf.c.obj
+│           │   │   │   │               │   ├── netdb.c.obj
+│           │   │   │   │               │   ├── netifapi.c.obj
+│           │   │   │   │               │   ├── sockets.c.obj
+│           │   │   │   │               │   └── tcpip.c.obj
+│           │   │   │   │               ├── apps
+│           │   │   │   │               │   ├── ifaddrs
+│           │   │   │   │               │   │   └── lwip_ifaddrs.c.obj
+│           │   │   │   │               │   ├── mdns
+│           │   │   │   │               │   │   └── mdns.c.obj
+│           │   │   │   │               │   └── ping
+│           │   │   │   │               │       └── ping.c.obj
+│           │   │   │   │               ├── core
+│           │   │   │   │               │   ├── debug.c.obj
+│           │   │   │   │               │   ├── def.c.obj
+│           │   │   │   │               │   ├── dns.c.obj
+│           │   │   │   │               │   ├── inet_chksum.c.obj
+│           │   │   │   │               │   ├── init.c.obj
+│           │   │   │   │               │   ├── ip.c.obj
+│           │   │   │   │               │   ├── ipv4
+│           │   │   │   │               │   │   ├── autoip.c.obj
+│           │   │   │   │               │   │   ├── dhcp.c.obj
+│           │   │   │   │               │   │   ├── etharp.c.obj
+│           │   │   │   │               │   │   ├── icmp.c.obj
+│           │   │   │   │               │   │   ├── igmp.c.obj
+│           │   │   │   │               │   │   ├── ip4_addr.c.obj
+│           │   │   │   │               │   │   ├── ip4.c.obj
+│           │   │   │   │               │   │   ├── ip4_frag.c.obj
+│           │   │   │   │               │   │   └── ip4_napt.c.obj
+│           │   │   │   │               │   ├── ipv6
+│           │   │   │   │               │   │   ├── dhcp6.c.obj
+│           │   │   │   │               │   │   ├── ethip6.c.obj
+│           │   │   │   │               │   │   ├── icmp6.c.obj
+│           │   │   │   │               │   │   ├── inet6.c.obj
+│           │   │   │   │               │   │   ├── ip6_addr.c.obj
+│           │   │   │   │               │   │   ├── ip6.c.obj
+│           │   │   │   │               │   │   ├── ip6_frag.c.obj
+│           │   │   │   │               │   │   ├── mld6.c.obj
+│           │   │   │   │               │   │   └── nd6.c.obj
+│           │   │   │   │               │   ├── mem.c.obj
+│           │   │   │   │               │   ├── memp.c.obj
+│           │   │   │   │               │   ├── netif.c.obj
+│           │   │   │   │               │   ├── pbuf.c.obj
+│           │   │   │   │               │   ├── raw.c.obj
+│           │   │   │   │               │   ├── stats.c.obj
+│           │   │   │   │               │   ├── sys.c.obj
+│           │   │   │   │               │   ├── tcp.c.obj
+│           │   │   │   │               │   ├── tcp_in.c.obj
+│           │   │   │   │               │   ├── tcp_out.c.obj
+│           │   │   │   │               │   ├── timeouts.c.obj
+│           │   │   │   │               │   └── udp.c.obj
+│           │   │   │   │               └── netif
+│           │   │   │   │                   ├── ethernet.c.obj
+│           │   │   │   │                   └── ppp
+│           │   │   │   │                       ├── auth.c.obj
+│           │   │   │   │                       ├── ccp.c.obj
+│           │   │   │   │                       ├── chap-md5.c.obj
+│           │   │   │   │                       ├── chap_ms.c.obj
+│           │   │   │   │                       ├── chap-new.c.obj
+│           │   │   │   │                       ├── demand.c.obj
+│           │   │   │   │                       ├── eap.c.obj
+│           │   │   │   │                       ├── ecp.c.obj
+│           │   │   │   │                       ├── eui64.c.obj
+│           │   │   │   │                       ├── fsm.c.obj
+│           │   │   │   │                       ├── ipcp.c.obj
+│           │   │   │   │                       ├── ipv6cp.c.obj
+│           │   │   │   │                       ├── lcp.c.obj
+│           │   │   │   │                       ├── magic.c.obj
+│           │   │   │   │                       ├── mppe.c.obj
+│           │   │   │   │                       ├── multilink.c.obj
+│           │   │   │   │                       ├── polarssl
+│           │   │   │   │                       │   ├── arc4.c.obj
+│           │   │   │   │                       │   ├── des.c.obj
+│           │   │   │   │                       │   ├── md4.c.obj
+│           │   │   │   │                       │   ├── md5.c.obj
+│           │   │   │   │                       │   └── sha1.c.obj
+│           │   │   │   │                       ├── pppapi.c.obj
+│           │   │   │   │                       ├── ppp.c.obj
+│           │   │   │   │                       ├── pppcrypt.c.obj
+│           │   │   │   │                       ├── pppoe.c.obj
+│           │   │   │   │                       ├── pppol2tp.c.obj
+│           │   │   │   │                       ├── pppos.c.obj
+│           │   │   │   │                       ├── upap.c.obj
+│           │   │   │   │                       ├── utils.c.obj
+│           │   │   │   │                       └── vj.c.obj
+│           │   │   │   ├── cmake_install.cmake
+│           │   │   │   └── liblwip_intf_v2_1.a
+│           │   │   ├── media_service
+│           │   │   │   ├── CMakeFiles
+│           │   │   │   │   └── __armino_media_service.dir
+│           │   │   │   │       ├── osi_wrapper
+│           │   │   │   │       │   ├── audio_osi_wrapper.c.obj
+│           │   │   │   │       │   └── video_osi_wrapper.c.obj
+│           │   │   │   │       └── src
+│           │   │   │   │           └── media_service.c.obj
+│           │   │   │   ├── cmake_install.cmake
+│           │   │   │   └── libmedia_service.a
+│           │   │   ├── media_utils
+│           │   │   │   ├── CMakeFiles
+│           │   │   │   │   └── __armino_media_utils.dir
+│           │   │   │   │       └── src
+│           │   │   │   │           ├── bk_list_edge.c.obj
+│           │   │   │   │           ├── media_utils.c.obj
+│           │   │   │   │           └── psram_mem_slab.c.obj
+│           │   │   │   ├── cmake_install.cmake
+│           │   │   │   └── libmedia_utils.a
+│           │   │   ├── mix_algorithm
+│           │   │   │   ├── CMakeFiles
+│           │   │   │   └── cmake_install.cmake
+│           │   │   ├── mp3_decoder
+│           │   │   │   ├── CMakeFiles
+│           │   │   │   └── cmake_install.cmake
+│           │   │   ├── multimedia
+│           │   │   │   ├── CMakeFiles
+│           │   │   │   │   └── __armino_multimedia.dir
+│           │   │   │   │       ├── comm
+│           │   │   │   │       │   └── frame_buffer.c.obj
+│           │   │   │   │       └── core
+│           │   │   │   │           └── media_mem_share.c.obj
+│           │   │   │   ├── cmake_install.cmake
+│           │   │   │   └── libmultimedia.a
+│           │   │   ├── onboard_dual_dmic_mic_stream
+│           │   │   │   ├── CMakeFiles
+│           │   │   │   └── cmake_install.cmake
+│           │   │   ├── onboard_mic_stream
+│           │   │   │   ├── CMakeFiles
+│           │   │   │   └── cmake_install.cmake
+│           │   │   ├── onboard_speaker_stream
+│           │   │   │   ├── CMakeFiles
+│           │   │   │   └── cmake_install.cmake
+│           │   │   ├── opus_dec
+│           │   │   │   ├── CMakeFiles
+│           │   │   │   └── cmake_install.cmake
+│           │   │   ├── opus_enc
+│           │   │   │   ├── CMakeFiles
+│           │   │   │   └── cmake_install.cmake
+│           │   │   ├── os
+│           │   │   │   ├── CMakeFiles
+│           │   │   │   │   └── __armino_os.dir
+│           │   │   │   │       └── smp
+│           │   │   │   │           └── core_affinity
+│           │   │   │   │               └── affinity.c.obj
+│           │   │   │   ├── cmake_install.cmake
+│           │   │   │   └── libos.a
+│           │   │   ├── os_source
+│           │   │   │   ├── CMakeFiles
+│           │   │   │   │   └── __armino_os_source.dir
+│           │   │   │   │       └── freertos_smp_v2p0
+│           │   │   │   │           └── FreeRTOS-Kernel
+│           │   │   │   │               ├── croutine.c.obj
+│           │   │   │   │               ├── event_groups.c.obj
+│           │   │   │   │               ├── list.c.obj
+│           │   │   │   │               ├── portable
+│           │   │   │   │               │   ├── GCC
+│           │   │   │   │               │   │   └── ARM_CM33_NTZ
+│           │   │   │   │               │   │       └── non_secure
+│           │   │   │   │               │   │           ├── portasm.c.obj
+│           │   │   │   │               │   │           └── port.c.obj
+│           │   │   │   │               │   └── MemMang
+│           │   │   │   │               │       └── heap_4.c.obj
+│           │   │   │   │               ├── queue.c.obj
+│           │   │   │   │               ├── stream_buffer.c.obj
+│           │   │   │   │               ├── tasks.c.obj
+│           │   │   │   │               └── timers.c.obj
+│           │   │   │   ├── cmake_install.cmake
+│           │   │   │   └── libos_source.a
+│           │   │   ├── ota
+│           │   │   │   ├── CMakeFiles
+│           │   │   │   │   └── __armino_ota.dir
+│           │   │   │   │       ├── ota_base_drv.c.obj
+│           │   │   │   │       ├── ota_checksum
+│           │   │   │   │       │   └── CheckSumUtils.c.obj
+│           │   │   │   │       ├── ota.c.obj
+│           │   │   │   │       ├── ota_common.c.obj
+│           │   │   │   │       └── ota_nosecurity
+│           │   │   │   │           └── ota_http.c.obj
+│           │   │   │   ├── cmake_install.cmake
+│           │   │   │   └── libota.a
+│           │   │   ├── partitions
+│           │   │   │   ├── _build
+│           │   │   │   │   ├── auto_partitions.csv
+│           │   │   │   │   ├── bl1_control.json
+│           │   │   │   │   ├── bl1_ec256_privkey.pem
+│           │   │   │   │   ├── bl1_ec256_pubkey.pem
+│           │   │   │   │   ├── bl2_root_rsa3072.pem
+│           │   │   │   │   ├── gpio_dev.csv
+│           │   │   │   │   ├── mpc.csv
+│           │   │   │   │   ├── _mpc.h
+│           │   │   │   │   ├── ota.csv
+│           │   │   │   │   ├── _ota.h
+│           │   │   │   │   ├── otp1.csv
+│           │   │   │   │   ├── otp2.csv
+│           │   │   │   │   ├── _otp.c
+│           │   │   │   │   ├── _otp.h
+│           │   │   │   │   ├── ppc_config.bin
+│           │   │   │   │   ├── ppc.csv
+│           │   │   │   │   ├── _ppc.h
+│           │   │   │   │   ├── ppro_ap.csv
+│           │   │   │   │   ├── ppro_default.csv
+│           │   │   │   │   ├── ppro_sec.csv
+│           │   │   │   │   ├── ram_regions.csv
+│           │   │   │   │   ├── security.csv
+│           │   │   │   │   ├── security_ctrl.csv
+│           │   │   │   │   ├── security.h
+│           │   │   │   │   └── tfm_hal_ppc.h
+│           │   │   │   ├── CMakeFiles
+│           │   │   │   └── cmake_install.cmake
+│           │   │   ├── part_table
+│           │   │   │   ├── CMakeFiles
+│           │   │   │   └── cmake_install.cmake
+│           │   │   ├── psa_mbedtls
+│           │   │   │   ├── CMakeFiles
+│           │   │   │   │   └── __armino_psa_mbedtls.dir
+│           │   │   │   │       ├── __
+│           │   │   │   │       │   └── bk_trustengine
+│           │   │   │   │       │       ├── dubhe_alt
+│           │   │   │   │       │       │   └── src
+│           │   │   │   │       │       │       ├── aes.c.obj
+│           │   │   │   │       │       │       ├── bignum_wrap.c.obj
+│           │   │   │   │       │       │       ├── ccm.c.obj
+│           │   │   │   │       │       │       ├── cmac.c.obj
+│           │   │   │   │       │       │       ├── gcm.c.obj
+│           │   │   │   │       │       │       ├── otp.c.obj
+│           │   │   │   │       │       │       ├── sha1.c.obj
+│           │   │   │   │       │       │       └── sha256.c.obj
+│           │   │   │   │       │       ├── dubhe_driver
+│           │   │   │   │       │       │   └── src
+│           │   │   │   │       │       │       ├── common
+│           │   │   │   │       │       │       │   ├── dubhe_driver.c.obj
+│           │   │   │   │       │       │       │   ├── dubhe_event.c.obj
+│           │   │   │   │       │       │       │   ├── dubhe_intr_handler.c.obj
+│           │   │   │   │       │       │       │   └── dubhe_sram_alloc.c.obj
+│           │   │   │   │       │       │       ├── crypto
+│           │   │   │   │       │       │       │   ├── aca
+│           │   │   │   │       │       │       │   │   ├── dubhe_aca.c.obj
+│           │   │   │   │       │       │       │   │   └── dubhe_aca_hw.c.obj
+│           │   │   │   │       │       │       │   ├── aead
+│           │   │   │   │       │       │       │   │   ├── dubhe_ccm.c.obj
+│           │   │   │   │       │       │       │   │   └── dubhe_gcm.c.obj
+│           │   │   │   │       │       │       │   ├── hash
+│           │   │   │   │       │       │       │   │   └── dubhe_hash.c.obj
+│           │   │   │   │       │       │       │   ├── mac
+│           │   │   │   │       │       │       │   │   ├── dubhe_cbcmac.c.obj
+│           │   │   │   │       │       │       │   │   ├── dubhe_cmac.c.obj
+│           │   │   │   │       │       │       │   │   └── dubhe_ghash.c.obj
+│           │   │   │   │       │       │       │   ├── otp
+│           │   │   │   │       │       │       │   │   └── dubhe_otp.c.obj
+│           │   │   │   │       │       │       │   ├── sca
+│           │   │   │   │       │       │       │   │   └── dubhe_sca.c.obj
+│           │   │   │   │       │       │       │   └── trng
+│           │   │   │   │       │       │       │       └── dubhe_trng.c.obj
+│           │   │   │   │       │       │       └── hal_pal
+│           │   │   │   │       │       │           ├── pal_heap.c.obj
+│           │   │   │   │       │       │           ├── pal_log.c.obj
+│           │   │   │   │       │       │           ├── pal_mutex.c.obj
+│           │   │   │   │       │       │           ├── pal_preempt.c.obj
+│           │   │   │   │       │       │           ├── pal_semaphore.c.obj
+│           │   │   │   │       │       │           ├── pal_signal.c.obj
+│           │   │   │   │       │       │           ├── pal_string.c.obj
+│           │   │   │   │       │       │           └── pal_time.c.obj
+│           │   │   │   │       │       ├── dubhe_lib
+│           │   │   │   │       │       │   ├── bignum.c.obj
+│           │   │   │   │       │       │   ├── bignum_delta.c.obj
+│           │   │   │   │       │       │   ├── cipher.c.obj
+│           │   │   │   │       │       │   ├── cipher_wrap.c.obj
+│           │   │   │   │       │       │   ├── ctr_drbg.c.obj
+│           │   │   │   │       │       │   ├── dhm.c.obj
+│           │   │   │   │       │       │   ├── ecdh.c.obj
+│           │   │   │   │       │       │   ├── ecdsa.c.obj
+│           │   │   │   │       │       │   ├── ecp.c.obj
+│           │   │   │   │       │       │   ├── ecp_curves.c.obj
+│           │   │   │   │       │       │   ├── entropy_poll.c.obj
+│           │   │   │   │       │       │   ├── md.c.obj
+│           │   │   │   │       │       │   ├── oid.c.obj
+│           │   │   │   │       │       │   ├── pkparse.c.obj
+│           │   │   │   │       │       │   └── rsa.c.obj
+│           │   │   │   │       │       └── spe
+│           │   │   │   │       │           └── src
+│           │   │   │   │       │               └── misc.c.obj
+│           │   │   │   │       ├── mbedtls
+│           │   │   │   │       │   ├── library
+│           │   │   │   │       │   │   ├── aes.c.obj
+│           │   │   │   │       │   │   ├── aesni.c.obj
+│           │   │   │   │       │   │   ├── aria.c.obj
+│           │   │   │   │       │   │   ├── asn1parse.c.obj
+│           │   │   │   │       │   │   ├── asn1write.c.obj
+│           │   │   │   │       │   │   ├── base64.c.obj
+│           │   │   │   │       │   │   ├── bignum_core.c.obj
+│           │   │   │   │       │   │   ├── camellia.c.obj
+│           │   │   │   │       │   │   ├── ccm.c.obj
+│           │   │   │   │       │   │   ├── chacha20.c.obj
+│           │   │   │   │       │   │   ├── chachapoly.c.obj
+│           │   │   │   │       │   │   ├── cmac.c.obj
+│           │   │   │   │       │   │   ├── constant_time.c.obj
+│           │   │   │   │       │   │   ├── debug.c.obj
+│           │   │   │   │       │   │   ├── des.c.obj
+│           │   │   │   │       │   │   ├── ecjpake.c.obj
+│           │   │   │   │       │   │   ├── ecp_curves_new.c.obj
+│           │   │   │   │       │   │   ├── entropy.c.obj
+│           │   │   │   │       │   │   ├── error.c.obj
+│           │   │   │   │       │   │   ├── gcm.c.obj
+│           │   │   │   │       │   │   ├── hmac_drbg.c.obj
+│           │   │   │   │       │   │   ├── md5.c.obj
+│           │   │   │   │       │   │   ├── mps_reader.c.obj
+│           │   │   │   │       │   │   ├── mps_trace.c.obj
+│           │   │   │   │       │   │   ├── nist_kw.c.obj
+│           │   │   │   │       │   │   ├── pem.c.obj
+│           │   │   │   │       │   │   ├── pk.c.obj
+│           │   │   │   │       │   │   ├── pkcs12.c.obj
+│           │   │   │   │       │   │   ├── pkcs5.c.obj
+│           │   │   │   │       │   │   ├── pkcs7.c.obj
+│           │   │   │   │       │   │   ├── pk_wrap.c.obj
+│           │   │   │   │       │   │   ├── pkwrite.c.obj
+│           │   │   │   │       │   │   ├── platform_util.c.obj
+│           │   │   │   │       │   │   ├── poly1305.c.obj
+│           │   │   │   │       │   │   ├── psa_crypto_aead.c.obj
+│           │   │   │   │       │   │   ├── psa_crypto_cipher.c.obj
+│           │   │   │   │       │   │   ├── psa_crypto_client.c.obj
+│           │   │   │   │       │   │   ├── psa_crypto.c.obj
+│           │   │   │   │       │   │   ├── psa_crypto_driver_wrappers_no_static.c.obj
+│           │   │   │   │       │   │   ├── psa_crypto_ecp.c.obj
+│           │   │   │   │       │   │   ├── psa_crypto_ffdh.c.obj
+│           │   │   │   │       │   │   ├── psa_crypto_hash.c.obj
+│           │   │   │   │       │   │   ├── psa_crypto_mac.c.obj
+│           │   │   │   │       │   │   ├── psa_crypto_pake.c.obj
+│           │   │   │   │       │   │   ├── psa_crypto_rsa.c.obj
+│           │   │   │   │       │   │   ├── psa_crypto_se.c.obj
+│           │   │   │   │       │   │   ├── psa_crypto_slot_management.c.obj
+│           │   │   │   │       │   │   ├── psa_crypto_storage.c.obj
+│           │   │   │   │       │   │   ├── psa_util.c.obj
+│           │   │   │   │       │   │   ├── ripemd160.c.obj
+│           │   │   │   │       │   │   ├── rsa_alt_helpers.c.obj
+│           │   │   │   │       │   │   ├── sha1.c.obj
+│           │   │   │   │       │   │   ├── sha256.c.obj
+│           │   │   │   │       │   │   ├── sha3.c.obj
+│           │   │   │   │       │   │   ├── sha512.c.obj
+│           │   │   │   │       │   │   ├── ssl_cache.c.obj
+│           │   │   │   │       │   │   ├── ssl_ciphersuites.c.obj
+│           │   │   │   │       │   │   ├── ssl_client.c.obj
+│           │   │   │   │       │   │   ├── ssl_cookie.c.obj
+│           │   │   │   │       │   │   ├── ssl_debug_helpers_generated.c.obj
+│           │   │   │   │       │   │   ├── ssl_msg.c.obj
+│           │   │   │   │       │   │   ├── ssl_ticket.c.obj
+│           │   │   │   │       │   │   ├── ssl_tls12_client.c.obj
+│           │   │   │   │       │   │   ├── ssl_tls12_server.c.obj
+│           │   │   │   │       │   │   ├── ssl_tls13_client.c.obj
+│           │   │   │   │       │   │   ├── ssl_tls13_generic.c.obj
+│           │   │   │   │       │   │   ├── ssl_tls13_keys.c.obj
+│           │   │   │   │       │   │   ├── ssl_tls13_server.c.obj
+│           │   │   │   │       │   │   ├── ssl_tls.c.obj
+│           │   │   │   │       │   │   ├── x509.c.obj
+│           │   │   │   │       │   │   ├── x509_create.c.obj
+│           │   │   │   │       │   │   ├── x509_crl.c.obj
+│           │   │   │   │       │   │   ├── x509_crt.c.obj
+│           │   │   │   │       │   │   ├── x509_csr.c.obj
+│           │   │   │   │       │   │   ├── x509write.c.obj
+│           │   │   │   │       │   │   ├── x509write_crt.c.obj
+│           │   │   │   │       │   │   └── x509write_csr.c.obj
+│           │   │   │   │       │   └── tests
+│           │   │   │   │       │       └── src
+│           │   │   │   │       │           └── certs.c.obj
+│           │   │   │   │       └── mbedtls_port
+│           │   │   │   │           ├── mbedtls
+│           │   │   │   │           │   ├── library
+│           │   │   │   │           │   │   ├── net_sockets.c.obj
+│           │   │   │   │           │   │   ├── platform.c.obj
+│           │   │   │   │           │   │   └── threading.c.obj
+│           │   │   │   │           │   └── programs
+│           │   │   │   │           │       └── test
+│           │   │   │   │           │           └── selftest.c.obj
+│           │   │   │   │           └── src
+│           │   │   │   │               ├── tls_connect.c.obj
+│           │   │   │   │               ├── tls_hardware.c.obj
+│           │   │   │   │               └── tls_mem.c.obj
+│           │   │   │   ├── cmake_install.cmake
+│           │   │   │   └── libpsa_mbedtls.a
+│           │   │   ├── raw_stream
+│           │   │   │   ├── CMakeFiles
+│           │   │   │   └── cmake_install.cmake
+│           │   │   ├── release
+│           │   │   │   ├── CMakeFiles
+│           │   │   │   └── cmake_install.cmake
+│           │   │   ├── rsp_algorithm
+│           │   │   │   ├── CMakeFiles
+│           │   │   │   └── cmake_install.cmake
+│           │   │   ├── sbc_decoder
+│           │   │   │   ├── CMakeFiles
+│           │   │   │   └── cmake_install.cmake
+│           │   │   ├── sbc_encoder
+│           │   │   │   ├── CMakeFiles
+│           │   │   │   └── cmake_install.cmake
+│           │   │   ├── touch
+│           │   │   │   ├── CMakeFiles
+│           │   │   │   └── cmake_install.cmake
+│           │   │   ├── uac_mic_stream
+│           │   │   │   ├── CMakeFiles
+│           │   │   │   └── cmake_install.cmake
+│           │   │   ├── uac_speaker_stream
+│           │   │   │   ├── CMakeFiles
+│           │   │   │   └── cmake_install.cmake
+│           │   │   ├── uart_debug
+│           │   │   │   ├── CMakeFiles
+│           │   │   │   └── cmake_install.cmake
+│           │   │   ├── uart_stream
+│           │   │   │   ├── CMakeFiles
+│           │   │   │   └── cmake_install.cmake
+│           │   │   ├── unity
+│           │   │   │   ├── CMakeFiles
+│           │   │   │   │   └── __armino_unity.dir
+│           │   │   │   │       ├── extras
+│           │   │   │   │       │   └── fixture
+│           │   │   │   │       │       └── src
+│           │   │   │   │       │           └── unity_fixture.c.obj
+│           │   │   │   │       └── src
+│           │   │   │   │           └── unity.c.obj
+│           │   │   │   ├── cmake_install.cmake
+│           │   │   │   └── libunity.a
+│           │   │   ├── utf8
+│           │   │   │   ├── CMakeFiles
+│           │   │   │   │   └── __armino_utf8.dir
+│           │   │   │   │       └── conv_utf8.c.obj
+│           │   │   │   ├── cmake_install.cmake
+│           │   │   │   └── libutf8.a
+│           │   │   ├── vfs_stream
+│           │   │   │   ├── CMakeFiles
+│           │   │   │   └── cmake_install.cmake
+│           │   │   ├── VolcEngineRTCLite
+│           │   │   │   ├── CMakeFiles
+│           │   │   │   └── cmake_install.cmake
+│           │   │   ├── wanson
+│           │   │   │   ├── CMakeFiles
+│           │   │   │   └── cmake_install.cmake
+│           │   │   ├── wanson_armino
+│           │   │   │   ├── CMakeFiles
+│           │   │   │   └── cmake_install.cmake
+│           │   │   ├── wav_decoder
+│           │   │   │   ├── CMakeFiles
+│           │   │   │   └── cmake_install.cmake
+│           │   │   ├── webclient
+│           │   │   │   ├── CMakeFiles
+│           │   │   │   └── cmake_install.cmake
+│           │   │   ├── wifi_transfer
+│           │   │   │   ├── CMakeFiles
+│           │   │   │   │   └── __armino_wifi_transfer.dir
+│           │   │   │   │       └── src
+│           │   │   │   │           └── wifi_transfer.c.obj
+│           │   │   │   ├── cmake_install.cmake
+│           │   │   │   └── libwifi_transfer.a
+│           │   │   └── zlib
+│           │   │       ├── CMakeFiles
+│           │   │       └── cmake_install.cmake
+│           │   ├── armino_as_lib
+│           │   │   ├── bk7258_ap
+│           │   │   │   ├── config
+│           │   │   │   │   ├── sdkconfig.h
+│           │   │   │   │   └── sdkconfig.h.properties
+│           │   │   │   └── libs
+│           │   │   │       ├── libaacdec.a
+│           │   │   │       ├── libadpcm.a
+│           │   │   │       ├── libaec.a
+│           │   │   │       ├── libaec_v3.a
+│           │   │   │       ├── libagc.a
+│           │   │   │       ├── libap.a
+│           │   │   │       ├── libat_server.a
+│           │   │   │       ├── libaudio_osi.a
+│           │   │   │       ├── libaud_ns.a
+│           │   │   │       ├── libaud_vad.a
+│           │   │   │       ├── libavdk_utils.a
+│           │   │   │       ├── libavi.a
+│           │   │   │       ├── libbase64.a
+│           │   │   │       ├── libbk7258_ap.a
+│           │   │   │       ├── libbk_adapter.a
+│           │   │   │       ├── libbk_aud_param_ctrl.a
+│           │   │   │       ├── libbk_bluetooth.a
+│           │   │   │       ├── libbk_camera.a
+│           │   │   │       ├── libbk_cli.a
+│           │   │   │       ├── libbk_common.a
+│           │   │   │       ├── libbk_event.a
+│           │   │   │       ├── libbk_init.a
+│           │   │   │       ├── libbk_log.a
+│           │   │   │       ├── libbk_netif.a
+│           │   │   │       ├── libbk_network_transfer.a
+│           │   │   │       ├── libbk_peripheral.a
+│           │   │   │       ├── libbk_pm.a
+│           │   │   │       ├── libbk_rtos.a
+│           │   │   │       ├── libbk_server.a
+│           │   │   │       ├── libbk_startup.a
+│           │   │   │       ├── libbk_system.a
+│           │   │   │       ├── libbk_vfs.a
+│           │   │   │       ├── libbk_wifi.a
+│           │   │   │       ├── libbk_wifi_driver.a
+│           │   │   │       ├── libbluetooth_host_ble_ap.a
+│           │   │   │       ├── libbluetooth_host_ble_ap_slave_observer.a
+│           │   │   │       ├── libbluetooth_host_ble_ap_slave_only.a
+│           │   │   │       ├── libbluetooth_host_dm_dual_ap.a
+│           │   │   │       ├── libbt.a
+│           │   │   │       ├── libcm33.a
+│           │   │   │       ├── libcmsis.a
+│           │   │   │       ├── libcommon.a
+│           │   │   │       ├── libcompress.a
+│           │   │   │       ├── libconsole.a
+│           │   │   │       ├── libcoredump.a
+│           │   │   │       ├── libdriver.a
+│           │   │   │       ├── libeasy_flash.a
+│           │   │   │       ├── libeq.a
+│           │   │   │       ├── libfatfs.a
+│           │   │   │       ├── libfdk_aac_enc.a
+│           │   │   │       ├── libflac.a
+│           │   │   │       ├── libfreetype.a
+│           │   │   │       ├── libg711.a
+│           │   │   │       ├── libg722.a
+│           │   │   │       ├── libhelix.a
+│           │   │   │       ├── libhmac_sha_256.a
+│           │   │   │       ├── libhttp.a
+│           │   │   │       ├── libimage_convert.a
+│           │   │   │       ├── libiperf.a
+│           │   │   │       ├── liblcd_font.a
+│           │   │   │       ├── liblwip_intf_v2_1.a
+│           │   │   │       ├── libmedia_service.a
+│           │   │   │       ├── libmedia_utils.a
+│           │   │   │       ├── libmultimedia.a
+│           │   │   │       ├── libogg.a
+│           │   │   │       ├── libopus.a
+│           │   │   │       ├── libos.a
+│           │   │   │       ├── libos_source.a
+│           │   │   │       ├── libota.a
+│           │   │   │       ├── libpsa_mbedtls.a
+│           │   │   │       ├── libresample.a
+│           │   │   │       ├── libsbc.a
+│           │   │   │       ├── libscale_dtcm.a
+│           │   │   │       ├── libscale_sram.a
+│           │   │   │       ├── libtjpg_dtcm.a
+│           │   │   │       ├── libtjpg_dtcm_part.a
+│           │   │   │       ├── libtjpg_enc_dtcm.a
+│           │   │   │       ├── libtjpg_enc_dtcm_part.a
+│           │   │   │       ├── libtjpg_enc_sram.a
+│           │   │   │       ├── libtjpg_sram.a
+│           │   │   │       ├── libuid.a
+│           │   │   │       ├── libunity.a
+│           │   │   │       ├── libusb.a
+│           │   │   │       ├── libutf8.a
+│           │   │   │       ├── libvideo_osi.a
+│           │   │   │       ├── libwav.a
+│           │   │   │       └── libwifi_transfer.a
+│           │   │   └── include
+│           │   │       ├── CMakeLists.txt
+│           │   │       ├── common
+│           │   │       │   ├── bk_assert.h
+│           │   │       │   ├── bk_compiler.h
+│           │   │       │   ├── bk_err.h
+│           │   │       │   ├── bk_generic.h
+│           │   │       │   ├── bk_include.h
+│           │   │       │   ├── bk_kernel_err.h
+│           │   │       │   ├── bk_section.h
+│           │   │       │   ├── bk_typedef.h
+│           │   │       │   ├── bk_utils.h
+│           │   │       │   └── sys_config.h
+│           │   │       ├── compiler.h
+│           │   │       ├── components
+│           │   │       │   ├── app_time_intf.h
+│           │   │       │   ├── ate.h
+│           │   │       │   ├── audio_param_ctrl.h
+│           │   │       │   ├── avdk_types.h
+│           │   │       │   ├── avdk_utils
+│           │   │       │   │   ├── avdk_check.h
+│           │   │       │   │   ├── avdk_error.h
+│           │   │       │   │   └── avdk_types.h
+│           │   │       │   ├── bk_asr_service.h
+│           │   │       │   ├── bk_asr_service_types.h
+│           │   │       │   ├── bk_audio
+│           │   │       │   │   ├── audio_algorithms
+│           │   │       │   │   │   ├── aec_algorithm.h
+│           │   │       │   │   │   ├── aec_v3_algorithm.h
+│           │   │       │   │   │   ├── agc_algorithm.h
+│           │   │       │   │   │   ├── eq_algorithm.h
+│           │   │       │   │   │   ├── mix_algorithm.h
+│           │   │       │   │   │   └── rsp_algorithm.h
+│           │   │       │   │   ├── audio_decoders
+│           │   │       │   │   │   ├── aac_decoder.h
+│           │   │       │   │   │   ├── g711_decoder.h
+│           │   │       │   │   │   ├── g722_decoder.h
+│           │   │       │   │   │   ├── mp3_decoder.h
+│           │   │       │   │   │   ├── opus_dec.h
+│           │   │       │   │   │   ├── sbc_decoder.h
+│           │   │       │   │   │   └── wav_decoder.h
+│           │   │       │   │   ├── audio_encoders
+│           │   │       │   │   │   ├── aac_encoder.h
+│           │   │       │   │   │   ├── g711_encoder.h
+│           │   │       │   │   │   ├── g722_encoder.h
+│           │   │       │   │   │   ├── opus_enc.h
+│           │   │       │   │   │   └── sbc_enc.h
+│           │   │       │   │   ├── audio_pipeline
+│           │   │       │   │   │   ├── audio_element.h
+│           │   │       │   │   │   ├── audio_error.h
+│           │   │       │   │   │   ├── audio_event_iface.h
+│           │   │       │   │   │   ├── audio_mem.h
+│           │   │       │   │   │   ├── audio_pipeline.h
+│           │   │       │   │   │   ├── audio_port.h
+│           │   │       │   │   │   ├── audio_port_info_list.h
+│           │   │       │   │   │   ├── audio_thread.h
+│           │   │       │   │   │   ├── audio_types.h
+│           │   │       │   │   │   ├── bsd_queue.h
+│           │   │       │   │   │   ├── cb_port.h
+│           │   │       │   │   │   ├── fb_port.h
+│           │   │       │   │   │   ├── framebuf.h
+│           │   │       │   │   │   ├── rb_port.h
+│           │   │       │   │   │   └── ringbuf.h
+│           │   │       │   │   ├── audio_streams
+│           │   │       │   │   │   ├── array_stream.h
+│           │   │       │   │   │   ├── frame_array_stream.h
+│           │   │       │   │   │   ├── i2s_stream.h
+│           │   │       │   │   │   ├── onboard_dual_dmic_mic_stream.h
+│           │   │       │   │   │   ├── onboard_mic_stream.h
+│           │   │       │   │   │   ├── onboard_speaker_stream.h
+│           │   │       │   │   │   ├── raw_stream.h
+│           │   │       │   │   │   ├── uac_mic_stream.h
+│           │   │       │   │   │   ├── uac_speaker_stream.h
+│           │   │       │   │   │   ├── uart_stream.h
+│           │   │       │   │   │   └── vfs_stream.h
+│           │   │       │   │   └── audio_utils
+│           │   │       │   │       ├── count_util.h
+│           │   │       │   │       ├── debug_dump_util.h
+│           │   │       │   │       ├── uart_util.h
+│           │   │       │   │       └── vfs_util.h
+│           │   │       │   ├── bk_audio_asr_service.h
+│           │   │       │   ├── bk_audio_asr_service_types.h
+│           │   │       │   ├── bk_camera_ctlr.h
+│           │   │       │   ├── bk_camera_ctlr_types.h
+│           │   │       │   ├── bk_display.h
+│           │   │       │   ├── bk_display_types.h
+│           │   │       │   ├── bk_dma2d.h
+│           │   │       │   ├── bk_dma2d_types.h
+│           │   │       │   ├── bk_draw_osd.h
+│           │   │       │   ├── bk_draw_osd_types.h
+│           │   │       │   ├── bk_gsensor_arithmetic_demo_public.h
+│           │   │       │   ├── bk_gsensor.h
+│           │   │       │   ├── bk_jpeg_decode
+│           │   │       │   │   ├── bk_jpeg_decode_hw.h
+│           │   │       │   │   ├── bk_jpeg_decode_sw.h
+│           │   │       │   │   ├── bk_jpeg_decode_types.h
+│           │   │       │   │   ├── bk_jpeg_decode_types_hw.h
+│           │   │       │   │   ├── bk_jpeg_decode_types_sw.h
+│           │   │       │   │   └── bk_jpeg_decode_utils.h
+│           │   │       │   ├── bk_nfc.h
+│           │   │       │   ├── bk_player_service.h
+│           │   │       │   ├── bk_player_service_types.h
+│           │   │       │   ├── bk_uid.h
+│           │   │       │   ├── bk_video_pipeline
+│           │   │       │   │   ├── bk_video_pipeline.h
+│           │   │       │   │   └── bk_video_pipeline_types.h
+│           │   │       │   ├── bk_voice_read_service.h
+│           │   │       │   ├── bk_voice_read_service_types.h
+│           │   │       │   ├── bk_voice_service.h
+│           │   │       │   ├── bk_voice_service_types.h
+│           │   │       │   ├── bk_voice_write_service.h
+│           │   │       │   ├── bk_voice_write_service_types.h
+│           │   │       │   ├── bluetooth
+│           │   │       │   │   ├── bk_ble.h
+│           │   │       │   │   ├── bk_ble_types.h
+│           │   │       │   │   ├── bk_dm_a2dp.h
+│           │   │       │   │   ├── bk_dm_a2dp_types.h
+│           │   │       │   │   ├── bk_dm_avrcp.h
+│           │   │       │   │   ├── bk_dm_avrcp_types.h
+│           │   │       │   │   ├── bk_dm_ble.h
+│           │   │       │   │   ├── bk_dm_ble_types.h
+│           │   │       │   │   ├── bk_dm_bluetooth.h
+│           │   │       │   │   ├── bk_dm_bluetooth_types.h
+│           │   │       │   │   ├── bk_dm_bt.h
+│           │   │       │   │   ├── bk_dm_bt_types.h
+│           │   │       │   │   ├── bk_dm_gap_ble.h
+│           │   │       │   │   ├── bk_dm_gap_ble_types.h
+│           │   │       │   │   ├── bk_dm_gap_bt.h
+│           │   │       │   │   ├── bk_dm_gap_bt_types.h
+│           │   │       │   │   ├── bk_dm_gattc.h
+│           │   │       │   │   ├── bk_dm_gatt_common.h
+│           │   │       │   │   ├── bk_dm_gatts.h
+│           │   │       │   │   ├── bk_dm_gatt_types.h
+│           │   │       │   │   ├── bk_dm_hfp.h
+│           │   │       │   │   ├── bk_dm_hfp_types.h
+│           │   │       │   │   ├── bk_dm_hidd.h
+│           │   │       │   │   ├── bk_dm_hidh.h
+│           │   │       │   │   ├── bk_dm_l2cap.h
+│           │   │       │   │   ├── bk_dm_pan.h
+│           │   │       │   │   ├── bk_dm_pan_types.h
+│           │   │       │   │   └── bk_dm_spp.h
+│           │   │       │   ├── cherryusb
+│           │   │       │   │   ├── asix.h
+│           │   │       │   │   ├── axusbnet.h
+│           │   │       │   │   ├── ndis.h
+│           │   │       │   │   ├── rndis_protocol.h
+│           │   │       │   │   ├── usb_audio.h
+│           │   │       │   │   ├── usb_cdc.h
+│           │   │       │   │   ├── usb_config.h
+│           │   │       │   │   ├── usbd_audio.h
+│           │   │       │   │   ├── usbd_cdc_ecm.h
+│           │   │       │   │   ├── usbd_cdc.h
+│           │   │       │   │   ├── usb_dc.h
+│           │   │       │   │   ├── usbd_core.h
+│           │   │       │   │   ├── usbd_dfu.h
+│           │   │       │   │   ├── usb_def.h
+│           │   │       │   │   ├── usb_dfu.h
+│           │   │       │   │   ├── usbd_hid.h
+│           │   │       │   │   ├── usbd_msc.h
+│           │   │       │   │   ├── usbd_mtp.h
+│           │   │       │   │   ├── usbd_printer.h
+│           │   │       │   │   ├── usbd_rndis.h
+│           │   │       │   │   ├── usbd_video.h
+│           │   │       │   │   ├── usb_errno.h
+│           │   │       │   │   ├── usbh_audio.h
+│           │   │       │   │   ├── usbh_cdc_acm.h
+│           │   │       │   │   ├── usbh_cdc_ecm.h
+│           │   │       │   │   ├── usbh_cdc_ncm.h
+│           │   │       │   │   ├── usb_hc.h
+│           │   │       │   │   ├── usbh_core.h
+│           │   │       │   │   ├── usbh_hid.h
+│           │   │       │   │   ├── usbh_hub.h
+│           │   │       │   │   ├── usb_hid.h
+│           │   │       │   │   ├── usbh_msc.h
+│           │   │       │   │   ├── usbh_mtp.h
+│           │   │       │   │   ├── usbh_printer.h
+│           │   │       │   │   ├── usbh_rndis.h
+│           │   │       │   │   ├── usb_hub.h
+│           │   │       │   │   ├── usbh_video.h
+│           │   │       │   │   ├── usb_list.h
+│           │   │       │   │   ├── usb_log.h
+│           │   │       │   │   ├── usb_mem.h
+│           │   │       │   │   ├── usb_msc.h
+│           │   │       │   │   ├── usb_mtp.h
+│           │   │       │   │   ├── usb_osal.h
+│           │   │       │   │   ├── usb_printer.h
+│           │   │       │   │   ├── usb_scsi.h
+│           │   │       │   │   ├── usb_util.h
+│           │   │       │   │   └── usb_video.h
+│           │   │       │   ├── dvp_camera.h
+│           │   │       │   ├── dvp_camera_types.h
+│           │   │       │   ├── event.h
+│           │   │       │   ├── i8080_lcd_commands.h
+│           │   │       │   ├── init.h
+│           │   │       │   ├── log.h
+│           │   │       │   ├── media_co_list.h
+│           │   │       │   ├── media_types.h
+│           │   │       │   ├── modem_driver.h
+│           │   │       │   ├── net_camera_types.h
+│           │   │       │   ├── netif.h
+│           │   │       │   ├── netif_types.h
+│           │   │       │   ├── sensor.h
+│           │   │       │   ├── shell_task.h
+│           │   │       │   ├── spidma.h
+│           │   │       │   ├── system.h
+│           │   │       │   ├── usb_audio.h
+│           │   │       │   ├── usb.h
+│           │   │       │   ├── usbh_hub_multiple_classes_api.h
+│           │   │       │   ├── usbh_simulate_uart_api.h
+│           │   │       │   ├── usb_types.h
+│           │   │       │   ├── usb_video.h
+│           │   │       │   ├── uvc_camera.h
+│           │   │       │   ├── uvc_camera_types.h
+│           │   │       │   ├── uvc_uac_api_common.h
+│           │   │       │   ├── video_types.h
+│           │   │       │   └── webclient.h
+│           │   │       ├── driver
+│           │   │       │   ├── adc.h
+│           │   │       │   ├── adc_types.h
+│           │   │       │   ├── aon_rtc.h
+│           │   │       │   ├── aon_rtc_types.h
+│           │   │       │   ├── aon_wdt.h
+│           │   │       │   ├── aon_wdt_types.h
+│           │   │       │   ├── aud_adc.h
+│           │   │       │   ├── aud_adc_types.h
+│           │   │       │   ├── aud_common.h
+│           │   │       │   ├── aud_dac.h
+│           │   │       │   ├── aud_dac_types.h
+│           │   │       │   ├── aud_dmic.h
+│           │   │       │   ├── aud_dmic_types.h
+│           │   │       │   ├── aud_dtmf.h
+│           │   │       │   ├── aud_dtmf_types.h
+│           │   │       │   ├── aud.h
+│           │   │       │   ├── audio_ring_buff.h
+│           │   │       │   ├── aud_types.h
+│           │   │       │   ├── bk_queue.h
+│           │   │       │   ├── calendar.h
+│           │   │       │   ├── calendar_types.h
+│           │   │       │   ├── can.h
+│           │   │       │   ├── can_types.h
+│           │   │       │   ├── ckmn.h
+│           │   │       │   ├── ckmn_types.h
+│           │   │       │   ├── dma2d.h
+│           │   │       │   ├── dma2d_types.h
+│           │   │       │   ├── dma.h
+│           │   │       │   ├── dma_types.h
+│           │   │       │   ├── driver.h
+│           │   │       │   ├── drv_tp.h
+│           │   │       │   ├── efuse.h
+│           │   │       │   ├── efuse_types.h
+│           │   │       │   ├── fft.h
+│           │   │       │   ├── fft_types.h
+│           │   │       │   ├── flash.h
+│           │   │       │   ├── flash_partition.h
+│           │   │       │   ├── flash_types.h
+│           │   │       │   ├── gpio.h
+│           │   │       │   ├── gpio_types.h
+│           │   │       │   ├── h264.h
+│           │   │       │   ├── h264_types.h
+│           │   │       │   ├── hal
+│           │   │       │   │   ├── hal_adc_types.h
+│           │   │       │   │   ├── hal_aon_rtc_types.h
+│           │   │       │   │   ├── hal_aud_types.h
+│           │   │       │   │   ├── hal_calendar_types.h
+│           │   │       │   │   ├── hal_can_types.h
+│           │   │       │   │   ├── hal_ckmn_types.h
+│           │   │       │   │   ├── hal_dma_types.h
+│           │   │       │   │   ├── hal_efuse_types.h
+│           │   │       │   │   ├── hal_flash_types.h
+│           │   │       │   │   ├── hal_gpio_types.h
+│           │   │       │   │   ├── hal_h264_types.h
+│           │   │       │   │   ├── hal_i2c_types.h
+│           │   │       │   │   ├── hal_int_types.h
+│           │   │       │   │   ├── hal_jpeg_dec_types.h
+│           │   │       │   │   ├── hal_jpeg_types.h
+│           │   │       │   │   ├── hal_lcd_types.h
+│           │   │       │   │   ├── hal_lin_types.h
+│           │   │       │   │   ├── hal_mailbox_types.h
+│           │   │       │   │   ├── hal_mpc_types.h
+│           │   │       │   │   ├── hal_otp_types.h
+│           │   │       │   │   ├── hal_prro_types.h
+│           │   │       │   │   ├── hal_pwm_types.h
+│           │   │       │   │   ├── hal_qspi_types.h
+│           │   │       │   │   ├── hal_sdio_host_types.h
+│           │   │       │   │   ├── hal_sdmadc_types.h
+│           │   │       │   │   ├── hal_spi_types.h
+│           │   │       │   │   ├── hal_timer_types.h
+│           │   │       │   │   ├── hal_trng_types.h
+│           │   │       │   │   ├── hal_uart_types.h
+│           │   │       │   │   ├── hal_vault_types.h
+│           │   │       │   │   ├── hal_wdt_types.h
+│           │   │       │   │   └── hal_yuv_buf_types.h
+│           │   │       │   ├── hw_scale.h
+│           │   │       │   ├── hw_scale_types.h
+│           │   │       │   ├── i2c.h
+│           │   │       │   ├── i2c_types.h
+│           │   │       │   ├── i2s.h
+│           │   │       │   ├── i2s_types.h
+│           │   │       │   ├── int.h
+│           │   │       │   ├── int_types.h
+│           │   │       │   ├── jpeg_dec.h
+│           │   │       │   ├── jpeg_dec_types.h
+│           │   │       │   ├── jpeg_enc.h
+│           │   │       │   ├── jpeg_enc_types.h
+│           │   │       │   ├── lcd.h
+│           │   │       │   ├── lcd_qspi.h
+│           │   │       │   ├── lcd_qspi_types.h
+│           │   │       │   ├── lcd_spi.h
+│           │   │       │   ├── lcd_types.h
+│           │   │       │   ├── lin.h
+│           │   │       │   ├── lin_types.h
+│           │   │       │   ├── mailbox_channel.h
+│           │   │       │   ├── mailbox.h
+│           │   │       │   ├── mailbox_types.h
+│           │   │       │   ├── mb_chnl_buff.h
+│           │   │       │   ├── mb_ipc.h
+│           │   │       │   ├── mb_ipc_port_cfg.h
+│           │   │       │   ├── mb_uart_driver.h
+│           │   │       │   ├── otp.h
+│           │   │       │   ├── otp_types.h
+│           │   │       │   ├── pm_ap_core.h
+│           │   │       │   ├── psram.h
+│           │   │       │   ├── psram_types.h
+│           │   │       │   ├── pwm.h
+│           │   │       │   ├── pwm_types.h
+│           │   │       │   ├── pwr_clk.h
+│           │   │       │   ├── qspi_flash.h
+│           │   │       │   ├── qspi.h
+│           │   │       │   ├── qspi_psram.h
+│           │   │       │   ├── qspi_types.h
+│           │   │       │   ├── rosc_32k.h
+│           │   │       │   ├── rosc_ppm.h
+│           │   │       │   ├── rott_driver.h
+│           │   │       │   ├── rott_types.h
+│           │   │       │   ├── sbc.h
+│           │   │       │   ├── sbc_types.h
+│           │   │       │   ├── scr_types.h
+│           │   │       │   ├── sd_card.h
+│           │   │       │   ├── sd_card_types.h
+│           │   │       │   ├── sdio_host.h
+│           │   │       │   ├── sdio_host_types.h
+│           │   │       │   ├── sdio_types.h
+│           │   │       │   ├── sdmadc.h
+│           │   │       │   ├── sdmadc_types.h
+│           │   │       │   ├── securityip.h
+│           │   │       │   ├── securityip_types.h
+│           │   │       │   ├── sim_spi.h
+│           │   │       │   ├── slcd.h
+│           │   │       │   ├── slcd_types.h
+│           │   │       │   ├── spi_flash.h
+│           │   │       │   ├── spi.h
+│           │   │       │   ├── spi_types.h
+│           │   │       │   ├── sys_pm.h
+│           │   │       │   ├── sys_pm_types.h
+│           │   │       │   ├── timer.h
+│           │   │       │   ├── timer_types.h
+│           │   │       │   ├── touch.h
+│           │   │       │   ├── touch_types.h
+│           │   │       │   ├── tp.h
+│           │   │       │   ├── tp_types.h
+│           │   │       │   ├── trng.h
+│           │   │       │   ├── trng_types.h
+│           │   │       │   ├── uart.h
+│           │   │       │   ├── uart_types.h
+│           │   │       │   ├── vault.h
+│           │   │       │   ├── vault_types.h
+│           │   │       │   ├── wdt.h
+│           │   │       │   ├── wdt_types.h
+│           │   │       │   ├── yuv_buf.h
+│           │   │       │   └── yuv_buf_types.h
+│           │   │       ├── modules
+│           │   │       │   ├── aacdec.h
+│           │   │       │   ├── adpcm.h
+│           │   │       │   ├── aec.h
+│           │   │       │   ├── aec_v3.h
+│           │   │       │   ├── audio_agc.h
+│           │   │       │   ├── audio_agc_types.h
+│           │   │       │   ├── audio_ns.h
+│           │   │       │   ├── audio_rsp.h
+│           │   │       │   ├── audio_rsp_types.h
+│           │   │       │   ├── audio_vad.h
+│           │   │       │   ├── avilib.h
+│           │   │       │   ├── bk_g722.h
+│           │   │       │   ├── bk_musb.h
+│           │   │       │   ├── chip_support.h
+│           │   │       │   ├── dr_wav.h
+│           │   │       │   ├── eq.h
+│           │   │       │   ├── fdk_aac_enc
+│           │   │       │   │   ├── aacenc_lib.h
+│           │   │       │   │   ├── FDK_audio.h
+│           │   │       │   │   ├── genericStds.h
+│           │   │       │   │   ├── machine_type.h
+│           │   │       │   │   └── syslib_channelMapDescr.h
+│           │   │       │   ├── flac_dec.h
+│           │   │       │   ├── flac_dec_types.h
+│           │   │       │   ├── flac_enc.h
+│           │   │       │   ├── flac_enc_types.h
+│           │   │       │   ├── freetype
+│           │   │       │   │   ├── freetype
+│           │   │       │   │   │   ├── config
+│           │   │       │   │   │   │   ├── ftconfig.h
+│           │   │       │   │   │   │   ├── ftheader.h
+│           │   │       │   │   │   │   ├── ftmodule.h
+│           │   │       │   │   │   │   ├── ftoption.h
+│           │   │       │   │   │   │   ├── ftstdlib.h
+│           │   │       │   │   │   │   ├── integer-types.h
+│           │   │       │   │   │   │   ├── mac-support.h
+│           │   │       │   │   │   │   └── public-macros.h
+│           │   │       │   │   │   ├── freetype.h
+│           │   │       │   │   │   ├── ftadvanc.h
+│           │   │       │   │   │   ├── ftbbox.h
+│           │   │       │   │   │   ├── ftbdf.h
+│           │   │       │   │   │   ├── ftbitmap.h
+│           │   │       │   │   │   ├── ftbzip2.h
+│           │   │       │   │   │   ├── ftcache.h
+│           │   │       │   │   │   ├── ftchapters.h
+│           │   │       │   │   │   ├── ftcid.h
+│           │   │       │   │   │   ├── ftcolor.h
+│           │   │       │   │   │   ├── ftdriver.h
+│           │   │       │   │   │   ├── fterrdef.h
+│           │   │       │   │   │   ├── fterrors.h
+│           │   │       │   │   │   ├── ftfntfmt.h
+│           │   │       │   │   │   ├── ftgasp.h
+│           │   │       │   │   │   ├── ftglyph.h
+│           │   │       │   │   │   ├── ftgxval.h
+│           │   │       │   │   │   ├── ftgzip.h
+│           │   │       │   │   │   ├── ftimage.h
+│           │   │       │   │   │   ├── ftincrem.h
+│           │   │       │   │   │   ├── ftlcdfil.h
+│           │   │       │   │   │   ├── ftlist.h
+│           │   │       │   │   │   ├── ftlogging.h
+│           │   │       │   │   │   ├── ftlzw.h
+│           │   │       │   │   │   ├── ftmac.h
+│           │   │       │   │   │   ├── ftmm.h
+│           │   │       │   │   │   ├── ftmodapi.h
+│           │   │       │   │   │   ├── ftmoderr.h
+│           │   │       │   │   │   ├── ftotval.h
+│           │   │       │   │   │   ├── ftoutln.h
+│           │   │       │   │   │   ├── ftparams.h
+│           │   │       │   │   │   ├── ftpfr.h
+│           │   │       │   │   │   ├── ftrender.h
+│           │   │       │   │   │   ├── ftsizes.h
+│           │   │       │   │   │   ├── ftsnames.h
+│           │   │       │   │   │   ├── ftstroke.h
+│           │   │       │   │   │   ├── ftsynth.h
+│           │   │       │   │   │   ├── ftsystem.h
+│           │   │       │   │   │   ├── fttrigon.h
+│           │   │       │   │   │   ├── fttypes.h
+│           │   │       │   │   │   ├── ftwinfnt.h
+│           │   │       │   │   │   ├── otsvg.h
+│           │   │       │   │   │   ├── t1tables.h
+│           │   │       │   │   │   ├── ttnameid.h
+│           │   │       │   │   │   ├── tttables.h
+│           │   │       │   │   │   └── tttags.h
+│           │   │       │   │   └── ft2build.h
+│           │   │       │   ├── g711.h
+│           │   │       │   ├── image_scale.h
+│           │   │       │   ├── image_scale_types.h
+│           │   │       │   ├── jpeg_decode_sw.h
+│           │   │       │   ├── jpeg_decode_sw_types.h
+│           │   │       │   ├── jpeg_enc_sw.h
+│           │   │       │   ├── lcd_font.h
+│           │   │       │   ├── libjpeg_dec.h
+│           │   │       │   ├── mp3dec.h
+│           │   │       │   ├── ogg.h
+│           │   │       │   ├── opus_custom.h
+│           │   │       │   ├── opus_defines.h
+│           │   │       │   ├── opus.h
+│           │   │       │   ├── opus_multistream.h
+│           │   │       │   ├── opus_projection.h
+│           │   │       │   ├── opus_types.h
+│           │   │       │   ├── ota.h
+│           │   │       │   ├── pm.h
+│           │   │       │   ├── qrcodegen.h
+│           │   │       │   ├── raw_link.h
+│           │   │       │   ├── sbc_encoder.h
+│           │   │       │   ├── sbc_encoder_types.h
+│           │   │       │   ├── securityip
+│           │   │       │   │   ├── api_val_asset.h
+│           │   │       │   │   ├── api_val_asym.h
+│           │   │       │   │   ├── api_val_aunlock.h
+│           │   │       │   │   ├── api_val_buffers.h
+│           │   │       │   │   ├── api_val_claim.h
+│           │   │       │   │   ├── api_val_emmc.h
+│           │   │       │   │   ├── api_val.h
+│           │   │       │   │   ├── api_val_hardware.h
+│           │   │       │   │   ├── api_val_nop.h
+│           │   │       │   │   ├── api_val_random.h
+│           │   │       │   │   ├── api_val_result.h
+│           │   │       │   │   ├── api_val_securetimer.h
+│           │   │       │   │   ├── api_val_service.h
+│           │   │       │   │   ├── api_val_specfuncs.h
+│           │   │       │   │   ├── api_val_sym.h
+│           │   │       │   │   ├── api_val_symkeywrap.h
+│           │   │       │   │   ├── api_val_system.h
+│           │   │       │   │   ├── basic_defs.h
+│           │   │       │   │   └── clib.h
+│           │   │       │   ├── tjpgd.h
+│           │   │       │   ├── uidlib.h
+│           │   │       │   ├── wav_head.h
+│           │   │       │   ├── wifi.h
+│           │   │       │   └── wifi_types.h
+│           │   │       ├── os
+│           │   │       │   ├── mem.h
+│           │   │       │   ├── os.h
+│           │   │       │   ├── rtos_ext.h
+│           │   │       │   └── str.h
+│           │   │       ├── posix
+│           │   │       │   ├── errno.h
+│           │   │       │   ├── fcntl.h
+│           │   │       │   ├── mqueue.h
+│           │   │       │   ├── pthread.h
+│           │   │       │   ├── sched.h
+│           │   │       │   ├── semaphore.h
+│           │   │       │   ├── signal.h
+│           │   │       │   ├── sys
+│           │   │       │   │   └── types.h
+│           │   │       │   ├── time.h
+│           │   │       │   ├── unistd.h
+│           │   │       │   └── utils.h
+│           │   │       └── soc
+│           │   │           ├── bk7257
+│           │   │           │   ├── adc_cap.h
+│           │   │           │   ├── aon_rtc_cap.h
+│           │   │           │   ├── aon_wdt_cap.h
+│           │   │           │   ├── aud_cap.h
+│           │   │           │   ├── calendar_cap.h
+│           │   │           │   ├── dma_cap.h
+│           │   │           │   ├── efuse_cap.h
+│           │   │           │   ├── flash_cap.h
+│           │   │           │   ├── gpio_cap.h
+│           │   │           │   ├── i2c_cap.h
+│           │   │           │   ├── i2s_cap.h
+│           │   │           │   ├── icu_cap.h
+│           │   │           │   ├── jpeg_cap.h
+│           │   │           │   ├── mailbox_cap.h
+│           │   │           │   ├── mapping.h
+│           │   │           │   ├── pwm_cap.h
+│           │   │           │   ├── qspi_cap.h
+│           │   │           │   ├── reg_base.h
+│           │   │           │   ├── soc_cap.h
+│           │   │           │   ├── soc_debug.h
+│           │   │           │   ├── soc.h
+│           │   │           │   ├── spi_cap.h
+│           │   │           │   ├── sys_cap.h
+│           │   │           │   ├── timer_cap.h
+│           │   │           │   ├── trng_cap.h
+│           │   │           │   ├── uart_cap.h
+│           │   │           │   └── wdt_cap.h
+│           │   │           ├── bk7258
+│           │   │           │   ├── adc_cap.h
+│           │   │           │   ├── aon_rtc_cap.h
+│           │   │           │   ├── aon_wdt_cap.h
+│           │   │           │   ├── aud_cap.h
+│           │   │           │   ├── calendar_cap.h
+│           │   │           │   ├── dma_cap.h
+│           │   │           │   ├── efuse_cap.h
+│           │   │           │   ├── flash_cap.h
+│           │   │           │   ├── gpio_cap.h
+│           │   │           │   ├── i2c_cap.h
+│           │   │           │   ├── i2s_cap.h
+│           │   │           │   ├── icu_cap.h
+│           │   │           │   ├── jpeg_cap.h
+│           │   │           │   ├── mailbox_cap.h
+│           │   │           │   ├── mapping.h
+│           │   │           │   ├── pwm_cap.h
+│           │   │           │   ├── qspi_cap.h
+│           │   │           │   ├── reg_base.h
+│           │   │           │   ├── soc_cap.h
+│           │   │           │   ├── soc_debug.h
+│           │   │           │   ├── soc.h
+│           │   │           │   ├── spi_cap.h
+│           │   │           │   ├── sys_cap.h
+│           │   │           │   ├── timer_cap.h
+│           │   │           │   ├── trng_cap.h
+│           │   │           │   ├── uart_cap.h
+│           │   │           │   └── wdt_cap.h
+│           │   │           ├── mapping.h
+│           │   │           ├── reg_base.h
+│           │   │           ├── soc.h
+│           │   │           └── soc_port.h
+│           │   ├── build.ninja
+│           │   ├── CMakeCache.txt
+│           │   ├── CMakeFiles
+│           │   │   ├── 3.16.3
+│           │   │   │   ├── CMakeASMCompiler.cmake
+│           │   │   │   ├── CMakeCCompiler.cmake
+│           │   │   │   ├── CMakeCXXCompiler.cmake
+│           │   │   │   ├── CMakeDetermineCompilerABI_C.bin
+│           │   │   │   ├── CMakeDetermineCompilerABI_CXX.bin
+│           │   │   │   ├── CMakeSystem.cmake
+│           │   │   │   ├── CompilerIdASM
+│           │   │   │   ├── CompilerIdC
+│           │   │   │   │   ├── a.out
+│           │   │   │   │   ├── CMakeCCompilerId.c
+│           │   │   │   │   └── tmp
+│           │   │   │   └── CompilerIdCXX
+│           │   │   │       ├── a.out
+│           │   │   │       ├── CMakeCXXCompilerId.cpp
+│           │   │   │       └── tmp
+│           │   │   ├── app.elf.dir
+│           │   │   │   └── project_elf_src.c.obj
+│           │   │   ├── cmake.check_cache
+│           │   │   ├── CMakeOutput.log
+│           │   │   ├── CMakeTmp
+│           │   │   └── TargetDirectories.txt
+│           │   ├── cmake_install.cmake
+│           │   ├── compile_commands.json
+│           │   ├── components_kconfigs.in
+│           │   ├── config
+│           │   │   ├── kconfig_menus.json
+│           │   │   ├── sdkconfig.cmake
+│           │   │   ├── sdkconfig.h
+│           │   │   └── sdkconfig.json
+│           │   ├── config.env
+│           │   ├── extra_kconfigs.in
+│           │   ├── group_kconfigs
+│           │   │   └── group_index.kconfig
+│           │   ├── kconfigs.in
+│           │   ├── kconfigs_projbuild.in
+│           │   ├── middleware_kconfigs.in
+│           │   ├── project_description.json
+│           │   ├── project_elf_src.c
+│           │   ├── projects_kconfigs.in
+│           │   ├── properties_kconfigs.in
+│           │   ├── rules.ninja
+│           │   ├── size_map_detail.csv
+│           │   ├── size_map_total.csv
+│           │   └── size_map.txt
+│           ├── package
+│           │   ├── all-app.bin
+│           │   ├── app_pack.rbl
+│           │   ├── build_summary.txt
+│           │   └── tmp
+│           │       ├── app1.bin
+│           │       ├── app.bin
+│           │       ├── app_pack.bin
+│           │       ├── bootloader.bin
+│           │       └── ota_apps_pack.json
+│           └── partitions
+│               ├── bk_ota_partitions.json
+│               ├── bk_package.json
+│               ├── partitions.csv
+│               ├── partitions_gen.h
+│               ├── partitions.json
+│               ├── partitions.txt
+│               └── ram_regions.h
+├── CMakeLists.txt
+├── cp
+│   ├── CMakeLists.txt
+│   ├── config
+│   │   └── bk7258
+│   │       ├── config
+│   │       ├── config.old
+│   │       └── usr_gpio_cfg.h
+│   └── cp_main.c
+├── dir.txt
+├── dm_gatt_server_dir
+├── dm_gatt_server_dir.txt
+├── Makefile
+├── partitions
+│   └── bk7258
+│       ├── auto_partitions.csv
+│       ├── auto_partitions.csv.bak
+│       └── ram_regions.csv
+└── README.md
+
+846 directories, 2732 files

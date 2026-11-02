@@ -1,0 +1,8 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<fatdisk>
+   <disk_size>16384</disk_size>
+   <sector_size>512</sector_size>
+   <root_dir>bk</root_dir>
+   <output>bk.bin</output>
+   <strip>1</strip>
+</fatdisk>

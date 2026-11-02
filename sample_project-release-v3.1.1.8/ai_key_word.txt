@@ -1,0 +1,4 @@
+- 根目录文件夹作为二级标题 ：已将所有根目录下的文件夹（如bluetooth、compile、multimedia等）设置为二级标题，参考了wifi的格式。
+- 第二层文件夹有README.md的情况 ：将README.md的一级标题作为列表内容，并添加了超链接，如 [第三方库如何编译以及使用](compile/compile_lib/README.md) 。
+- 第二层文件夹没有README.md但有第三层文件夹的情况 ：将第二层文件夹作为二级列表内容，README.md的一级标题作为三级列表内容，并添加了超链接，如multimedia/avi下的AVI播放和录制示例。
+- 最后一层没有README.md的情况 ：直接将文件夹名作为列表内容，并标记为"开发中"，如 adc: 开发中 。

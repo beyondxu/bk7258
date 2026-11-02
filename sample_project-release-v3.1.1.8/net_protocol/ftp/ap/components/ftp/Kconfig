@@ -1,0 +1,7 @@
+menu "ftp_server_component"
+
+	config FTP_SERVER
+		bool "Enable FTP_SERVER"
+		default n
+		
+endmenu

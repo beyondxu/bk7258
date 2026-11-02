@@ -1,0 +1,37 @@
+menu "Display Draw"
+
+	config APP_DISPLAY_DRAW
+		bool "Enable Display Draw"
+		default n
+		help
+			显示绘制模块，支持以下功能：
+			- 颜色填充
+			- 图片数据搬移
+			- 透明度图片数据融合
+			- 文字融合
+
+	choice APP_DISPLAY_DRAW_MODE
+		prompt "Display Draw Mode"
+		depends on APP_DISPLAY_DRAW
+		default APP_DISPLAY_DRAW_SOFTWARE
+		help
+			Choose display draw implementation:
+			- Software: CPU-based
+			- Hardware DMA2D: Hardware acceleration
+
+	config APP_DISPLAY_DRAW_SOFTWARE
+		bool "Software Algorithm"
+		depends on MEDIA_OSD
+		help
+			Use software algorithm for display draw
+
+	config APP_DISPLAY_DRAW_DMA2D
+		bool "Hardware DMA2D"
+		depends on MEDIA_DAM2D
+		help
+			Use DMA2D hardware acceleration for display draw
+			Higher performance and lower CPU usage
+
+	endchoice
+
+endmenu

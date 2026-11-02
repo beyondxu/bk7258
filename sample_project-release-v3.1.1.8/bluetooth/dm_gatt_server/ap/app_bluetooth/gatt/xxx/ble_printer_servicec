@@ -1,0 +1,385 @@
+/**
+ * @file ble_printer_service.c
+ * @brief BLE Printer GATT Service Implementation
+ * @note BK7258 GATT stack requires 128-bit UUIDs for all custom services/characteristics
+ */
+
+#include <common/sys_config.h>
+#include <stdio.h>
+#include <stdlib.h>
+#include <stdbool.h>
+#include <string.h>
+#include <components/log.h>
+#include <os/mem.h>
+#include <os/str.h>
+#include <os/os.h>
+
+/* SDK GATT headers (from dm_gatts.h which provides the attribute table macros) */
+#include "components/bluetooth/bk_dm_bluetooth_types.h"
+#include "components/bluetooth/bk_dm_gap_ble_types.h"
+#include "components/bluetooth/bk_dm_gap_ble.h"
+#include "dm_gatts.h"
+#include "dm_gatt_connection.h"
+#include "dm_gap_utils.h"
+#include "dm_gatt.h"
+
+#include "ble_printer_service.h"
+#include "printer_protocol.h"
+
+#define TAG "PRINTER_SVC"
+
+/* ============================================================
+ * Handle indices (from ble_printer_service.h)
+ * ============================================================ */
+/* PRINTER_HDL_IDX_SVC          = 0  (Service)
+ * PRINTER_HDL_IDX_WRITE_CHAR   = 1  (Write characteristic, 0xFFE2)
+ * PRINTER_HDL_IDX_NOTIFY_CHAR  = 2  (Notify characteristic, 0xFFE1)
+ * PRINTER_HDL_IDX_NOTIFY_DESC  = 3  (CCC descriptor, 0x2902)
+ * PRINTER_HDL_IDX_MAX          = 4
+ */
+
+/* ============================================================
+ * 128-bit UUIDs (BK7258 GATT stack requires 128-bit UUIDs)
+ *
+ * Standard Bluetooth base UUID: 00000000-0000-1000-8000-00805F9B34FB
+ * In little-endian byte order (as stored in uint8_t[16]):
+ *   00 00 00 00 00 00 10 00 80 00 00 80 5F 9B 34 FB
+ *
+ * For 16-bit UUID 0xFFE0, the 128-bit version is:
+ *   E0 FF 00 00 00 00 10 00 80 00 00 80 5F 9B 34 FB
+ *
+ * These match the pattern used in f618_server.c (SDK example).
+ * ============================================================ */
+
+/* Service UUID: 0000FFE0-0000-1000-8000-00805F9B34FB */
+static const uint8_t PRINTER_SVC_UUID_128[16] = {
+    0xE0, 0xFF, 0x00, 0x00, 0x00, 0x00, 0x10, 0x00,
+    0x80, 0x00, 0x00, 0x80, 0x5F, 0x9B, 0x34, 0xFB
+};
+
+/* Notify Characteristic UUID: 0000FFE1-0000-1000-8000-00805F9B34FB */
+static const uint8_t PRINTER_NOTIFY_UUID_128[16] = {
+    0xE1, 0xFF, 0x00, 0x00, 0x00, 0x00, 0x10, 0x00,
+    0x80, 0x00, 0x00, 0x80, 0x5F, 0x9B, 0x34, 0xFB
+};
+
+/* Write Characteristic UUID: 0000FFE2-0000-1000-8000-00805F9B34FB */
+static const uint8_t PRINTER_WRITE_UUID_128[16] = {
+    0xE2, 0xFF, 0x00, 0x00, 0x00, 0x00, 0x10, 0x00,
+    0x80, 0x00, 0x00, 0x80, 0x5F, 0x9B, 0x34, 0xFB
+};
+
+/* ============================================================
+ * State variables
+ * ============================================================ */
+static uint16_t s_handle_list[PRINTER_HDL_IDX_MAX];
+static bk_gatt_if_t s_gatts_if = 0;
+static bool s_connected = false;
+static uint16_t s_gatts_conn_id = 0;
+
+/* ============================================================
+ * Value buffers
+ * ============================================================ */
+static uint8_t s_rx_value[512] = {0};          /* Write characteristic value */
+static uint8_t s_notify_value[512] = {0};      /* Notify characteristic value */
+static uint8_t s_ccc_value[2] = {0};           /* CCC descriptor value */
+
+/* ============================================================
+ * Advertising defines
+ * ============================================================ */
+#define ADV_HANDLE          0
+#define ADV_NAME            "BK-Printer"
+#define PRINTER_SVC_UUID16  0xFFE0
+
+/* ============================================================
+ * GATT Attribute Table
+ *
+ * Using SDK macros from dm_gatts.h:
+ *   BK_GATT_PRIMARY_SERVICE_DECL_128(uuid128)     -> Service with 128-bit UUID
+ *   BK_GATT_CHAR_DECL_128(uuid128, max_len, value, props, perm, rsp) -> Characteristic
+ *   BK_GATT_CHAR_DESC_DECL(uuid, max_len, value, perm, rsp) -> Descriptor
+ *
+ * This matches the pattern used in f618_server.c (SDK example).
+ * ============================================================ */
+static const bk_gatts_attr_db_t s_printer_attr_db[] = {
+    /* [0] Service Declaration (PRINTER_HDL_IDX_SVC) */
+    {
+        BK_GATT_PRIMARY_SERVICE_DECL_128(PRINTER_SVC_UUID_128),
+    },
+
+    /* [1] Write Characteristic (Phone -> Device) (PRINTER_HDL_IDX_WRITE_CHAR) */
+    {
+        BK_GATT_CHAR_DECL_128(PRINTER_WRITE_UUID_128,
+                              sizeof(s_rx_value), s_rx_value,
+                              BK_GATT_CHAR_PROP_BIT_WRITE | BK_GATT_CHAR_PROP_BIT_WRITE_NR,
+                              BK_GATT_PERM_WRITE,
+                              BK_GATT_RSP_BY_APP),
+    },
+
+    /* [2] Notify Characteristic (Device -> Phone) (PRINTER_HDL_IDX_NOTIFY_CHAR) */
+    {
+        BK_GATT_CHAR_DECL_128(PRINTER_NOTIFY_UUID_128,
+                              sizeof(s_notify_value), s_notify_value,
+                              BK_GATT_CHAR_PROP_BIT_READ | BK_GATT_CHAR_PROP_BIT_NOTIFY,
+                              BK_GATT_PERM_READ,
+                              BK_GATT_RSP_BY_APP),
+    },
+
+    /* [3] CCC Descriptor for Notify (PRINTER_HDL_IDX_NOTIFY_DESC) */
+    {
+        BK_GATT_CHAR_DESC_DECL(BK_GATT_UUID_CHAR_CLIENT_CONFIG,
+                               sizeof(s_ccc_value), s_ccc_value,
+                               BK_GATT_PERM_READ | BK_GATT_PERM_WRITE,
+                               BK_GATT_RSP_BY_APP),
+    },
+};
+
+/* ============================================================
+ * Advertising helper
+ * ============================================================ */
+static int printer_start_advertising(void)
+{
+    ble_err_t ret;
+
+    /* 1. Set advertising parameters */
+    bk_ble_gap_ext_adv_params_t adv_param = {
+        .type           = BK_BLE_GAP_SET_EXT_ADV_PROP_LEGACY_IND,
+        .interval_min   = 120,
+        .interval_max   = 160,
+        .channel_map    = BK_ADV_CHNL_ALL,
+        .filter_policy  = ADV_FILTER_ALLOW_SCAN_ANY_CON_ANY,
+        .primary_phy    = BK_BLE_GAP_PRI_PHY_1M,
+        .secondary_phy  = BK_BLE_GAP_PHY_1M,
+        .sid            = 0,
+        .scan_req_notif = 0,
+        .own_addr_type  = BLE_ADDR_TYPE_PUBLIC,
+    };
+
+    ret = bk_ble_gap_set_adv_params(ADV_HANDLE, &adv_param);
+    if (ret != BK_ERR_BT_SUCCESS) {
+        BK_LOGE(TAG, "set_adv_params err %d\r\n", ret);
+        return -1;
+    }
+    BK_LOGI(TAG, "adv params set ok\r\n");
+
+    /* 2. Build advertising data */
+    uint8_t adv_data[31] = {0};
+    uint32_t idx = 0, len_idx = 0;
+
+    /* Flags */
+    len_idx = idx;
+    adv_data[idx++] = 0x00;
+    adv_data[idx++] = BK_BLE_AD_TYPE_FLAG;
+    adv_data[idx++] = 0x06;
+    adv_data[len_idx] = 2;
+
+    /* Complete List of 16-bit Service UUIDs: 0xFFE0 */
+    len_idx = idx;
+    adv_data[idx++] = 0x00;
+    adv_data[idx++] = BK_BLE_AD_TYPE_16SRV_CMPL;
+    adv_data[idx++] = (uint8_t)(PRINTER_SVC_UUID16 & 0xFF);
+    adv_data[idx++] = (uint8_t)(PRINTER_SVC_UUID16 >> 8);
+    adv_data[len_idx] = 3;
+
+    /* Complete Local Name */
+    len_idx = idx;
+    adv_data[idx++] = 0x00;
+    adv_data[idx++] = BK_BLE_AD_TYPE_NAME_CMPL;
+    int name_len = snprintf((char *)&adv_data[idx],
+                            sizeof(adv_data) - idx - 2, "%s", ADV_NAME);
+    if (name_len < 0) name_len = 0;
+    idx += name_len;
+    adv_data[len_idx] = name_len + 1;
+
+    /* Set raw advertising data */
+    ret = bk_ble_gap_set_adv_data_raw(ADV_HANDLE, idx, adv_data);
+    if (ret != BK_ERR_BT_SUCCESS) {
+        BK_LOGE(TAG, "set_adv_data_raw err %d\r\n", ret);
+        return -1;
+    }
+    BK_LOGI(TAG, "adv data set ok, len=%d\r\n", idx);
+
+    /* Set scan response data (same as adv data) */
+    ret = bk_ble_gap_set_scan_rsp_data_raw(ADV_HANDLE, idx, adv_data);
+    if (ret != BK_ERR_BT_SUCCESS) {
+        BK_LOGW(TAG, "set_scan_rsp err %d (non-fatal)\r\n", ret);
+    }
+
+    /* 3. Start advertising */
+    bk_ble_gap_ext_adv_t ext_adv = {
+        .instance   = ADV_HANDLE,
+        .duration   = 0,
+        .max_events = 0,
+    };
+
+    ret = bk_ble_gap_adv_start(1, &ext_adv);
+    if (ret != BK_ERR_BT_SUCCESS) {
+        BK_LOGE(TAG, "adv_start err %d\r\n", ret);
+        return -1;
+    }
+
+    BK_LOGI(TAG, "Advertising started: name=%s, uuid=0x%04X\r\n",
+            ADV_NAME, PRINTER_SVC_UUID16);
+    return 0;
+}
+
+/* ============================================================
+ * GATTS Callback
+ *
+ * Pattern matches battery_server.c and f618_server.c (SDK examples):
+ * - Register callback via dm_gatts_add_gatts_callback()
+ * - Check service UUID in BK_GATTS_CREAT_ATTR_TAB_EVT using
+ *   param->add_attr_tab.svc_uuid.uuid.uuid128
+ * - Save gatts_conn_id in BK_GATTS_CONNECT_EVT
+ * - Return BK_ERR_BT_SUCCESS
+ * ============================================================ */
+static int32_t _printer_gatts_cb(bk_gatts_cb_event_t event,
+                               bk_gatt_if_t gatts_if,
+                               bk_ble_gatts_cb_param_t *param)
+{
+    switch (event) {
+    case BK_GATTS_REG_EVT:
+        s_gatts_if = gatts_if;
+        BK_LOGI(TAG, "REG_EVT gatts_if=%d, status=%d\r\n",
+                s_gatts_if, param->reg.status);
+        break;
+
+    case BK_GATTS_CREAT_ATTR_TAB_EVT: {
+        if (param->add_attr_tab.status == BK_GATT_OK) {
+            /* Check service UUID (128-bit) - same pattern as f618_server.c */
+            if (param->add_attr_tab.svc_uuid.len == BK_UUID_LEN_128 &&
+                memcmp(param->add_attr_tab.svc_uuid.uuid.uuid128,
+                       PRINTER_SVC_UUID_128, BK_UUID_LEN_128) == 0) {
+                memcpy(s_handle_list, param->add_attr_tab.handles,
+                       sizeof(uint16_t) * PRINTER_HDL_IDX_MAX);
+                BK_LOGI(TAG, "ATTR_TAB created, num=%d\r\n",
+                        param->add_attr_tab.num_handle);
+            } else {
+                BK_LOGE(TAG, "ATTR_TAB: UUID mismatch\r\n");
+            }
+        } else {
+            BK_LOGE(TAG, "create attr tab fail %d\r\n",
+                    param->add_attr_tab.status);
+        }
+        break;
+    }
+
+    case BK_GATTS_START_EVT:
+        BK_LOGI(TAG, "START_EVT svc=%d, status=%d\r\n",
+                param->start.service_handle, param->start.status);
+        printer_start_advertising();
+        break;
+
+    case BK_GATTS_WRITE_EVT: {
+        if (param->write.handle == s_handle_list[PRINTER_HDL_IDX_WRITE_CHAR]) {
+            BK_LOGD(TAG, "RX %d bytes\r\n", param->write.len);
+            printer_process_data(param->write.value, param->write.len);
+        }
+        break;
+    }
+
+    case BK_GATTS_CONNECT_EVT:
+        s_gatts_conn_id = param->connect.conn_id;
+        s_connected = true;
+        BK_LOGI(TAG, "CONNECT conn_id=%d\r\n",
+                param->connect.conn_id);
+        break;
+
+    case BK_GATTS_DISCONNECT_EVT:
+        s_gatts_conn_id = 0;
+        s_connected = false;
+        BK_LOGI(TAG, "DISCONNECT conn_id=%d\r\n",
+                param->disconnect.conn_id);
+        printer_start_advertising();
+        break;
+
+    /* All remaining events: handle with default to avoid -Werror=switch */
+    case BK_GATTS_READ_EVT:
+    case BK_GATTS_EXEC_WRITE_EVT:
+    case BK_GATTS_MTU_EVT:
+    case BK_GATTS_CONF_EVT:
+    case BK_GATTS_UNREG_EVT:
+    case BK_GATTS_CREATE_EVT:
+    case BK_GATTS_ADD_CHAR_EVT:
+    case BK_GATTS_ADD_CHAR_DESCR_EVT:
+    case BK_GATTS_STOP_EVT:
+    case BK_GATTS_RESPONSE_EVT:
+    case BK_GATTS_SET_ATTR_VAL_EVT:
+    case BK_GATTS_SEND_SERVICE_CHANGE_EVT:
+        break;
+    }
+    return BK_ERR_BT_SUCCESS;
+}
+
+/* ============================================================
+ * Public API
+ * ============================================================ */
+int printer_service_init(void)
+{
+    ble_err_t ret;
+
+    /* Register GATTS callback - use dm_gatts_add_gatts_callback() (SDK pattern) */
+    dm_gatts_add_gatts_callback(_printer_gatts_cb);
+
+    /* Register GATT application */
+    ret = bk_ble_gatts_app_register(0);
+    if (ret != BK_ERR_BT_SUCCESS) {
+        BK_LOGE(TAG, "app_register fail %d\r\n", ret);
+        return -1;
+    }
+
+    /* Create attribute table */
+    ret = bk_ble_gatts_create_attr_tab((void *)&s_printer_attr_db,
+                                        s_gatts_if,
+                                        PRINTER_HDL_IDX_MAX, 30);
+    if (ret != BK_GATT_OK) {
+        BK_LOGE(TAG, "create_attr_tab fail %d\r\n", ret);
+        return -1;
+    }
+
+    /* Start service */
+    bk_ble_gatts_start_service(s_handle_list[PRINTER_HDL_IDX_SVC]);
+
+    /* Init protocol parser */
+    printer_protocol_init();
+
+    BK_LOGI(TAG, "Printer service init done\r\n");
+    return 0;
+}
+
+int printer_send_notify(const uint8_t *data, uint16_t len)
+{
+    if (!s_gatts_if || !s_handle_list[PRINTER_HDL_IDX_NOTIFY_CHAR]) {
+        BK_LOGE(TAG, "notify: not ready\r\n");
+        return -1;
+    }
+    if (len > 512) {
+        BK_LOGE(TAG, "notify: len %d > 512\r\n", len);
+        return -1;
+    }
+
+    /* send_indicate: use s_gatts_conn_id (saved from CONNECT_EVT), need_confirm=0 -> notify */
+    ble_err_t ret = bk_ble_gatts_send_indicate(
+                        s_gatts_if,
+                        s_gatts_conn_id,
+                        s_handle_list[PRINTER_HDL_IDX_NOTIFY_CHAR],
+                        len,
+                        (uint8_t *)data,
+                        0);
+    if (ret != BK_ERR_BT_SUCCESS) {
+        BK_LOGE(TAG, "notify send err %d\r\n", ret);
+        return -1;
+    }
+
+    return 0;
+}
+
+int printer_notify_status(uint8_t status_code)
+{
+    return printer_send_notify(&status_code, 1);
+}
+
+bool printer_is_connected(void)
+{
+    return s_connected;
+}
