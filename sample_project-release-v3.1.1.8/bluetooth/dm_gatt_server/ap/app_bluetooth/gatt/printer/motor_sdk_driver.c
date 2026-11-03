@@ -1,3 +1,4 @@
+#include <driver/aon_rtc.h>
 #include "motor_sdk_driver.h"
 #include "bk_misc.h"
 #include <stdio.h>
@@ -17,13 +18,15 @@ extern bk_err_t gpio_dev_unmap(gpio_id_t gpio_id);
 __IRAM_SEC void bk_delay_us(UINT32 us);
 
 // 精确微秒延时
+/* CONFIG_TIMER_US selects the SDK 26MHz timer implementation. The CM33
+ * arch_delay_us fallback in this SDK is empty, so never silently use it.
+ */
+#if !CONFIG_TIMER_US
+#error Printer motion requires CONFIG_TIMER_US=y
+#endif
 __IRAM_SEC void delay_us(uint32_t us) {
-    for (volatile uint32_t i = 0; i < us * 2; i++)
-		__asm volatile("nop \n");
-//	bk_delay_us(us);
+    bk_delay_us(us);
 }
-
-
 
 static void safe_gpio_config_output(gpio_id_t pin, gpio_pull_mode_t pull_mode) {
     gpio_dev_unmap(pin); 
@@ -662,7 +665,7 @@ void motor_all_power_down(void) {
 
 
 /* Reproduce the user's working shuttle curve. Delay arguments below are
- * nominal: delay_us() is the existing project implementation, not RTC timing.
+ * microseconds requested from the SDK hardware timer, not NOP loop counts.
  * nFAULT is observed, not used to stop this bounded comparison; the driver
  * retains its hardware protection. No printing or indefinite cycling here.
  */
@@ -684,6 +687,7 @@ bk_err_t motor_carriage_test_leg(uint8_t direction, uint32_t steps, uint32_t *se
     *sent = 0;
     if (steps != 7480U) return BK_FAIL;
     unsigned fault_before = !!bk_gpio_get_input(TPH_MOT_nFA);
+    uint64_t started_us = bk_aon_rtc_get_us();
     SET_GPIO_LEVEL(TPH_MOT_DIR, direction != 0);
     delay_us(50);
     for (uint32_t i = 0; i < steps; ++i) {
@@ -697,6 +701,9 @@ bk_err_t motor_carriage_test_leg(uint8_t direction, uint32_t steps, uint32_t *se
         delay_us(current_delay);
         ++*sent;
     }
+    uint32_t elapsed_us = (uint32_t)(bk_aon_rtc_get_us() - started_us);
+    printf("[CARRIAGE_TIME] dir=%u pulses=%lu elapsed_us=%lu timer=SDK_TIMER_US\r\n",
+           direction, (unsigned long)*sent, (unsigned long)elapsed_us);
     unsigned fault_after = !!bk_gpio_get_input(TPH_MOT_nFA);
     printf("[CARRIAGE_NFAULT] dir=%u before=%u after=%u MONITOR_ONLY\r\n",
            direction, fault_before, fault_after);

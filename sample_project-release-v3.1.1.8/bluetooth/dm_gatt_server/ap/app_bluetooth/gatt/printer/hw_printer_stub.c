@@ -499,7 +499,7 @@ void printer_run_carriage_diagnostic(void)
         return;
     }
     motor_carriage_test_power_up();
-    os_printf("[CARRIAGE_TEST] BEGIN steps_each=7480 timing=USER_SHUTTLE delay=project_delay_us ramp=250 start=1000 cruise=260 high=4 nFAULT=MONITOR_ONLY feed=0 ink=OFF MS=111 no_position_feedback\r\n");
+    os_printf("[CARRIAGE_TEST] BEGIN steps_each=7480 timing=USER_RAMP_SDK_TIMER delay=bk_delay_us ramp=250 start=1000 cruise=260 high=4 nFAULT=MONITOR_ONLY feed=0 ink=OFF MS=111 no_position_feedback\r\n");
     result = motor_carriage_test_leg(1, CARRIAGE_RUN_STEPS, &forward);
     os_printf("[CARRIAGE_TEST] FORWARD result=%d pulses=%lu\r\n", result, (unsigned long)forward);
     if (result == BK_OK) {
