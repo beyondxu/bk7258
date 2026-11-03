@@ -5,6 +5,15 @@
 HC32 修改位于 `hc32f460/projects/ev_hc32f460_lqfp100_v2/examples/spi/spi_dma/source/main.c`。
 沿用目前本地成功的固件工程、编译器和烧录方式。
 
+本分支还恢复了SDK根目录`Makefile`对`tools/build_main.mk`的包含，解决根目录误为zlib Makefile导致的`No rule to make target bk7258`。在项目目录继续使用原命令：
+
+```sh
+make bk7258 SDK_DIR=~/armino/bk_avdk_smp
+```
+
+此入口包含AP、CP、分区/RAM头生成与打包；恢复入口不等于完整固件已在云端编译通过。
+更新前保存本地修改。若只复制源码，务必同时更新SDK根目录的`Makefile`。
+
 ## 这次修复
 
 - HC32 收满 100 字节 DMA 后才读取该列；未收满时不会调用喷射函数。
