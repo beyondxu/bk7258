@@ -111,10 +111,23 @@ static uint32_t le32(uint8_t *p, uint32_t value)
 }
 static int flush_swath(const uint8_t *planes, uint32_t width, uint32_t y,
                        const printer_map_config_t *cfg, printer_map_stats_t *stats,
-                       uint32_t *crc, void (*yield_cpu)(void))
+                       uint32_t *crc, void (*yield_cpu)(void), printer_map_capture_t *capture)
 {
     uint32_t delay = domain_offset(0, cfg);
-    uint8_t column[100], position[8];
+    uint8_t column[100], position[8], allowed[100] = {0};
+    int taking = capture && capture->target_y == y;
+    if (taking) {
+        if (capture->found) return -5;
+        capture->found = 1;
+        for (uint32_t ch = 0; ch < 3; ++ch) {
+            if (!(capture->channel_mask & (1U << ch))) continue;
+            for (uint32_t row = capture->first_row; row <= capture->last_row; ++row) {
+                printer_map_route_t route;
+                if (printer_map_route(ch, row, cfg, &route)) return -1;
+                allowed[route.slot] |= (uint8_t)route.mask;
+            }
+        }
+    }
     for (uint32_t channel = 0; channel < 3; ++channel) {
         const uint8_t *p = planes + channel * width * 24U;
         for (uint32_t i = 0; i < width * 24U; ++i) stats->input_dots[channel] += bit_count(p[i]);
@@ -122,6 +135,18 @@ static int flush_swath(const uint8_t *planes, uint32_t width, uint32_t y,
     for (uint32_t x = 0; x < width + delay; ++x) {
         if (yield_cpu && (x & 31U) == 0) yield_cpu();
         if (make_column(planes, width, x, cfg, column)) return -1;
+        if (taking) {
+            for (uint32_t slot = 0; slot < 100; ++slot) {
+                uint8_t bits = column[slot] & allowed[slot];
+                if (bits) {
+                    if (x >= capture->column_limit || x < capture->min_column || x > capture->max_column) return -5;
+                    capture->columns[x * 100U + slot] = bits;
+                    if (x < capture->first_active) capture->first_active = x;
+                    if (x > capture->last_active) capture->last_active = x;
+                    for (uint32_t bit = 0; bit < 6; ++bit) capture->selected_dots[bit / 2U] += (bits >> bit) & 1U;
+                }
+            }
+        }
         le32(position, y); le32(position + 4, x);
         *crc = printer_crc32_update(*crc, position, 8);
         *crc = printer_crc32_update(*crc, column, 100);
@@ -135,9 +160,9 @@ static int flush_swath(const uint8_t *planes, uint32_t width, uint32_t y,
     stats->max_delay = delay;
     return 0;
 }
-int printer_map_bin_dry_run(const uint8_t *bin, uint32_t length,
+static int map_bin_run(const uint8_t *bin, uint32_t length,
                            const printer_map_config_t *cfg, printer_map_stats_t *stats,
-                           void *(*allocate)(size_t), void (*release)(void *), void (*yield_cpu)(void))
+                           void *(*allocate)(size_t), void (*release)(void *), void (*yield_cpu)(void), printer_map_capture_t *capture)
 {
     if (!bin || !length || !stats || !allocate || !release || !config_valid(cfg)) return -1;
     memset(stats, 0, sizeof(*stats));
@@ -158,7 +183,9 @@ int printer_map_bin_dry_run(const uint8_t *bin, uint32_t length,
         if (first < 0) break;
         if (first == 12) {
             if (seen) {
-                if (seen != 7 || flush_swath(planes, width, y, cfg, stats, &crc, yield_cpu)) break;
+                if (seen != 7) break;
+                int code = flush_swath(planes, width, y, cfg, stats, &crc, yield_cpu, capture);
+                if (code) { result = code; break; }
             }
             if (!stats->swaths || read_byte(&reader) != -1) break;
             stats->decoded_bytes = reader.decoded;
@@ -191,7 +218,9 @@ int printer_map_bin_dry_run(const uint8_t *bin, uint32_t length,
             int feed = read_byte(&reader);
             if (feed < 0) break;
             if (feed != 192) { result = -4; break; }
-            if (seen != 7 || flush_swath(planes, width, y, cfg, stats, &crc, yield_cpu)) break;
+            if (seen != 7) break;
+            int code = flush_swath(planes, width, y, cfg, stats, &crc, yield_cpu, capture);
+            if (code) { result = code; break; }
             seen = 0;
             channel = 3;
             y += (uint32_t)feed;
@@ -227,5 +256,30 @@ done:
             if (stats->input_dots[i] != stats->output_dots[i]) return -3;
         }
     }
+    return result;
+}
+
+int printer_map_bin_dry_run(const uint8_t *bin, uint32_t length,
+                           const printer_map_config_t *cfg, printer_map_stats_t *stats,
+                           void *(*allocate)(size_t), void (*release)(void *), void (*yield_cpu)(void))
+{
+    return map_bin_run(bin, length, cfg, stats, allocate, release, yield_cpu, NULL);
+}
+int printer_map_bin_capture(const uint8_t *bin, uint32_t length,
+                           const printer_map_config_t *cfg, printer_map_stats_t *stats,
+                           printer_map_capture_t *capture,
+                           void *(*allocate)(size_t), void (*release)(void *), void (*yield_cpu)(void))
+{
+    if (!capture || !capture->columns || !capture->column_limit || capture->column_limit > MAP_MAX_WIDTH ||
+        capture->buffer_bytes < capture->column_limit * 100U || capture->target_y % 192U ||
+        capture->first_row > capture->last_row || capture->last_row >= 192 ||
+        !capture->channel_mask || (capture->channel_mask & ~7U) ||
+        capture->min_column > capture->max_column || capture->max_column >= capture->column_limit) return -1;
+    memset(capture->columns, 0, capture->column_limit * 100U);
+    capture->found = 0;
+    memset(capture->selected_dots, 0, sizeof(capture->selected_dots));
+    capture->first_active = UINT32_MAX; capture->last_active = 0;
+    int result = map_bin_run(bin, length, cfg, stats, allocate, release, yield_cpu, capture);
+    if (!result && (!capture->found || capture->first_active == UINT32_MAX)) result = -5;
     return result;
 }

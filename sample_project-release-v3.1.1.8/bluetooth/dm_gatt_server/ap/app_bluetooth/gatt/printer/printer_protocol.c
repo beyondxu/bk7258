@@ -327,3 +327,14 @@ void printer_protocol_audit_complete(uint32_t saved_len, uint32_t saved_crc)
     s_status.fault = ok ? 0 : 8;
     s_job.state = JOB_STATE_IDLE;
 }
+
+void printer_protocol_bounded_complete(uint32_t saved_len, uint32_t saved_crc, int test_result)
+{
+    bool ok = test_result == 0 && saved_len == s_job.total_bin_len && saved_crc == s_job.expected_crc;
+    os_printf("[LINE_RESULT] task=%u code=%d motion_transport=%s ink_unverified\r\n",
+              s_job.task_id, test_result, ok ? "PASS" : "FAIL");
+    audit_send_finish(s_job.task_id, ok ? 0 : 1);
+    s_status.work = 0;
+    s_status.fault = ok ? 0 : 8;
+    s_job.state = JOB_STATE_IDLE;
+}

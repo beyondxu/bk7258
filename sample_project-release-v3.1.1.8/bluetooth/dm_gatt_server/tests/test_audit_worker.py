@@ -28,6 +28,8 @@ static void *s_print_sem;
 static jmp_buf done;
 static unsigned sem_calls, physical_calls, completed, mapping_calls;
 static void printer_run_mapping_audit(const uint8_t *p,uint32_t length) {assert(length==9);++mapping_calls;}
+static int printer_run_bounded_line(const uint8_t *p,uint32_t n) {assert(n==9);return 0;}
+static void printer_protocol_bounded_complete(uint32_t n,uint32_t crc,int result) {abort();}
 static void rtos_delay_milliseconds(unsigned ms) {}
 static void rtos_get_semaphore(void **s,int timeout) {if(sem_calls++)longjmp(done,1);}
 static void parse_and_execute_stream_perfect(const uint8_t *p,uint32_t len) {++physical_calls;}

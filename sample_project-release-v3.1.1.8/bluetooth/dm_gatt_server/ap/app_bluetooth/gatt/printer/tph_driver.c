@@ -1,4 +1,5 @@
 #include "tph_driver.h"
+#include "printer_control.h"
 #include "motor_sdk_driver.h"
 #include <driver/spi.h>
 #include <stdio.h>
@@ -155,4 +156,13 @@ bk_err_t tph_fire_raw_column_bytes(const uint8_t *column)
         return result;
     }
     return wait_hc32_level(1);
+}
+
+bk_err_t tph_mcu_set_head_power(uint8_t enable)
+{
+    uint8_t command[TPH_COLUMN_BYTES] = {0};
+    command[0] = PRINTER_CONTROL_TAG;
+    command[1] = enable ? PRINTER_CONTROL_ON : PRINTER_CONTROL_OFF;
+    memcpy(command + 2, PRINTER_CONTROL_MAGIC, PRINTER_CONTROL_MAGIC_LEN);
+    return tph_fire_raw_column_bytes(command);
 }

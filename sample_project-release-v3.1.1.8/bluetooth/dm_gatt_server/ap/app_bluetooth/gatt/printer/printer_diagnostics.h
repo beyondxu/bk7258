@@ -5,6 +5,25 @@
 #ifndef PRINTER_DATA_AUDIT
 #define PRINTER_DATA_AUDIT 1
 #endif
+/* Bounded-line branch: default is PLAN ONLY, with all physical outputs off. */
+#ifndef PRINTER_BOUNDED_LINE
+#define PRINTER_BOUNDED_LINE 1
+#endif
+#ifndef PRINTER_BOUNDED_PRINT
+#define PRINTER_BOUNDED_PRINT 0
+#endif
+#ifndef PRINTER_BOUNDED_CHANNEL_MASK
+#define PRINTER_BOUNDED_CHANNEL_MASK 1 /* 1=C, 2=M, 4=Y; not a D1..D6 mask */
+#endif
+#if PRINTER_BOUNDED_LINE && !PRINTER_DATA_AUDIT
+#error Bounded line requires the audited receive path
+#endif
+#if PRINTER_BOUNDED_CHANNEL_MASK < 1 || PRINTER_BOUNDED_CHANNEL_MASK > 7
+#error Select C/M/Y with mask 1..7
+#endif
+#if PRINTER_BOUNDED_PRINT && !PRINTER_BOUNDED_LINE
+#error Bounded printing requires a validated bounded-line plan
+#endif
 /* Mapping audit emits fingerprints only, never SPI or motor commands. */
 #ifndef PRINTER_MAP_AUDIT
 #define PRINTER_MAP_AUDIT 1
@@ -57,6 +76,9 @@
 #error Printer diagnostic mask must select only D1..D6
 #endif
 
+#if PRINTER_BOUNDED_PRINT && PRINTER_STARTUP_DIAGNOSTIC != 0
+#error Bounded printing requires startup diagnostic 0
+#endif
 #if PRINTER_STARTUP_DIAGNOSTIC < 0 || PRINTER_STARTUP_DIAGNOSTIC > 4
 #error Invalid printer diagnostic mode
 #endif

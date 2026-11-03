@@ -27,6 +27,19 @@ typedef struct {
     uint32_t columns_crc32; /* canonical stream: uint32LE y, uint32LE col, 100B */
     uint32_t decoded_bytes;
 } printer_map_stats_t;
+typedef struct {
+    uint8_t *columns;
+    uint32_t buffer_bytes, column_limit;
+    uint32_t target_y, first_row, last_row, channel_mask;
+    uint32_t min_column, max_column;
+    uint32_t found, selected_dots[3], first_active, last_active;
+} printer_map_capture_t;
+/* Build a complete, bounded diagnostic plan. Never drives hardware.
+ * -5 means target/range/blank-plan rejection. Caller discards buffer on failure. */
+int printer_map_bin_capture(const uint8_t *bin, uint32_t length,
+                           const printer_map_config_t *cfg, printer_map_stats_t *stats,
+                           printer_map_capture_t *capture,
+                           void *(*allocate)(size_t), void (*release)(void *), void (*yield_cpu)(void));
 void printer_map_default_config(printer_map_config_t *cfg);
 int printer_map_route(uint32_t channel, uint32_t row, const printer_map_config_t *cfg,
                       printer_map_route_t *route);

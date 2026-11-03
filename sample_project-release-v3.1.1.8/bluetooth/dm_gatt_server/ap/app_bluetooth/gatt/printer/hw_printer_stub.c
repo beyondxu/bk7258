@@ -343,6 +343,67 @@ static void printer_run_mapping_audit(const uint8_t *bin, uint32_t length)
               (unsigned long)stats.output_dots[0], (unsigned long)stats.output_dots[1], (unsigned long)stats.output_dots[2]);
 }
 
+extern bool printer_link_is_ready(void);
+/* One explicitly selected APP strip; no page feed, no trajectory extension. */
+static int printer_run_bounded_line(const uint8_t *bin, uint32_t length)
+{
+    static bool attempted = false;
+    uint8_t *columns = printer_map_psram_alloc(SWEEP_COLS_TOTAL * TPH_COLUMN_BYTES);
+    if (!columns) return -2;
+    printer_map_config_t cfg;
+    printer_map_stats_t stats;
+    printer_map_capture_t capture;
+    printer_map_default_config(&cfg);
+    cfg.x_pitch_centi_um = PRINTER_MAP_X_PITCH_CENTI_UM;
+    cfg.x_direction = PRINTER_MAP_X_DIRECTION;
+    cfg.first_nozzle = PRINTER_MAP_FIRST_NOZZLE;
+    cfg.reverse_y = PRINTER_MAP_REVERSE_Y;
+    memset(&capture, 0, sizeof(capture));
+    capture.columns = columns;
+    capture.buffer_bytes = SWEEP_COLS_TOTAL * TPH_COLUMN_BYTES;
+    capture.column_limit = SWEEP_COLS_TOTAL;
+    capture.target_y = 576;
+    capture.first_row = 175;
+    capture.last_row = 175;
+    capture.channel_mask = PRINTER_BOUNDED_CHANNEL_MASK;
+    capture.min_column = 200;
+    capture.max_column = 999;
+    int result = printer_map_bin_capture(bin, length, &cfg, &stats, &capture,
+                                        printer_map_psram_alloc, printer_map_psram_free, printer_map_yield_cpu);
+    unsigned dots = capture.selected_dots[0] + capture.selected_dots[1] + capture.selected_dots[2];
+    if (!result && dots < 64) result = -6;
+    os_printf("[LINE_PLAN] result=%d y=576 row=175 mask=%u dots_CMY=%lu,%lu,%lu first=%lu last=%lu columns=1180 steps=7480 feed=0\r\n",
+              result, (unsigned)capture.channel_mask, (unsigned long)capture.selected_dots[0],
+              (unsigned long)capture.selected_dots[1], (unsigned long)capture.selected_dots[2],
+              (unsigned long)capture.first_active, (unsigned long)capture.last_active);
+    if (result) goto done;
+    if (!PRINTER_BOUNDED_PRINT) {
+        os_printf("[LINE_PLAN] PLAN_ONLY no_SPI_no_motion_no_ink\r\n");
+        goto done;
+    }
+    if (attempted || !printer_link_is_ready()) { result = -7; goto done; }
+    attempted = true; /* Never automatically repeat a potentially fired job. */
+    if (tph_mcu_comm_init() != BK_OK || tph_mcu_set_head_power(0) != BK_OK) { result = -8; goto done; }
+    motor_all_power_up_and_enable();
+    bk_motor_set_state(0, 0); /* paper motor stays asleep throughout */
+    if (tph_mcu_set_head_power(1) != BK_OK) { result = -8; goto stop; }
+    s_final_swath_cols = (uint8_t (*)[TPH_COLUMN_BYTES])columns;
+    if (!sweep_and_fire_line_direct()) { result = -9; goto stop; }
+    if (tph_mcu_set_head_power(0) != BK_OK) { result = -8; goto stop; }
+    motor_carriage_return_home(CARRIAGE_RUN_STEPS);
+    os_printf("[LINE_DONE] sweep_and_return=1 feed=0 ink_unverified\r\n");
+stop:
+    if (result) {
+        (void)tph_mcu_set_head_power(0);
+        os_printf("[LINE_STOP] code=%d no_blind_return_after_failure\r\n", result);
+    }
+    motor_all_power_down();
+    s_final_swath_cols = NULL;
+done:
+    printer_map_psram_free(columns);
+    return result;
+}
+
 static void printer_worker_thread(void *arg) {
     while (1) {
         rtos_get_semaphore(&s_print_sem, BEKEN_WAIT_FOREVER);
@@ -366,8 +427,11 @@ static void printer_worker_thread(void *arg) {
             os_printf("[AUDIT_END] len=%lu dump_len=%lu %s\r\n", (unsigned long)length,
                       (unsigned long)dump_len, dump_len == length ? "COMPLETE" : "TRUNCATED");
             if (PRINTER_MAP_AUDIT) printer_run_mapping_audit(s_print_buffer, length);
+            int line_result = 0;
+            if (PRINTER_BOUNDED_LINE) line_result = printer_run_bounded_line(s_print_buffer, length);
             hw_printer_clear_buffer();
-            printer_protocol_audit_complete(length, crc);
+            if (PRINTER_BOUNDED_PRINT) printer_protocol_bounded_complete(length, crc, line_result);
+            else printer_protocol_audit_complete(length, crc);
             continue;
         }
         if (s_print_buffer && s_buffer_len > 0) {

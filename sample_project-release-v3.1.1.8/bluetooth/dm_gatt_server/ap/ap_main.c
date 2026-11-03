@@ -39,6 +39,8 @@ static dma_id_t spi_rx_dma_chan = DMA_ID_MAX;
 
 static beken_thread_t s_pwr_key_task = NULL;
 static beken_thread_t s_app_main_task = NULL;
+static bool s_printer_link_ready = false;
+bool printer_link_is_ready(void) { return s_printer_link_ready; }
 
 extern bk_err_t gpio_dev_unmap(gpio_id_t gpio_id);
 
@@ -291,7 +293,7 @@ static void app_printer_task_entry(void *arg) {
 	 //  u4_carriage_motor_standalone_test();
 	//   return ;
 
-#if !PRINTER_DATA_AUDIT
+#if !PRINTER_DATA_AUDIT || PRINTER_BOUNDED_PRINT
     // 1. 初始化电机 GPIO
     bk_motor_gpio_config_init();
 
@@ -315,6 +317,7 @@ static void app_printer_task_entry(void *arg) {
         rtos_delay_milliseconds(500);
     }
 	// 握手自检成功...
+    s_printer_link_ready = link_ready;
     if (!link_ready) {
         os_printf("[SYS] Check HC32 link before printing.\r\n");
     }
