@@ -6,6 +6,7 @@
  * 1: 100 blank SPI columns, no carriage/paper movement
  * 2: one selected domain/slot fired once, no movement
  * 3: selected domain/slot draws a horizontal line with the existing sweep
+ * 4: hold boost on for 30 seconds for rail measurement; no SPI firing/motion
  */
 #ifndef PRINTER_STARTUP_DIAGNOSTIC
 #define PRINTER_STARTUP_DIAGNOSTIC 0
@@ -17,7 +18,7 @@
 #define PRINTER_DIAG_DOMAIN 0 /* exactly one bit D1; range 0..5 */
 #endif
 
-#if PRINTER_STARTUP_DIAGNOSTIC < 0 || PRINTER_STARTUP_DIAGNOSTIC > 3
+#if PRINTER_STARTUP_DIAGNOSTIC < 0 || PRINTER_STARTUP_DIAGNOSTIC > 4
 #error Invalid printer diagnostic mode
 #endif
 #if PRINTER_DIAG_SLOT < 0 || PRINTER_DIAG_SLOT >= 100

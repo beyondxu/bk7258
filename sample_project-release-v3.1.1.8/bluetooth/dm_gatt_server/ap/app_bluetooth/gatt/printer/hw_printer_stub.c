@@ -337,6 +337,13 @@ void printer_run_startup_diagnostic(void)
         column[PRINTER_DIAG_SLOT] = (uint8_t)(1U << PRINTER_DIAG_DOMAIN);
     }
     tph_power_on();
+    if (PRINTER_STARTUP_DIAGNOSTIC == 4) {
+        os_printf("[DIAG POWER] 30-second measurement window: no columns, no motion. Measure VDD_15V, VDD_VL and VDD_TPH against GND.\r\n");
+        rtos_delay_milliseconds(30000);
+        tph_power_off();
+        os_printf("[DIAG POWER] window closed; boost disabled.\r\n");
+        return;
+    }
     unsigned count = PRINTER_STARTUP_DIAGNOSTIC == 1 ? 100U : 1U;
     unsigned sent = 0;
     while (sent < count) {
