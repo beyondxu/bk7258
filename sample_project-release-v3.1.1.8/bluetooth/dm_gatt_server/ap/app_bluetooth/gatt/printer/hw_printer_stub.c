@@ -498,16 +498,17 @@ void printer_run_carriage_diagnostic(void)
         os_printf("[CARRIAGE_TEST] head_OFF handshake failed; NO_MOTION\r\n");
         return;
     }
-    motor_all_power_up_and_enable();
-    bk_motor_set_state(0, 0);
-    os_printf("[CARRIAGE_TEST] BEGIN steps_each=7480 high_us_min=40 low_us=1500..2500 feed=0 ink=OFF MS=111 no_position_feedback\r\n");
+    motor_carriage_test_power_up();
+    os_printf("[CARRIAGE_TEST] BEGIN steps_each=7480 timing=USER_SHUTTLE delay=project_delay_us ramp=250 start=1000 cruise=260 high=4 nFAULT=MONITOR_ONLY feed=0 ink=OFF MS=111 no_position_feedback\r\n");
     result = motor_carriage_test_leg(1, CARRIAGE_RUN_STEPS, &forward);
     os_printf("[CARRIAGE_TEST] FORWARD result=%d pulses=%lu\r\n", result, (unsigned long)forward);
     if (result == BK_OK) {
-        rtos_delay_milliseconds(500);
+        rtos_delay_milliseconds(200);
         result = motor_carriage_test_leg(0, CARRIAGE_RUN_STEPS, &reverse);
         os_printf("[CARRIAGE_TEST] REVERSE result=%d pulses=%lu\r\n", result, (unsigned long)reverse);
     }
+    rtos_delay_milliseconds(300);
+    bk_motor_set_state(1, 0);
     motor_all_power_down();
     os_printf("[CARRIAGE_TEST] END result=%d forward=%lu reverse=%lu pulse_counts_only inspect_actual_motion\r\n",
               result, (unsigned long)forward, (unsigned long)reverse);

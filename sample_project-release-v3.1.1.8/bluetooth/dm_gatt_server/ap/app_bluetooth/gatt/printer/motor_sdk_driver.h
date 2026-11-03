@@ -70,6 +70,7 @@ bk_err_t bk_motor_move_run(uint8_t is_tph_motor, uint32_t steps, uint8_t directi
 
 // 1. 双电机统一上电唤醒 (15V升压稳定 + 1/16细分 + 退出休眠使能)
 void motor_all_power_up_and_enable(void);
+void motor_carriage_test_power_up(void);
 bk_err_t motor_carriage_test_leg(uint8_t direction, uint32_t steps, uint32_t *sent);
 
 // 2. 进纸电机控制 (forward: 1=正向进纸, 0=反向退纸)
