@@ -666,8 +666,8 @@ void motor_all_power_down(void) {
 
 /* Reproduce the user's working shuttle curve. Delay arguments below are
  * microseconds requested from the SDK hardware timer, not NOP loop counts.
- * nFAULT is observed, not used to stop this bounded comparison; the driver
- * retains its hardware protection. No printing or indefinite cycling here.
+ * nFAULT is not read by this diagnostic. The driver retains its hardware
+ * protection. No printing or indefinite cycling here.
  */
 void motor_carriage_test_power_up(void) {
     bk_motor_gpio_config_init();
@@ -686,7 +686,6 @@ bk_err_t motor_carriage_test_leg(uint8_t direction, uint32_t steps, uint32_t *se
     if (!sent) return BK_FAIL;
     *sent = 0;
     if (steps != 7480U) return BK_FAIL;
-    unsigned fault_before = !!bk_gpio_get_input(TPH_MOT_nFA);
     uint64_t started_us = bk_aon_rtc_get_us();
     SET_GPIO_LEVEL(TPH_MOT_DIR, direction != 0);
     delay_us(50);
@@ -704,8 +703,5 @@ bk_err_t motor_carriage_test_leg(uint8_t direction, uint32_t steps, uint32_t *se
     uint32_t elapsed_us = (uint32_t)(bk_aon_rtc_get_us() - started_us);
     printf("[CARRIAGE_TIME] dir=%u pulses=%lu elapsed_us=%lu timer=SDK_TIMER_US\r\n",
            direction, (unsigned long)*sent, (unsigned long)elapsed_us);
-    unsigned fault_after = !!bk_gpio_get_input(TPH_MOT_nFA);
-    printf("[CARRIAGE_NFAULT] dir=%u before=%u after=%u MONITOR_ONLY\r\n",
-           direction, fault_before, fault_after);
     return BK_OK; /* Pulse generation only; physical movement is unverified. */
 }

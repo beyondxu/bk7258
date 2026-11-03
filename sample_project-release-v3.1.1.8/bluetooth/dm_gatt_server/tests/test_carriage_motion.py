@@ -5,6 +5,8 @@ root=Path(__file__).resolve().parents[1]/'ap/app_bluetooth/gatt/printer'
 s=(root/'motor_sdk_driver.c').read_text();loop=s[s.index('void motor_carriage_test_power_up'):]
 wrapper=s[s.index('__IRAM_SEC void delay_us(uint32_t us)'):s.index('static void safe_gpio_config_output')]
 s=(root/'hw_printer_stub.c').read_text();controller=s[s.index('void printer_run_carriage_diagnostic'):]
+assert 'bk_gpio_get_input' not in loop
+assert 'TPH_MOT_nFA' not in loop
 harness=r'''
 #include <assert.h>
 #include <stdint.h>
@@ -28,7 +30,7 @@ static unsigned phase,index_in_leg,delay_calls;
 static uint64_t now_us;
 static uint64_t bk_aon_rtc_get_us(void){return now_us;}
 #define __IRAM_SEC
-static int direction,step,pulses[2],fault_level=1,off_calls,powerups,powerdowns,off_fail;
+static int direction,step,pulses[2],off_calls,powerups,powerdowns,off_fail;
 static void high(int pin){if(pin==50){assert(!step);direction=1;phase=0;index_in_leg=0;}else if(pin==19){assert(!step&&phase==1);step=1;++pulses[direction];}}
 static void low(int pin){if(pin==50){assert(!step);direction=0;phase=0;index_in_leg=0;}else if(pin==19){assert(step&&phase==2);step=0;}}
 #define SET_GPIO_HIGH(p) high(p)
@@ -45,7 +47,6 @@ static void bk_delay_us(uint32_t us){
   assert(us==expected);++index_in_leg;phase=1;
  }
 }
-static int bk_gpio_get_input(int pin){assert(pin==48&&!step);return fault_level;}
 static void rtos_delay_milliseconds(unsigned ms){assert(!step);(void)ms;}
 static int bk_motor_gpio_config_init(void){++powerups;return 0;}
 static void bk_motor_boost_power(int on){assert(on==1);}
@@ -62,9 +63,9 @@ int main(void){
  assert(now_us==2160750ULL);
  assert(motor_carriage_test_leg(0,7480,&sent)==0&&sent==7480&&pulses[0]==7480);
  reset();assert(motor_carriage_test_leg(1,7481,&sent)!=0&&sent==0&&!delay_calls);
- reset();fault_level=0;printer_run_carriage_diagnostic();assert(pulses[0]==7480&&pulses[1]==7480&&off_calls==1&&powerups==1&&powerdowns==1);
+ reset();printer_run_carriage_diagnostic();assert(pulses[0]==7480&&pulses[1]==7480&&off_calls==1&&powerups==1&&powerdowns==1);
  reset();off_fail=1;printer_run_carriage_diagnostic();assert(!powerups&&!pulses[0]&&!pulses[1]);
- puts("PASS: user's exact delay argument curve both directions, 7480 count, one cycle, OFF only, fault monitor only, no motion if OFF handshake fails");
+ puts("PASS: user's exact delay argument curve both directions, 7480 count, one cycle, OFF only, no nFAULT read, no motion if OFF handshake fails");
 }
 '''.replace('WRAPPER',wrapper).replace('LOOP',loop).replace('CONTROLLER',controller)
 with tempfile.TemporaryDirectory() as tmp:
