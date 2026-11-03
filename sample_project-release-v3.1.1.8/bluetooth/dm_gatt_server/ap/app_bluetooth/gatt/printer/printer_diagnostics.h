@@ -5,6 +5,26 @@
 #ifndef PRINTER_DATA_AUDIT
 #define PRINTER_DATA_AUDIT 1
 #endif
+/* Mapping audit emits fingerprints only, never SPI or motor commands. */
+#ifndef PRINTER_MAP_AUDIT
+#define PRINTER_MAP_AUDIT 1
+#endif
+#if PRINTER_MAP_AUDIT && !PRINTER_DATA_AUDIT
+#error Mapping audit requires receive-only mode; do not enable uncalibrated firing
+#endif
+#ifndef PRINTER_MAP_X_PITCH_CENTI_UM
+#define PRINTER_MAP_X_PITCH_CENTI_UM 4233
+#endif
+#ifndef PRINTER_MAP_X_DIRECTION
+#define PRINTER_MAP_X_DIRECTION 1
+#endif
+#ifndef PRINTER_MAP_FIRST_NOZZLE
+#define PRINTER_MAP_FIRST_NOZZLE 0
+#endif
+#ifndef PRINTER_MAP_REVERSE_Y
+#define PRINTER_MAP_REVERSE_Y 0
+#endif
+
 #ifndef PRINTER_AUDIT_DUMP_MAX_BYTES
 #define PRINTER_AUDIT_DUMP_MAX_BYTES 65536U
 #endif

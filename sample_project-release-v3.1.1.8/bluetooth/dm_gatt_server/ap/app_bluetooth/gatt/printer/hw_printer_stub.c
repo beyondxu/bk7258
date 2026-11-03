@@ -10,6 +10,7 @@
 #include "printer_protocol.h"
 #include "printer_diagnostics.h"
 #include "printer_audit_utils.h"
+#include "printer_mapper.h"
 #include "ble_printer_service.h"
 #include "gpio_driver.h"
 
@@ -301,6 +302,47 @@ cleanup:
     s_unpacked_swath = NULL;
 }
 
+/* Geometry candidates are logged so a fingerprint never hides calibration. */
+static void *printer_map_psram_alloc(size_t bytes)
+{
+    if (bytes > 4U * 1024U * 1024U) return NULL;
+    return psram_malloc(bytes);
+}
+static void printer_map_psram_free(void *ptr)
+{
+    psram_free(ptr);
+}
+static void printer_map_yield_cpu(void)
+{
+    rtos_delay_milliseconds(1);
+}
+static void printer_run_mapping_audit(const uint8_t *bin, uint32_t length)
+{
+    printer_map_config_t cfg;
+    printer_map_stats_t stats;
+    printer_map_default_config(&cfg);
+    cfg.x_pitch_centi_um = PRINTER_MAP_X_PITCH_CENTI_UM;
+    cfg.x_direction = PRINTER_MAP_X_DIRECTION;
+    cfg.first_nozzle = PRINTER_MAP_FIRST_NOZZLE;
+    cfg.reverse_y = PRINTER_MAP_REVERSE_Y;
+    os_printf("[MAP_CONFIG] pitch_centi_um=%lu direction=%ld first_nozzle=%lu reverse_y=%lu CANDIDATE_ONLY\r\n",
+              (unsigned long)cfg.x_pitch_centi_um, (long)cfg.x_direction,
+              (unsigned long)cfg.first_nozzle, (unsigned long)cfg.reverse_y);
+    int result = printer_map_bin_dry_run(bin, length, &cfg, &stats,
+                                        printer_map_psram_alloc, printer_map_psram_free, printer_map_yield_cpu);
+    if (result) {
+        os_printf("[MAP_AUDIT] result=%d NOT_MAPPED no_physical_print\r\n", result);
+        return;
+    }
+    os_printf("[MAP_AUDIT] swaths=%lu width=%lu max_delay=%lu columns=%lu crc32=%08lX\r\n",
+              (unsigned long)stats.swaths, (unsigned long)stats.max_width,
+              (unsigned long)stats.max_delay, (unsigned long)stats.output_columns,
+              (unsigned long)stats.columns_crc32);
+    os_printf("[MAP_DOTS] input_CMY=%lu,%lu,%lu output_CMY=%lu,%lu,%lu no_physical_print\r\n",
+              (unsigned long)stats.input_dots[0], (unsigned long)stats.input_dots[1], (unsigned long)stats.input_dots[2],
+              (unsigned long)stats.output_dots[0], (unsigned long)stats.output_dots[1], (unsigned long)stats.output_dots[2]);
+}
+
 static void printer_worker_thread(void *arg) {
     while (1) {
         rtos_get_semaphore(&s_print_sem, BEKEN_WAIT_FOREVER);
@@ -323,6 +365,7 @@ static void printer_worker_thread(void *arg) {
             }
             os_printf("[AUDIT_END] len=%lu dump_len=%lu %s\r\n", (unsigned long)length,
                       (unsigned long)dump_len, dump_len == length ? "COMPLETE" : "TRUNCATED");
+            if (PRINTER_MAP_AUDIT) printer_run_mapping_audit(s_print_buffer, length);
             hw_printer_clear_buffer();
             printer_protocol_audit_complete(length, crc);
             continue;

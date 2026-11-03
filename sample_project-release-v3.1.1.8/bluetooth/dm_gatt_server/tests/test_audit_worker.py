@@ -26,7 +26,8 @@ static uint8_t *s_print_buffer;
 static uint32_t s_max_buffer_size,s_buffer_len;
 static void *s_print_sem;
 static jmp_buf done;
-static unsigned sem_calls, physical_calls, completed;
+static unsigned sem_calls, physical_calls, completed, mapping_calls;
+static void printer_run_mapping_audit(const uint8_t *p,uint32_t length) {assert(length==9);++mapping_calls;}
 static void rtos_delay_milliseconds(unsigned ms) {}
 static void rtos_get_semaphore(void **s,int timeout) {if(sem_calls++)longjmp(done,1);}
 static void parse_and_execute_stream_perfect(const uint8_t *p,uint32_t len) {++physical_calls;}
@@ -45,7 +46,7 @@ int main(void) {
  assert(s_buffer_len==4);
  assert(hw_printer_append_data((const uint8_t*)"56789",5));
  if(!setjmp(done))printer_worker_thread(NULL);
- assert(completed==1 && physical_calls==0);
+ assert(completed==1 && physical_calls==0 && mapping_calls==1);
  puts("PASS: actual worker dumps stored BIN, reports saved CRC, frees before completion and never calls print engine");
 }
 '''.replace('DIAGNOSTICS',str(base/'printer_diagnostics.h')).replace('UTILS',str(base/'printer_audit_utils.h')).replace('BUFFERS',buffers).replace('WORKER',worker)
