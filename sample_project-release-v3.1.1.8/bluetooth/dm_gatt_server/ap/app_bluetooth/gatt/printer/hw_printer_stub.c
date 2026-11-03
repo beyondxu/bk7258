@@ -9,6 +9,7 @@
 #include "motor_sdk_driver.h"
 #include "printer_protocol.h"
 #include "printer_diagnostics.h"
+#include "printer_audit_utils.h"
 #include "ble_printer_service.h"
 #include "gpio_driver.h"
 
@@ -55,7 +56,8 @@ bool hw_printer_prepare_buffer(uint32_t total_len) {
         psram_free(s_print_buffer);
         s_print_buffer = NULL;
     }
-    uint32_t alloc_size = total_len + 4096;
+    if (!total_len || total_len > 4U * 1024U * 1024U) return false;
+    uint32_t alloc_size = total_len;
     s_print_buffer = (uint8_t *)psram_malloc(alloc_size);
     if (!s_print_buffer) return false;
 
@@ -64,11 +66,11 @@ bool hw_printer_prepare_buffer(uint32_t total_len) {
     return true;
 }
 
-void hw_printer_append_data(const uint8_t *data, uint16_t len) {
-    if (s_print_buffer && (s_buffer_len + len <= s_max_buffer_size)) {
-        memcpy(s_print_buffer + s_buffer_len, data, len);
-        s_buffer_len += len;
-    }
+bool hw_printer_append_data(const uint8_t *data, uint32_t len) {
+    if (!s_print_buffer || !data || len > s_max_buffer_size - s_buffer_len) return false;
+    memcpy(s_print_buffer + s_buffer_len, data, len);
+    s_buffer_len += len;
+    return true;
 }
 
 void hw_printer_clear_buffer(void) {
@@ -302,6 +304,29 @@ cleanup:
 static void printer_worker_thread(void *arg) {
     while (1) {
         rtos_get_semaphore(&s_print_sem, BEKEN_WAIT_FOREVER);
+        if (PRINTER_DATA_AUDIT) {
+            uint32_t length = s_buffer_len;
+            uint32_t crc = printer_crc32(s_print_buffer, length);
+            uint32_t dump_len = length < PRINTER_AUDIT_DUMP_MAX_BYTES ? length : PRINTER_AUDIT_DUMP_MAX_BYTES;
+            os_printf("[AUDIT_BEGIN] len=%lu crc32=%08lX dump_len=%lu\r\n",
+                      (unsigned long)length, (unsigned long)crc, (unsigned long)dump_len);
+            for (uint32_t offset = 0; offset < dump_len; offset += 32) {
+                char line[112];
+                unsigned used = (unsigned)snprintf(line, sizeof(line), "[AUDIT_HEX] %08lX ", (unsigned long)offset);
+                uint32_t count = dump_len - offset;
+                if (count > 32) count = 32;
+                for (uint32_t i = 0; i < count; ++i) {
+                    used += (unsigned)snprintf(line + used, sizeof(line) - used, "%02X", s_print_buffer[offset + i]);
+                }
+                os_printf("%s\r\n", line);
+                if ((offset & 511U) == 0) rtos_delay_milliseconds(1);
+            }
+            os_printf("[AUDIT_END] len=%lu dump_len=%lu %s\r\n", (unsigned long)length,
+                      (unsigned long)dump_len, dump_len == length ? "COMPLETE" : "TRUNCATED");
+            hw_printer_clear_buffer();
+            printer_protocol_audit_complete(length, crc);
+            continue;
+        }
         if (s_print_buffer && s_buffer_len > 0) {
             parse_and_execute_stream_perfect(s_print_buffer, s_buffer_len);
         }
@@ -325,7 +350,7 @@ void hw_printer_create_task(void) {
 void printer_run_startup_diagnostic(void)
 {
     uint8_t column[TPH_COLUMN_BYTES] = {0};
-    if (PRINTER_STARTUP_DIAGNOSTIC == 0) return;
+    if (PRINTER_DATA_AUDIT || PRINTER_STARTUP_DIAGNOSTIC == 0) return;
     if (tph_mcu_comm_init() != BK_OK) {
         os_printf("[DIAG] SPI init failed\r\n");
         return;

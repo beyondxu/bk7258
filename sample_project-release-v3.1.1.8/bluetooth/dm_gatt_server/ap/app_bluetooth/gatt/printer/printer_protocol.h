@@ -29,6 +29,8 @@ void printer_process_data(const uint8_t *data, uint32_t len);
 /* 状态更新与主动上报 */
 void printer_set_status(const dn20_printer_status_t *status);
 void printer_report_status(void);
+/* Called after the audit worker has released its buffer. */
+void printer_protocol_audit_complete(uint32_t saved_len, uint32_t saved_crc);
 
 #ifdef __cplusplus
 }

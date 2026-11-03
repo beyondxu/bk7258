@@ -1,6 +1,14 @@
 #ifndef PRINTER_DIAGNOSTICS_H
 #define PRINTER_DIAGNOSTICS_H
 
+/* Receive-only investigation: disables ALL startup firing/motion diagnostics. */
+#ifndef PRINTER_DATA_AUDIT
+#define PRINTER_DATA_AUDIT 1
+#endif
+#ifndef PRINTER_AUDIT_DUMP_MAX_BYTES
+#define PRINTER_AUDIT_DUMP_MAX_BYTES 65536U
+#endif
+
 /* Rebuild BK7258 after changing these values. No APK data is used.
  * 0: normal BLE startup, no automatic ink firing
  * 1: 100 blank SPI columns, no carriage/paper movement

@@ -54,7 +54,7 @@ void pwr_early_hold_power(void) {
     };
     bk_gpio_set_config(PIN_POWER_HOLD, &cfg);
     GPIO_UP(PIN_POWER_HOLD);
-	 bk_motor_boost_power(1);//临时打开15v
+	 bk_motor_boost_power(PRINTER_DATA_AUDIT ? 0 : 1); /* audit never enables boost */
     os_printf("[PWR_MGR] Power Latch LOCKED (GPIO_14 = HIGH)\r\n");
 }
 
@@ -291,6 +291,7 @@ static void app_printer_task_entry(void *arg) {
 	 //  u4_carriage_motor_standalone_test();
 	//   return ;
 
+#if !PRINTER_DATA_AUDIT
     // 1. 初始化电机 GPIO
     bk_motor_gpio_config_init();
 
@@ -336,6 +337,10 @@ static void app_printer_task_entry(void *arg) {
      // ★★★ 在此调用 7 色测试：色块宽度 600 列 ★★★
     //test_print_full_cmy_color_palette(600);
 		rtos_delay_milliseconds(1500);
+
+#else
+    os_printf("[AUDIT] receive-only; HC32 link test, motor and ink diagnostics disabled\r\n");
+#endif
 
     // 5. 自检通过，启动蓝牙广播与打印机协议后台任务
     dm_gatts_init();

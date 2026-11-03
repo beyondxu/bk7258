@@ -6,6 +6,8 @@
 #include <os/os.h>
 
 #include "printer_protocol.h"
+#include "printer_diagnostics.h"
+#include "printer_audit_utils.h"
 #include "ble_printer_service.h"
 
 #define TAG "PRN_PROTO"
@@ -13,7 +15,7 @@
 #define FRAME_TAIL  0x1E
 
 extern void hw_printer_create_task(void);
-extern void hw_printer_append_data(const uint8_t *data, uint16_t len);
+extern bool hw_printer_append_data(const uint8_t *data, uint32_t len);
 extern void hw_printer_clear_buffer(void);
 extern bool hw_printer_prepare_buffer(uint32_t total_len);
 extern void hw_printer_start_job_async(void);
@@ -43,6 +45,8 @@ static struct {
     uint32_t total_bin_len;
     uint32_t received_bin_len;
     uint32_t packet_count;
+    uint32_t expected_crc;
+    uint32_t running_crc;
 } s_job = {0};
 
 /**
@@ -87,6 +91,9 @@ static void send_dn20_response(uint8_t category, uint8_t sub_class, uint8_t type
     printer_ntf_data(rsp, idx);
 }
 
+static void printer_process_data_legacy(const uint8_t *data, uint32_t len);
+#include "printer_audit_rx.h"
+
 // 主动上报状态 (协议第 5 页：Cat=0x06, Sub=0x02, Type=0x01)
 void printer_report_status(void)
 {
@@ -95,6 +102,7 @@ void printer_report_status(void)
 
 void printer_protocol_init(void)
 {
+    audit_frame_used = 0;
     memset(&s_job, 0, sizeof(s_job));
     s_job.state = JOB_STATE_IDLE;
     hw_printer_create_task();
@@ -102,6 +110,8 @@ void printer_protocol_init(void)
 
 void printer_protocol_reset(void)
 {
+    audit_frame_used = 0;
+    if (PRINTER_DATA_AUDIT && s_job.state == JOB_STATE_PRINTING) return;
     memset(&s_job, 0, sizeof(s_job));
     s_job.state = JOB_STATE_IDLE;
     s_status.work = 0x00;
@@ -113,7 +123,7 @@ uint8_t g_print_quality_pass = 8;
 /**
  * @brief 核心协议解析器
  */
-void printer_process_data(const uint8_t *data, uint32_t len)
+static void printer_process_data_legacy(const uint8_t *data, uint32_t len)
 {
     if (data == NULL || len == 0) return;
 
@@ -298,3 +308,22 @@ void printer_process_data(const uint8_t *data, uint32_t len)
     }
 }
 
+
+void printer_process_data(const uint8_t *data, uint32_t len)
+{
+    if (PRINTER_DATA_AUDIT) printer_audit_feed(data, len);
+    else printer_process_data_legacy(data, len);
+}
+
+void printer_protocol_audit_complete(uint32_t saved_len, uint32_t saved_crc)
+{
+    bool ok = saved_len == s_job.total_bin_len && saved_crc == s_job.expected_crc;
+    os_printf("[AUDIT_RESULT] task=%u len=%lu expected_len=%lu crc32=%08lX expected_crc32=%08lX %s (NO PHYSICAL PRINT)\r\n",
+              s_job.task_id, (unsigned long)saved_len, (unsigned long)s_job.total_bin_len,
+              (unsigned long)saved_crc, (unsigned long)s_job.expected_crc,
+              ok ? "PASS" : "FAIL");
+    audit_send_finish(s_job.task_id, ok ? 0 : 1);
+    s_status.work = 0;
+    s_status.fault = ok ? 0 : 8;
+    s_job.state = JOB_STATE_IDLE;
+}
