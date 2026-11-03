@@ -4,7 +4,8 @@ import subprocess,tempfile
 root=Path(__file__).resolve().parents[1]/'ap/app_bluetooth/gatt/printer'
 s=(root/'motor_sdk_driver.c').read_text();loop=s[s.index('void motor_carriage_test_power_up'):]
 wrapper=s[s.index('__IRAM_SEC void delay_us(uint32_t us)'):s.index('static void safe_gpio_config_output')]
-s=(root/'hw_printer_stub.c').read_text();controller=s[s.index('void printer_run_carriage_diagnostic'):]
+s=(root/'hw_printer_stub.c').read_text();start=s.index('void printer_run_carriage_diagnostic')
+controller=s[start:s.index('\n}',start)+2]
 assert 'bk_gpio_get_input' not in loop
 assert 'TPH_MOT_nFA' not in loop
 harness=r'''

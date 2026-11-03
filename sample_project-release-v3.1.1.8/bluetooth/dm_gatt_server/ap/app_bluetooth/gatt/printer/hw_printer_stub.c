@@ -623,3 +623,129 @@ void standalone_carriage_shuttle_test(uint32_t test_cycles) {
     bk_motor_boost_power(0); // 关断 15V
 }
 
+
+/* Separate comparison path: the hardware-verified shuttle above is retained
+ * unchanged. HC32 paired PCTLv1 firmware is required; keep its head OFF.
+ */
+static uint32_t s_blank_spi_columns, s_blank_spi_steps[2];
+static bool s_blank_spi_failed;
+static bool carriage_blank_spi_move_ramped(uint8_t direction, uint32_t total_steps) {
+    // 1. 设置物理方向
+    if (direction) {
+        GPIO_UP(TPH_MOT_DIR);   // 向右
+    } else {
+        GPIO_DOWN(TPH_MOT_DIR); // 向左
+    }
+    delay_us(50); // 方向建立时间
+
+    // 2. 梯形速度曲线参数
+    uint32_t start_delay_us  = 1000; // 起步慢速 (1000us) 稳健力矩起动
+    uint32_t cruise_delay_us = 260;  // 巡航高速 (260us) 平稳匀速段
+    uint32_t current_delay   = start_delay_us;
+
+    for (uint32_t i = 0; i < total_steps; i++) {
+        /* 200 + 1180*6 + 200 = 7480. Retain the user's 250-step
+         * velocity ramps; do not add travel to accommodate SPI columns.
+         */
+        if (direction && i >= 200U && i < 7280U && (i - 200U) % 6U == 0U) {
+            static const uint8_t blank[TPH_COLUMN_BYTES] = {0};
+            if (tph_fire_raw_column_bytes(blank) != BK_OK) {
+                s_blank_spi_failed = true;
+                return false; /* caller powers down; no blind full return */
+            }
+            ++s_blank_spi_columns;
+        }
+        // A. 加速段
+        if (i < ACCEL_RAMP_STEPS) {
+            current_delay = start_delay_us - ((start_delay_us - cruise_delay_us) * i / ACCEL_RAMP_STEPS);
+        }
+        // B. 减速段
+        else if (i >= (total_steps - ACCEL_RAMP_STEPS)) {
+            uint32_t decel_i = total_steps - 1 - i;
+            current_delay = start_delay_us - ((start_delay_us - cruise_delay_us) * decel_i / ACCEL_RAMP_STEPS);
+        }
+        // C. 匀速段
+        else {
+            current_delay = cruise_delay_us;
+        }
+
+        // 发送 STEP 物理脉冲
+        GPIO_UP(TPH_MOT_STEP);
+        delay_us(4); // 脉冲保持时间
+        GPIO_DOWN(TPH_MOT_STEP);
+        delay_us(current_delay);
+        ++s_blank_spi_steps[direction ? 1 : 0];
+    }
+    return true;
+}
+
+void standalone_carriage_blank_spi_test(void) {
+    s_blank_spi_columns = 0;
+    s_blank_spi_steps[0] = s_blank_spi_steps[1] = 0;
+    s_blank_spi_failed = false;
+    if (tph_mcu_set_head_power(0) != BK_OK) {
+        os_printf("[BLANK_SPI_END] head_OFF_handshake_failed NO_MOTION\r\n");
+        return;
+    }
+    os_printf("[BLANK_SPI_BEGIN] base=7f89a27 columns=1180 bytes_each=100 zero_only=1 head=OFF feed=0 cycles=1\r\n");
+    os_printf(">>> [BLANK_SPI] Carriage plus zero-column transport <<<\r\n");
+    os_printf("Stroke: %d steps, Speed: Ramp(1000us->260us)\r\n", SHUTTLE_TOTAL_STEPS);
+    os_printf("========================================================\r\n");
+
+    // 1. 初始化电机 GPIO
+    bk_motor_gpio_config_init();
+
+    // 2. 开启 15V 主升压电源并延时等待稳定
+    os_printf("Step 1: 15V Power Boosting...\r\n");
+    bk_motor_boost_power(1);
+    rtos_delay_milliseconds(60);
+
+    // 3. 配置 ATD5984 (U4) 为 1/16 高精度微步细分 (MS1=1, MS2=1, MS3=1)
+    GPIO_UP(TPH_MOT_MS1);
+    GPIO_UP(TPH_MOT_MS2);
+    GPIO_UP(TPH_MOT_MS3);
+
+    // 4. 唤醒驱动芯片 (退出休眠与复位)
+    GPIO_UP(TPH_MOT_SLEEP);
+    rtos_delay_milliseconds(5);
+    GPIO_UP(TPH_MOT_RES);
+
+    // 5. 开启 H 桥使能输出 (低电平使能)
+    GPIO_DOWN(TPH_MOT_EN);
+    rtos_delay_milliseconds(10); // 建立初始锁紧力矩
+
+    uint32_t current_cycle = 0;
+    while (1) {
+        current_cycle++;
+        os_printf("[SHUTTLE] Cycle #%lu: Moving RIGHT >>>\r\n", (unsigned long)current_cycle);
+
+        // ---- 向右前行 7480 步 ----
+        if (!carriage_blank_spi_move_ramped(1, SHUTTLE_TOTAL_STEPS)) break;
+
+        // 扫掠到右端停顿 200ms
+        rtos_delay_milliseconds(200);
+
+        os_printf("[SHUTTLE] Cycle #%lu: Moving LEFT <<<\r\n", (unsigned long)current_cycle);
+
+        // ---- 向左退回 7480 步 (严丝合缝回到原点) ----
+        if (!carriage_blank_spi_move_ramped(0, SHUTTLE_TOTAL_STEPS)) break;
+
+        // 退回左端停顿 300ms (喂看门狗并让机械彻底稳定)
+        rtos_delay_milliseconds(300);
+
+        // 如果达到指定测试次数，退出循环
+        if (current_cycle >= 1U) {
+            break;
+        }
+    }
+
+    // 测试完毕，安全下电休眠
+    os_printf(">>> Shuttle Test Finished! Entering Safe Sleep. <<<\r\n");
+    GPIO_UP(TPH_MOT_EN);     // 关断输出
+    GPIO_DOWN(TPH_MOT_SLEEP);// 休眠
+    GPIO_DOWN(TPH_MOT_RES);
+    bk_motor_boost_power(0); // 关断 15V
+    os_printf("[BLANK_SPI_END] result=%d columns=%lu/1180 forward=%lu reverse=%lu pulse_counts_only inspect_actual_motion\r\n",
+              s_blank_spi_failed ? -1 : 0, (unsigned long)s_blank_spi_columns,
+              (unsigned long)s_blank_spi_steps[1], (unsigned long)s_blank_spi_steps[0]);
+}
