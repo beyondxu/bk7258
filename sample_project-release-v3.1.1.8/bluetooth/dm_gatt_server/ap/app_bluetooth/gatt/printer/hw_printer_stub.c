@@ -489,17 +489,14 @@ void printer_run_startup_diagnostic(void)
               (unsigned)PRINTER_DIAG_MASK, sent, count, sent == count ? "PASS" : "FAIL");
 }
 
-/* Paired HC32 stays powered off: only PCTL OFF is sent, never a firing column. */
+/* Requires paired HC32 power-gated firmware: no SPI or firing command. */
 void printer_run_carriage_diagnostic(void)
 {
     uint32_t forward = 0, reverse = 0;
     int result = -1;
-    if (tph_mcu_set_head_power(0) != BK_OK) {
-        os_printf("[CARRIAGE_TEST] head_OFF handshake failed; NO_MOTION\r\n");
-        return;
-    }
     motor_carriage_test_power_up();
-    os_printf("[CARRIAGE_TEST] BEGIN steps_each=7480 timing=USER_RAMP_SDK_TIMER delay=bk_delay_us ramp=250 start=1000 cruise=260 high=4 nFAULT=IGNORED feed=0 ink=OFF MS=111 no_position_feedback\r\n");
+    os_printf("[CARRIAGE_TEST] BEGIN steps_each=7480 timing=REFERENCE delay_mode=%u ramp=250 start=1000 cruise=260 high=4 nFAULT=IGNORED feed=0 ink=OFF MS=111 no_position_feedback no_SPI\r\n",
+              (unsigned)PRINTER_CARRIAGE_REFERENCE_DELAY);
     result = motor_carriage_test_leg(1, CARRIAGE_RUN_STEPS, &forward);
     os_printf("[CARRIAGE_TEST] FORWARD result=%d pulses=%lu\r\n", result, (unsigned long)forward);
     if (result == BK_OK) {

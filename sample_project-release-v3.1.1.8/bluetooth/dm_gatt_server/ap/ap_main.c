@@ -293,7 +293,15 @@ static void app_printer_task_entry(void *arg) {
 	 //  u4_carriage_motor_standalone_test();
 	//   return ;
 
-#if !PRINTER_DATA_AUDIT || PRINTER_BOUNDED_PRINT || PRINTER_CARRIAGE_TEST
+#if PRINTER_CARRIAGE_TEST
+    /* Reference test exits before ANY SPI/HC32/BLE printer setup. */
+    os_printf("[CARRIAGE_REFERENCE] standalone before_SPI before_HC32 before_BLE_printer\r\n");
+    printer_run_carriage_diagnostic();
+    rtos_delete_thread(NULL);
+    return;
+#endif
+
+#if !PRINTER_DATA_AUDIT || PRINTER_BOUNDED_PRINT
     // 1. 初始化电机 GPIO
     bk_motor_gpio_config_init();
 
@@ -322,8 +330,7 @@ static void app_printer_task_entry(void *arg) {
         os_printf("[SYS] Check HC32 link before printing.\r\n");
     }
 	   rtos_delay_milliseconds(1000);
-    if (link_ready && PRINTER_CARRIAGE_TEST) printer_run_carriage_diagnostic();
-    else if (link_ready) printer_run_startup_diagnostic();
+    if (link_ready) printer_run_startup_diagnostic();
 	   // ★ 测试打印：绿色 (青+黄, 掩码 0x33, 打印 600 列) ★
 	  // test_print_solid_color_bar(COLOR_MASK_GREEN, 600);
 	// test_print_multi_lines_for_scope(COLOR_MASK_GREEN, 10);

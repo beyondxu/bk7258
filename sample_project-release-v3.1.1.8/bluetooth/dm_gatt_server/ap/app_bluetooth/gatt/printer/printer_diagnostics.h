@@ -5,6 +5,13 @@
 #ifndef PRINTER_DATA_AUDIT
 #define PRINTER_DATA_AUDIT 1
 #endif
+/* 1: reproduce the user's original NOP delay; 2: same path with SDK timer. */
+#ifndef PRINTER_CARRIAGE_REFERENCE_DELAY
+#define PRINTER_CARRIAGE_REFERENCE_DELAY 1
+#endif
+#if PRINTER_CARRIAGE_REFERENCE_DELAY != 1 && PRINTER_CARRIAGE_REFERENCE_DELAY != 2
+#error Carriage reference delay must be 1 or 2
+#endif
 #ifndef PRINTER_CARRIAGE_TEST
 #define PRINTER_CARRIAGE_TEST 1
 #endif

@@ -1,3 +1,4 @@
+#include "printer_diagnostics.h"
 #include <driver/aon_rtc.h>
 #include "motor_sdk_driver.h"
 #include "bk_misc.h"
@@ -664,11 +665,18 @@ void motor_all_power_down(void) {
 }
 
 
-/* Reproduce the user's working shuttle curve. Delay arguments below are
- * microseconds requested from the SDK hardware timer, not NOP loop counts.
- * nFAULT is not read by this diagnostic. The driver retains its hardware
- * protection. No printing or indefinite cycling here.
+/* Diagnostic-local delay: mode 1 exactly retains the user's us*2 NOP
+ * implementation; its arguments are NOT calibrated microseconds.
+ * Mode 2 changes only this delay to the SDK hardware timer.
  */
+static void carriage_test_delay_us(uint32_t us) {
+#if PRINTER_CARRIAGE_REFERENCE_DELAY == 1
+    for (volatile uint32_t i = 0; i < us * 2U; ++i)
+        __asm volatile("nop ");
+#else
+    bk_delay_us(us);
+#endif
+}
 void motor_carriage_test_power_up(void) {
     bk_motor_gpio_config_init();
     bk_motor_boost_power(1);
@@ -688,20 +696,20 @@ bk_err_t motor_carriage_test_leg(uint8_t direction, uint32_t steps, uint32_t *se
     if (steps != 7480U) return BK_FAIL;
     uint64_t started_us = bk_aon_rtc_get_us();
     SET_GPIO_LEVEL(TPH_MOT_DIR, direction != 0);
-    delay_us(50);
+    carriage_test_delay_us(50);
     for (uint32_t i = 0; i < steps; ++i) {
         uint32_t current_delay;
         if (i < 250U) current_delay = 1000U - 740U * i / 250U;
         else if (i >= steps - 250U) current_delay = 1000U - 740U * (steps - 1U - i) / 250U;
         else current_delay = 260U;
         SET_GPIO_HIGH(TPH_MOT_STEP);
-        delay_us(4);
+        carriage_test_delay_us(4);
         SET_GPIO_LOW(TPH_MOT_STEP);
-        delay_us(current_delay);
+        carriage_test_delay_us(current_delay);
         ++*sent;
     }
     uint32_t elapsed_us = (uint32_t)(bk_aon_rtc_get_us() - started_us);
-    printf("[CARRIAGE_TIME] dir=%u pulses=%lu elapsed_us=%lu timer=SDK_TIMER_US\r\n",
-           direction, (unsigned long)*sent, (unsigned long)elapsed_us);
+    printf("[CARRIAGE_TIME] dir=%u pulses=%lu elapsed_us=%lu delay_mode=%u\r\n",
+           direction, (unsigned long)*sent, (unsigned long)elapsed_us, (unsigned)PRINTER_CARRIAGE_REFERENCE_DELAY);
     return BK_OK; /* Pulse generation only; physical movement is unverified. */
 }

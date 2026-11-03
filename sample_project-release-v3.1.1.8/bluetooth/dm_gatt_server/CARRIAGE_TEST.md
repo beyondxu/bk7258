@@ -1,13 +1,16 @@
-# 字车往返：复现用户已验证的梯形曲线
+# 纯字车基准：跳过 SPI / HC32 握手 / BLE 打印服务
 
-分支 `codex/printer-carriage-test`，仅更新 BK7258；HC32 保持 `codex/printer-bounded-line` / `f87a450`。
-这一版保留用户梯形曲线，并将过快的 NOP 忙循环改为 SDK 硬件定时器延时；未实机验证。
+分支 `codex/printer-carriage-test`。仅更新 BK7258，HC32 保持已烧录的
+`codex/printer-bounded-line` / `f87a450`（该版没有控制命令就不开喷头电源）。
 
-## 更新与编译
+上次 nFAULT=IGNORED 版本两程各约 2.186s，实际仍不动，移除 nFAULT 没有解决问题。
+本次先复现用户已验证的独立运行条件，不再推测电机损坏，也不声称已修好。
+
+## 更新
 
 ```sh
 cd ~/armino/bk_avdk_smp
-git stash push -m before-shuttle-update -- sample_project-release-v3.1.1.8/bluetooth/dm_gatt_server/ap/app_bluetooth/gatt/printer/printer_diagnostics.h
+git stash push -m before-pure-carriage-reference -- sample_project-release-v3.1.1.8/bluetooth/dm_gatt_server/ap/app_bluetooth/gatt/printer/printer_diagnostics.h
 git fetch origin
 git switch codex/printer-carriage-test
 git pull --ff-only
@@ -15,38 +18,39 @@ cd sample_project-release-v3.1.1.8/bluetooth/dm_gatt_server
 make bk7258 SDK_DIR=~/armino/bk_avdk_smp
 ```
 
-不要 stash pop。保持默认 PRINTER_CARRIAGE_TEST=1、PRINTER_BOUNDED_PRINT=0，不需要改参数。
-两个 MCU 断电前把字车恢复到之前正常打印的起始位置（照片箭头起点），烧录后一起重新启动。
-不用 APP、不需要纸张。启动握手成功后，只发送喷头 OFF 指令，再让字车自动往返一次。
-纸张电机保持初始化的禁用状态，全程不发走纸脉冲；不发送喷墨列。
+不要 stash pop。默认 PRINTER_CARRIAGE_TEST=1、PRINTER_BOUNDED_PRINT=0、
+PRINTER_CARRIAGE_REFERENCE_DELAY=1。不需要改参数。
+把字车恢复到已验证行程的起点，烧录后两个 MCU 断电重新启动，不需要 APP 或纸。
 
-## 与用户代码的对应
+## 本次运行路径
 
-- 单程 7480 脉冲，MS1/MS2/MS3=111。
-- 只初始化电机 GPIO，升压后等待 60ms，SLEEP 拉高等待 5ms，RES 拉高，EN 拉低后等待 10ms。
-- 方向建立 delay_us(50)，STEP 高 delay_us(4)，低电平梯形参数 1000→260→1000，斜坡各 250 步。
-- 前进后暂停 200ms，返回后暂停 300ms，关闭字车 EN/SLEEP/RES 和升压。
-- motor_sdk_driver.c 的 delay_us() 现调用 bk_delay_us()，项目 CONFIG_TIMER_US=y 时走 SDK 的 26MHz TIMER0 延时。
-  编译时强制要求 CONFIG_TIMER_US，防止落入该 SDK 中空的 arch_delay_us() 回退实现。
-  不再用 us*2 次 nop 冒充微秒。单程请求延时总和约 2.161 秒，实机还包含 GPIO、函数调用及中断开销。
-- 步进循环不插入 SPI、GPIO 输入读取、打印日志或 RTOS 调度调用；中断保持正常状态。
+应用任务进入后，在任何 SPI 初始化/自检之前调用独立往返；完成后退出初始化线程，
+不启动 BLE 打印服务或打印后台任务。系统底层蓝牙初始化仍由 SDK 启动流程负责。
+不调用 HC32 通信、不发送任何喷墨列、不读取 nFAULT、不输出走纸脉冲。
+HC32 停留在 Waiting for BK7258 的自检等待状态是本次的正常现象。
 
-按用户要求，本次独立往返测试不读取、不打印、不判断 nFAULT，启动日志显示 nFAULT=IGNORED。
-该修改仅限本测试路径；未调用的旧电机测试函数保持原样。GPIO 初始化仍将故障脚设为输入，
-不会驱动它，也没有修改 ATD5984 芯片内部硬件保护。保留当前 SDK 定时器、步数和速度曲线，
-只移除 nFAULT 读取，便于单独对比；不保证它是此前不运动的原因。
-如仍卡住或碰到边界，立即断电，不反复执行。代码没有位置反馈或自动寻零。
+电机初始化按用户代码：GPIO 初始化，升压后等 60ms，细分 111，SLEEP 拉高等5ms，
+RESET 拉高，ENABLE 拉低等10ms；前行7480步，等200ms，返回7480步，等300ms后下电。
+每程250步加减速，延时参数1000→260→1000，STEP高电平参数4，方向建立参数50。
 
-## 反馈与验证
+默认 delay_mode=1 使用测试局部的原始 us*2 次 nop 忙循环。它不是真实微秒，速度可能很快，
+本次只往返一次，目的是复现原代码而不是标定速度。没有位置反馈或自动寻零；
+如果出现卡顿或碰到边界立即断电，不反复运行。
 
-提供 `[CARRIAGE_TEST]` 全部日志，以及前进/返回是否平稳、是否回到起始位置。
-日志应显示 timing=USER_RAMP_SDK_TIMER，两程 pulses=7480；
-每程新增 [CARRIAGE_TIME] elapsed_us=...，由 RTC 独立测量整程耗时。
-预计约 2.2 秒或更长，不能仍只有 0.204 秒；不要要求与理想值完全相等。
-计数与时间仍不能证明物理运动完成。
+日志开头应有 `[CARRIAGE_REFERENCE] standalone before_SPI before_HC32 before_BLE_printer`。
+随后 `[CARRIAGE_TEST] ... delay_mode=1 ... nFAULT=IGNORED ... no_SPI`，两程脉冲和耗时。
+本次不应出现启动 SPI 回环自检、BLE ADV ENABLED 或等待APP打印的后续流程。
 
-用户最新日志显示每程约 204ms，nFAULT 两程前后均为高，说明此前名义延时远短于微秒参数。
-主机测试逐个检查两程全部延时参数、delay_us 对 SDK 的转发、理论耗时、脉冲数量、单次往返、
-喷头只关不打开、OFF 握手失败不运动。
-完整 BK SDK 编译及实际运动仍需本地验证。先验证纯运动，再单独加入空白 SPI 列，最后恢复青色打印，
-以区分纯步进问题和 SPI/喷墨与步进交错造成的节奏问题。
+## 之后的单变量对比
+
+先反馈默认模式的日志、是否实际运动、是否回到起始位置。
+如果默认模式已能平稳往返，可只把诊断头文件 PRINTER_CARRIAGE_REFERENCE_DELAY 改为2，
+重新编译烧录。模式2保持同一个纯运动启动路径，只把局部延时改为 SDK 硬件定时器；
+预计单程约2.2秒或更长。不要同时恢复SPI/打印。
+默认模式失败时先停在基准对比，不继续盲目加回其他功能。
+
+## 验证边界
+
+主机测试检查全部7480步梯形参数、单次往返、不读取nFAULT、无任何HC32控制调用、
+两种实际延时分支、启动测试位于SPI初始化前。完整固件仍需本地编译、实机验证。
+原有协议、解析和喷嘴映射未修改；此分支当前不执行这些服务。
