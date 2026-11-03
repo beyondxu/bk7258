@@ -277,6 +277,7 @@ extern void test_print_color_bars_multi_lines(uint8_t color_byte, uint32_t total
 extern void test_print_perfect_green_multi_lines(uint32_t print_width_cols, uint32_t total_lines);
 extern void test_print_full_cmy_color_palette(uint32_t print_width_cols);
 void test_print_standalone_single_black_line(void) ;
+void standalone_carriage_shuttle_test(uint32_t test_cycles);
 
 // ==========================================
 // 4. 应用任务主入口
@@ -322,7 +323,7 @@ static void app_printer_task_entry(void *arg) {
         os_printf("[SYS] Check HC32 link before printing.\r\n");
     }
 	   rtos_delay_milliseconds(1000);
-    if (link_ready && PRINTER_CARRIAGE_TEST) printer_run_carriage_diagnostic();
+    if (link_ready && PRINTER_CARRIAGE_TEST) standalone_carriage_shuttle_test(2);//printer_run_carriage_diagnostic();
     else if (link_ready) printer_run_startup_diagnostic();
 	   // ★ 测试打印：绿色 (青+黄, 掩码 0x33, 打印 600 列) ★
 	  // test_print_solid_color_bar(COLOR_MASK_GREEN, 600);

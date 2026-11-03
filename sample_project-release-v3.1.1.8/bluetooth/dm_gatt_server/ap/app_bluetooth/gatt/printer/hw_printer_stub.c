@@ -513,3 +513,113 @@ void printer_run_carriage_diagnostic(void)
     os_printf("[CARRIAGE_TEST] END result=%d forward=%lu reverse=%lu pulse_counts_only inspect_actual_motion\r\n",
               result, (unsigned long)forward, (unsigned long)reverse);
 }
+/**
+ * @brief ★ 字车电机单向平稳移动 (带纯净梯形加减速) ★
+ * @param direction 1: 向右 (前行), 0: 向左 (归位)
+ * @param total_steps 总步数 (例如 7480)
+ */
+ 
+#define SHUTTLE_TOTAL_STEPS    7480 // 经过实测验证的安全往返行程
+#define ACCEL_RAMP_STEPS       250  // 平滑加减速步数
+static void carriage_shuttle_move_ramped(uint8_t direction, uint32_t total_steps) {
+    // 1. 设置物理方向
+    if (direction) {
+        GPIO_UP(TPH_MOT_DIR);   // 向右
+    } else {
+        GPIO_DOWN(TPH_MOT_DIR); // 向左
+    }
+    delay_us(50); // 方向建立时间
+
+    // 2. 梯形速度曲线参数
+    uint32_t start_delay_us  = 1000; // 起步慢速 (1000us) 稳健力矩起动
+    uint32_t cruise_delay_us = 260;  // 巡航高速 (260us) 平稳匀速段
+    uint32_t current_delay   = start_delay_us;
+
+    for (uint32_t i = 0; i < total_steps; i++) {
+        // A. 加速段
+        if (i < ACCEL_RAMP_STEPS) {
+            current_delay = start_delay_us - ((start_delay_us - cruise_delay_us) * i / ACCEL_RAMP_STEPS);
+        }
+        // B. 减速段
+        else if (i >= (total_steps - ACCEL_RAMP_STEPS)) {
+            uint32_t decel_i = total_steps - 1 - i;
+            current_delay = start_delay_us - ((start_delay_us - cruise_delay_us) * decel_i / ACCEL_RAMP_STEPS);
+        }
+        // C. 匀速段
+        else {
+            current_delay = cruise_delay_us;
+        }
+
+        // 发送 STEP 物理脉冲
+        GPIO_UP(TPH_MOT_STEP);
+        delay_us(4); // 脉冲保持时间
+        GPIO_DOWN(TPH_MOT_STEP);
+        delay_us(current_delay);
+    }
+}
+
+/**
+ * @brief ★ 字车往复移动独立测试函数 (可独立在 app_main 中死循环运行) ★
+ * @param test_cycles 往返循环次数 (传 0 为无限死循环测试)
+ */
+void standalone_carriage_shuttle_test(uint32_t test_cycles) {
+    os_printf("\r\n========================================================\r\n");
+    os_printf(">>> [STANDALONE] Carriage Motor Shuttle Test Starting... <<<\r\n");
+    os_printf("Stroke: %d steps, Speed: Ramp(1000us->260us)\r\n", SHUTTLE_TOTAL_STEPS);
+    os_printf("========================================================\r\n");
+
+    // 1. 初始化电机 GPIO
+    bk_motor_gpio_config_init();
+
+    // 2. 开启 15V 主升压电源并延时等待稳定
+    os_printf("Step 1: 15V Power Boosting...\r\n");
+    bk_motor_boost_power(1);
+    rtos_delay_milliseconds(60);
+
+    // 3. 配置 ATD5984 (U4) 为 1/16 高精度微步细分 (MS1=1, MS2=1, MS3=1)
+    GPIO_UP(TPH_MOT_MS1);
+    GPIO_UP(TPH_MOT_MS2);
+    GPIO_UP(TPH_MOT_MS3);
+
+    // 4. 唤醒驱动芯片 (退出休眠与复位)
+    GPIO_UP(TPH_MOT_SLEEP);
+    rtos_delay_milliseconds(5);
+    GPIO_UP(TPH_MOT_RES);
+    
+    // 5. 开启 H 桥使能输出 (低电平使能)
+    GPIO_DOWN(TPH_MOT_EN);
+    rtos_delay_milliseconds(10); // 建立初始锁紧力矩
+
+    uint32_t current_cycle = 0;
+    while (1) {
+        current_cycle++;
+        os_printf("[SHUTTLE] Cycle #%lu: Moving RIGHT >>>\r\n", (unsigned long)current_cycle);
+        
+        // ---- 向右前行 7480 步 ----
+        carriage_shuttle_move_ramped(1, SHUTTLE_TOTAL_STEPS);
+
+        // 扫掠到右端停顿 200ms
+        rtos_delay_milliseconds(200);
+
+        os_printf("[SHUTTLE] Cycle #%lu: Moving LEFT <<<\r\n", (unsigned long)current_cycle);
+
+        // ---- 向左退回 7480 步 (严丝合缝回到原点) ----
+        carriage_shuttle_move_ramped(0, SHUTTLE_TOTAL_STEPS);
+
+        // 退回左端停顿 300ms (喂看门狗并让机械彻底稳定)
+        rtos_delay_milliseconds(300);
+
+        // 如果达到指定测试次数，退出循环
+        if (test_cycles > 0 && current_cycle >= test_cycles) {
+            break;
+        }
+    }
+
+    // 测试完毕，安全下电休眠
+    os_printf(">>> Shuttle Test Finished! Entering Safe Sleep. <<<\r\n");
+    GPIO_UP(TPH_MOT_EN);     // 关断输出
+    GPIO_DOWN(TPH_MOT_SLEEP);// 休眠
+    GPIO_DOWN(TPH_MOT_RES);
+    bk_motor_boost_power(0); // 关断 15V
+}
+
