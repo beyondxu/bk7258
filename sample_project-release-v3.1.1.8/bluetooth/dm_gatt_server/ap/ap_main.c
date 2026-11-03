@@ -7,6 +7,7 @@
 
 #include "dm_gatts.h"
 #include "tph_driver.h"
+#include "printer_diagnostics.h"
 #include "motor_sdk_driver.h"
 #include "ble_printer_service.h"
 
@@ -302,18 +303,22 @@ static void app_printer_task_entry(void *arg) {
 	
 
     // 4. 开机自检：确认小华固件在线且通信正常
+    bool link_ready = false;
     int retry = 0;
     while (retry < 5) {
         retry++;
         if (bk_spi_master_selftest_100b()) {
+            link_ready = true;
             break;
         }
         rtos_delay_milliseconds(500);
     }
 	// 握手自检成功...
-	   os_printf("[SYS] SelfTest 100% OK! Starting Green Color Test Print...\r\n");
+    if (!link_ready) {
+        os_printf("[SYS] Check HC32 link before printing.\r\n");
+    }
 	   rtos_delay_milliseconds(1000);
-	test_print_standalone_single_black_line(); 
+    if (link_ready) printer_run_startup_diagnostic();
 	   // ★ 测试打印：绿色 (青+黄, 掩码 0x33, 打印 600 列) ★
 	  // test_print_solid_color_bar(COLOR_MASK_GREEN, 600);
 	// test_print_multi_lines_for_scope(COLOR_MASK_GREEN, 10);

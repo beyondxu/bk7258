@@ -48,8 +48,8 @@ void tph_power_on(void);
 void tph_power_off(void);
 
 // 将 C/M/Y 点阵流通过 SPI 发送并触发 HC32 打火一列
-void tph_fire_one_column_via_mcu(const TphTestColumn_t *col_data);
-	__IRAM_SEC void tph_fire_raw_column_bytes(const uint8_t *p_column_100b);
+bk_err_t tph_fire_one_column_via_mcu(const TphTestColumn_t *col_data);
+bk_err_t tph_fire_raw_column_bytes(const uint8_t *p_column_100b);
 #ifdef __cplusplus
 }
 #endif

@@ -8,16 +8,17 @@
 #include "tph_driver.h"
 #include "motor_sdk_driver.h"
 #include "printer_protocol.h"
+#include "printer_diagnostics.h"
 #include "ble_printer_service.h"
 #include "gpio_driver.h"
 
 #define TAG "HW_PRINTER"
 
-#define LINE_FEED_STEPS        2340   
-#define PAPER_EJECT_STEPS      4500   
+#define LINE_FEED_STEPS        2340
+#define PAPER_EJECT_STEPS      4500
 
 #define TOTAL_PRINT_COLS       1180
-#define SWEEP_COLS_TOTAL       1180 
+#define SWEEP_COLS_TOTAL       1180
 #define CARRIAGE_RUN_STEPS     7480 // 严格 7480 步防撞
 
 #define SWATH_BYTES_PER_COL    24   // 1180 * 24 = 28320 字节
@@ -39,8 +40,8 @@ __IRAM_SEC void bk_delay_us(UINT32 us);
 /*
 // 规格书附页 B 偶列喷孔真实物理地址表
 static const uint8_t s_EvenNozzleToAddr[25] = {
-    0,  7, 13, 19,  1,  8, 14, 20,  2,  9, 
-   15, 21,  3, 10, 16, 22,  4, 11, 17, 23, 
+    0,  7, 13, 19,  1,  8, 14, 20,  2,  9,
+   15, 21,  3, 10, 16, 22,  4, 11, 17, 23,
     5, 12, 18, 24,  6
 };
 */
@@ -100,7 +101,7 @@ static int decode_packbits_full(const uint8_t *src, int src_len, uint8_t *dst, i
     return dst_idx;
 }
 
-static void sweep_and_fire_line_direct(void) {
+static bool sweep_and_fire_line_direct(void) {
     uint32_t accel_steps = 200;
     uint32_t decel_steps = 200;
 
@@ -114,7 +115,10 @@ static void sweep_and_fire_line_direct(void) {
     }
 
     for (uint32_t col = 0; col < SWEEP_COLS_TOTAL; col++) {
-        tph_fire_raw_column_bytes(s_final_swath_cols[col]);
+        if (tph_fire_raw_column_bytes(s_final_swath_cols[col]) != BK_OK) {
+            motor_all_power_down();
+            return false;
+        }
 
         for (int m = 0; m < 6; m++) {
             SET_GPIO_HIGH(TPH_MOT_STEP); bk_delay_us(4);
@@ -127,6 +131,7 @@ static void sweep_and_fire_line_direct(void) {
         SET_GPIO_HIGH(TPH_MOT_STEP); bk_delay_us(4);
         SET_GPIO_LOW(TPH_MOT_STEP);  bk_delay_us(d);
     }
+    return true;
 }
 
 // =========================================================================
@@ -134,7 +139,7 @@ static void sweep_and_fire_line_direct(void) {
 // =========================================================================
 void test_print_standalone_single_black_line(void) {
     os_printf("\r\n========================================================\r\n");
-    os_printf(">>> [STANDALONE BENCHMARK] Printing Hardcoded 1-Pixel Black Line <<<\r\n");
+    os_printf(">>> [NOZZLE DIAGNOSTIC] Printing One Domain/Slot Line <<<\r\n");
     os_printf("========================================================\r\n");
 
     s_final_swath_cols = (uint8_t (*)[TPH_COLUMN_BYTES])psram_malloc(SWEEP_COLS_TOTAL * TPH_COLUMN_BYTES);
@@ -146,29 +151,30 @@ void test_print_standalone_single_black_line(void) {
 
     // 在相纸中间：第 200 列到第 900 列，只点亮【唯一的一个物理喷嘴】！
     // Address 10, Section 0 -> 对应的 byte_idx = 10 * 4 + 0 = 40
-    // 0x3F 代表 D1~D6 全部点亮 (青+品红+黄 = 纯黑！)
-    uint32_t fixed_byte_idx = 40; 
+    // Exactly one domain bit; 0x3F would select SIX different nozzles.
+    uint32_t fixed_byte_idx = PRINTER_DIAG_SLOT;
 
     for (uint32_t col = 200; col < 900; col++) {
-        s_final_swath_cols[col][fixed_byte_idx] = 0x3F; // 纯黑色
+        s_final_swath_cols[col][fixed_byte_idx] = (uint8_t)(1U << PRINTER_DIAG_DOMAIN);
     }
 
-    os_printf(">>> Firing Standalone Sweep (Fired ByteIdx=%lu, All 6 Domains=0x3F) <<<\r\n", (unsigned long)fixed_byte_idx);
-    
+    os_printf(">>> Firing Standalone Sweep (Fired ByteIdx=%lu, Single domain selected) <<<\r\n", (unsigned long)fixed_byte_idx);
+
     // 扫掠打火一趟
-    sweep_and_fire_line_direct();
-    rtos_delay_milliseconds(40);
-    motor_feed_paper(2340, 1);
+    if (!sweep_and_fire_line_direct()) {
+        psram_free(s_final_swath_cols);
+        s_final_swath_cols = NULL;
+        return;
+    }
     rtos_delay_milliseconds(40);
     motor_carriage_return_home(CARRIAGE_RUN_STEPS);
     rtos_delay_milliseconds(100);
 
-    motor_feed_paper(3500, 1);
     motor_all_power_down();
 
     psram_free(s_final_swath_cols);
     s_final_swath_cols = NULL;
-    os_printf(">>> Standalone Benchmark Print Complete! Check Paper! <<<\r\n\r\n");
+    os_printf("[DIAG] single-slot line complete; paper feed unchanged\r\n");
 }
 
 // 映射函数 (无环形折叠，严格单线映射)
@@ -243,7 +249,7 @@ static void parse_and_execute_stream_perfect(const uint8_t *buf, uint32_t len) {
             // 当 Channel 3 到齐，在真正打火前执行【门闸审查】！
             if (current_channel == 3) {
                 completed_swaths++;
-                
+
                 // 扫描硬件点阵中被激活的物理槽位数
                 int active_slots = 0;
              //   int active_byte_mark = -1;
@@ -265,7 +271,7 @@ static void parse_and_execute_stream_perfect(const uint8_t *buf, uint32_t len) {
                 if (active_slots == 1) {
                     os_printf("🌟 [AUDIT PASSED! EXECUTING REAL HARDWARE PRINT!]\r\n");
                     motor_all_power_up_and_enable();
-                    sweep_and_fire_line_direct();
+                    if (!sweep_and_fire_line_direct()) goto cleanup;
                     motor_feed_paper(LINE_FEED_STEPS, 1);
                     motor_carriage_return_home(CARRIAGE_RUN_STEPS);
                 } else if (active_slots > 1) {
@@ -283,6 +289,7 @@ static void parse_and_execute_stream_perfect(const uint8_t *buf, uint32_t len) {
     }
 
     motor_feed_paper(PAPER_EJECT_STEPS, 1);
+cleanup:
     motor_all_power_down();
 
     psram_free(s_final_swath_cols);
@@ -312,3 +319,32 @@ void hw_printer_create_task(void) {
     }
 }
 
+
+/* Called before BLE starts, so it cannot overlap an incoming print job. */
+void printer_run_startup_diagnostic(void)
+{
+    uint8_t column[TPH_COLUMN_BYTES] = {0};
+    if (PRINTER_STARTUP_DIAGNOSTIC == 0) return;
+    if (tph_mcu_comm_init() != BK_OK) {
+        os_printf("[DIAG] SPI init failed\r\n");
+        return;
+    }
+    if (PRINTER_STARTUP_DIAGNOSTIC == 3) {
+        test_print_standalone_single_black_line();
+        return;
+    }
+    if (PRINTER_STARTUP_DIAGNOSTIC == 2) {
+        column[PRINTER_DIAG_SLOT] = (uint8_t)(1U << PRINTER_DIAG_DOMAIN);
+    }
+    tph_power_on();
+    unsigned count = PRINTER_STARTUP_DIAGNOSTIC == 1 ? 100U : 1U;
+    unsigned sent = 0;
+    while (sent < count) {
+        if (tph_fire_raw_column_bytes(column) != BK_OK) break;
+        ++sent;
+    }
+    tph_power_off();
+    os_printf("[DIAG] mode=%u slot=%u domain=%u columns=%u/%u %s\r\n",
+              PRINTER_STARTUP_DIAGNOSTIC, PRINTER_DIAG_SLOT,
+              PRINTER_DIAG_DOMAIN, sent, count, sent == count ? "PASS" : "FAIL");
+}

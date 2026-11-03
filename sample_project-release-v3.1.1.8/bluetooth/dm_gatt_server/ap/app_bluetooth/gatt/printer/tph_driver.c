@@ -57,7 +57,8 @@ bk_err_t tph_mcu_comm_init(void) {
     spi_cfg.dma_mode  = SPI_DMA_MODE_DISABLE; // 100字节极速单工直接发，无需频繁启停DMA
 
     // ★ 关键：原理图为 SPI1 (P2~P5)，严禁写成 SPI_ID_0 ★
-    bk_spi_init(SPI_ID_1, &spi_cfg);
+    bk_err_t result = bk_spi_init(SPI_ID_1, &spi_cfg);
+    if (result != BK_OK) return result;
 
     TPH_LOGI("BK7258 <-> HC32F460 SPI1 (10MHz Mode 3) Ready.\r\n");
     return BK_OK;
@@ -70,7 +71,8 @@ void tph_power_on(void) {
 
     // 等待 HC32 报告就绪 (BK_2 为高)
     uint32_t timeout = 500;
-    while ((bk_gpio_get_input(PIN_BK_READY_IN) == 0) && timeout--) {
+    while (timeout && (bk_gpio_get_input(PIN_BK_READY_IN) == 0)) {
+        --timeout;
         rtos_delay_milliseconds(2);
     }
     if (timeout == 0) {
@@ -118,40 +120,39 @@ static void pack_column_data(const TphTestColumn_t *col_data, uint8_t *out_100b)
 /**
  * @brief 【高速协处理器模式】通过 SPI1 下发一列点阵并产生同步脉冲
  */
-__IRAM_SEC void tph_fire_one_column_via_mcu(const TphTestColumn_t *col_data) {
-    // 1. 本地快速位重组打包 (耗时 < 3us)
-    pack_column_data(col_data, s_spi_tx_column);
-
-    // 2. 通过 SPI1 Master 发送 100 字节至 HC32 双缓冲 DMA (10MHz 耗时仅 80us)
-    bk_spi_write_bytes(SPI_ID_1, s_spi_tx_column, TPH_COLUMN_BYTES);
-
-    // 3. 产生 BK_1 (GPIO_1) 正脉冲，通知 HC32 启动本列物理微秒打火
-    GPIO_DOWN(PIN_BK_SYNC_OUT);
-   
-    bk_delay_us(5); // 脉冲保持 5us，确保小华中断/电平检测 100% 捕获
-    GPIO_UP(PIN_BK_SYNC_OUT);
-}
-/**
- * @brief 通过 SPI 下发 100 字节点阵，并产生 BK_1 (P1) 低电平有效打火脉冲
+/* BK_2 is HIGH only while HC32 has armed a complete 100-byte receive.
+ * BK_1 stays LOW until HC32 acknowledges the completed DMA with BK_2 LOW.
+ * The next HIGH on BK_2 means firing has finished and the next DMA is armed.
+ * Both MCUs must be updated together; a 5us pulse is not a reliable handshake.
  */
-__IRAM_SEC void tph_fire_raw_column_bytes(const uint8_t *p_column_100b) {
-    // 1. SPI1 极速下发 100 字节 (10MHz 耗时仅 80us)
-    //bk_spi_dma_write_bytes(SPI_ID_1, (uint8_t *)p_column_100b, TPH_COLUMN_BYTES);
-	// 这样能 100% 保证 HC32 端的 DMA 已经把数据完完整整地放进了内存！
-
-	// 加一个静态计数器，每 200 列打印一次 BK7258 真正送进 SPI 寄存器的第 1 个字节
-		static uint32_t s_send_cnt = 0;
-		if (s_send_cnt++ % 200 == 0) {
-			os_printf("[BK TX CHECK] Sending Byte[0]=0x%02X, Byte[1]=0x%02X\r\n", 
-					  p_column_100b[0], p_column_100b[1]);
-		}
-
-	bk_spi_write_bytes(SPI_ID_1, (uint8_t *)p_column_100b, TPH_COLUMN_BYTES);
-
-    // 2. ★ 产生低电平有效打火脉冲：平时为高，拉低 5us 后恢复为高 ★
-    bk_gpio_set_output_low(PIN_BK_SYNC_OUT);   // 拉低 (0V) 触发小华打火！
-    bk_delay_us(5);                            // 保持 5us 脉宽
-    bk_gpio_set_output_high(PIN_BK_SYNC_OUT);  // 恢复高电平 (3.3V)
+static bk_err_t wait_hc32_level(uint32_t level)
+{
+    for (uint32_t elapsed = 0; elapsed < 100000; elapsed += 5) {
+        if (bk_gpio_get_input(PIN_BK_READY_IN) == level) return BK_OK;
+        bk_delay_us(5);
+    }
+    return BK_FAIL;
 }
 
+bk_err_t tph_fire_one_column_via_mcu(const TphTestColumn_t *col_data)
+{
+    if (col_data == NULL) return BK_FAIL;
+    pack_column_data(col_data, s_spi_tx_column);
+    return tph_fire_raw_column_bytes(s_spi_tx_column);
+}
 
+bk_err_t tph_fire_raw_column_bytes(const uint8_t *column)
+{
+    if (column == NULL || wait_hc32_level(1) != BK_OK) return BK_FAIL;
+    if (bk_spi_write_bytes(SPI_ID_1, column, TPH_COLUMN_BYTES) != BK_OK) {
+        return BK_FAIL;
+    }
+    bk_gpio_set_output_low(PIN_BK_SYNC_OUT);
+    bk_err_t result = wait_hc32_level(0);
+    bk_gpio_set_output_high(PIN_BK_SYNC_OUT);
+    if (result != BK_OK) {
+        TPH_LOGE("Column DMA acknowledgement timed out; abort job.\r\n");
+        return result;
+    }
+    return wait_hc32_level(1);
+}
