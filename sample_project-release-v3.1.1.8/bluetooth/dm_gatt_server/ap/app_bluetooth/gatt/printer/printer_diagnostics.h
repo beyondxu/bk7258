@@ -18,6 +18,17 @@
 #define PRINTER_DIAG_DOMAIN 0 /* exactly one bit D1; range 0..5 */
 #endif
 
+/* Optional A/B override: 0x3F reproduces the original six-domain stimulus.
+ * It selects six physical nozzles, not a single black pixel.
+ * If not overridden, preserve the existing one-domain diagnostic.
+ */
+#ifndef PRINTER_DIAG_MASK
+#define PRINTER_DIAG_MASK (1U << PRINTER_DIAG_DOMAIN)
+#endif
+#if PRINTER_DIAG_MASK == 0 || (PRINTER_DIAG_MASK & ~0x3FU) != 0
+#error Printer diagnostic mask must select only D1..D6
+#endif
+
 #if PRINTER_STARTUP_DIAGNOSTIC < 0 || PRINTER_STARTUP_DIAGNOSTIC > 4
 #error Invalid printer diagnostic mode
 #endif

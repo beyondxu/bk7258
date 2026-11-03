@@ -139,7 +139,7 @@ static bool sweep_and_fire_line_direct(void) {
 // =========================================================================
 void test_print_standalone_single_black_line(void) {
     os_printf("\r\n========================================================\r\n");
-    os_printf(">>> [NOZZLE DIAGNOSTIC] Printing One Domain/Slot Line <<<\r\n");
+    os_printf(">>> [NOZZLE DIAGNOSTIC] Printing Selected Domain Mask/Slot Line <<<\r\n");
     os_printf("========================================================\r\n");
 
     s_final_swath_cols = (uint8_t (*)[TPH_COLUMN_BYTES])psram_malloc(SWEEP_COLS_TOTAL * TPH_COLUMN_BYTES);
@@ -151,14 +151,15 @@ void test_print_standalone_single_black_line(void) {
 
     // 在相纸中间：第 200 列到第 900 列，只点亮【唯一的一个物理喷嘴】！
     // Address 10, Section 0 -> 对应的 byte_idx = 10 * 4 + 0 = 40
-    // Exactly one domain bit; 0x3F would select SIX different nozzles.
+    // A diagnostic mask may select multiple physical nozzles.
     uint32_t fixed_byte_idx = PRINTER_DIAG_SLOT;
 
     for (uint32_t col = 200; col < 900; col++) {
-        s_final_swath_cols[col][fixed_byte_idx] = (uint8_t)(1U << PRINTER_DIAG_DOMAIN);
+        s_final_swath_cols[col][fixed_byte_idx] = (uint8_t)PRINTER_DIAG_MASK;
     }
 
-    os_printf(">>> Firing Standalone Sweep (Fired ByteIdx=%lu, Single domain selected) <<<\r\n", (unsigned long)fixed_byte_idx);
+    os_printf(">>> Firing Standalone Sweep (ByteIdx=%lu, mask=0x%02X) <<<\r\n",
+              (unsigned long)fixed_byte_idx, (unsigned)PRINTER_DIAG_MASK);
 
     // 扫掠打火一趟
     if (!sweep_and_fire_line_direct()) {
@@ -334,7 +335,7 @@ void printer_run_startup_diagnostic(void)
         return;
     }
     if (PRINTER_STARTUP_DIAGNOSTIC == 2) {
-        column[PRINTER_DIAG_SLOT] = (uint8_t)(1U << PRINTER_DIAG_DOMAIN);
+        column[PRINTER_DIAG_SLOT] = (uint8_t)PRINTER_DIAG_MASK;
     }
     tph_power_on();
     if (PRINTER_STARTUP_DIAGNOSTIC == 4) {
@@ -351,7 +352,7 @@ void printer_run_startup_diagnostic(void)
         ++sent;
     }
     tph_power_off();
-    os_printf("[DIAG] mode=%u slot=%u domain=%u columns=%u/%u %s\r\n",
+    os_printf("[DIAG] mode=%u slot=%u mask=0x%02X columns=%u/%u %s\r\n",
               PRINTER_STARTUP_DIAGNOSTIC, PRINTER_DIAG_SLOT,
-              PRINTER_DIAG_DOMAIN, sent, count, sent == count ? "PASS" : "FAIL");
+              (unsigned)PRINTER_DIAG_MASK, sent, count, sent == count ? "PASS" : "FAIL");
 }
