@@ -1,3 +1,4 @@
+#include <driver/aon_rtc.h>
 #include "motor_sdk_driver.h"
 #include "bk_misc.h"
 #include <stdio.h>
@@ -660,3 +661,38 @@ void motor_all_power_down(void) {
     printf("[MOTOR_SYS] All Motors & 15V Powered Down.\r\n");
 }
 
+
+/* Diagnostic only: identical slow timing for forward and reverse. RTC is
+ * independent of compiler busy-loop timing. Never masks interrupts for a leg.
+ */
+static bk_err_t carriage_rtc_wait(uint32_t us) {
+    uint64_t start = bk_aon_rtc_get_us();
+    for (uint32_t guard = 0; guard < 2000000U; ++guard) {
+        if (bk_aon_rtc_get_us() - start >= us) return BK_OK;
+    }
+    return BK_FAIL; /* stopped clock: never hang with bridge enabled */
+}
+bk_err_t motor_carriage_test_leg(uint8_t direction, uint32_t steps, uint32_t *sent) {
+    if (!sent) return BK_FAIL;
+    *sent = 0;
+    if (steps > 7480U) return BK_FAIL;
+    SET_GPIO_LOW(TPH_MOT_STEP);
+    SET_GPIO_LEVEL(TPH_MOT_DIR, direction != 0);
+    if (carriage_rtc_wait(100)) return BK_FAIL;
+    for (uint32_t i = 0; i < steps; ++i) {
+        if (!bk_gpio_get_input(TPH_MOT_nFA)) {
+            SET_GPIO_HIGH(TPH_MOT_EN);
+            printf("[CARRIAGE_FAULT] dir=%u sent=%lu nFAULT=0\r\n", direction, (unsigned long)*sent);
+            return BK_FAIL;
+        }
+        uint32_t edge = i < steps - 1U - i ? i : steps - 1U - i;
+        uint32_t low_us = edge < 800U ? 2500U - edge * 1000U / 800U : 1500U;
+        SET_GPIO_HIGH(TPH_MOT_STEP);
+        bk_err_t high_result = carriage_rtc_wait(40);
+        SET_GPIO_LOW(TPH_MOT_STEP);
+        ++*sent;
+        if (high_result || carriage_rtc_wait(low_us)) return BK_FAIL;
+        if ((i & 15U) == 15U) rtos_delay_milliseconds(1);
+    }
+    return bk_gpio_get_input(TPH_MOT_nFA) ? BK_OK : BK_FAIL;
+}

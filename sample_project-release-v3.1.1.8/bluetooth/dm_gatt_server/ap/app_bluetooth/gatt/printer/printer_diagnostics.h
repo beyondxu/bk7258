@@ -5,12 +5,18 @@
 #ifndef PRINTER_DATA_AUDIT
 #define PRINTER_DATA_AUDIT 1
 #endif
+#ifndef PRINTER_CARRIAGE_TEST
+#define PRINTER_CARRIAGE_TEST 1
+#endif
 /* Bounded-line branch: default is PLAN ONLY, with all physical outputs off. */
 #ifndef PRINTER_BOUNDED_LINE
 #define PRINTER_BOUNDED_LINE 1
 #endif
 #ifndef PRINTER_BOUNDED_PRINT
 #define PRINTER_BOUNDED_PRINT 0
+#endif
+#if PRINTER_CARRIAGE_TEST && PRINTER_BOUNDED_PRINT
+#error Carriage test must not enable bounded printing
 #endif
 #ifndef PRINTER_BOUNDED_CHANNEL_MASK
 #define PRINTER_BOUNDED_CHANNEL_MASK 1 /* 1=C, 2=M, 4=Y; not a D1..D6 mask */
@@ -90,5 +96,6 @@
 #endif
 
 void printer_run_startup_diagnostic(void);
+void printer_run_carriage_diagnostic(void);
 
 #endif
