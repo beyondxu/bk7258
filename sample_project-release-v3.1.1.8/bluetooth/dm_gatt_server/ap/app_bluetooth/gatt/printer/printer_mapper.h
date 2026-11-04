@@ -40,6 +40,11 @@ int printer_map_bin_capture(const uint8_t *bin, uint32_t length,
                            const printer_map_config_t *cfg, printer_map_stats_t *stats,
                            printer_map_capture_t *capture,
                            void *(*allocate)(size_t), void (*release)(void *), void (*yield_cpu)(void));
+/* Diagnostic: one physical nozzle, one bit per column, outside range zero. */
+int printer_map_solid_line(uint8_t *columns, uint32_t buffer_bytes,
+                          uint32_t column_count, uint32_t first, uint32_t last,
+                          uint32_t channel, uint32_t row,
+                          const printer_map_config_t *cfg);
 void printer_map_default_config(printer_map_config_t *cfg);
 int printer_map_route(uint32_t channel, uint32_t row, const printer_map_config_t *cfg,
                       printer_map_route_t *route);

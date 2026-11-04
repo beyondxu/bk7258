@@ -283,3 +283,18 @@ int printer_map_bin_capture(const uint8_t *bin, uint32_t length,
     if (!result && (!capture->found || capture->first_active == UINT32_MAX)) result = -5;
     return result;
 }
+
+int printer_map_solid_line(uint8_t *columns, uint32_t buffer_bytes,
+                          uint32_t column_count, uint32_t first, uint32_t last,
+                          uint32_t channel, uint32_t row,
+                          const printer_map_config_t *cfg)
+{
+    printer_map_route_t route;
+    if (!columns || !column_count || column_count > MAP_MAX_WIDTH ||
+        buffer_bytes < column_count * 100U || first > last || last >= column_count ||
+        printer_map_route(channel, row, cfg, &route)) return -1;
+    memset(columns, 0, column_count * 100U);
+    for (uint32_t x = first; x <= last; ++x)
+        columns[x * 100U + route.slot] = (uint8_t)route.mask;
+    return 0;
+}

@@ -1,3 +1,5 @@
+> `codex/printer-solid-line` 当前使用固件生成的连续单色线，步骤以 [SOLID_LINE_TEST.md](SOLID_LINE_TEST.md) 为准；下文为原APP单行测试说明。
+
 # APP 黑横线 → 单色青线：沿用实机通过的运动
 
 分支 `codex/printer-cyan-line`，运动基准 `29a973b`（空白SPI实机往返通过），

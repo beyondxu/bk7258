@@ -8,6 +8,9 @@
 #ifndef PRINTER_CARRIAGE_TEST
 #define PRINTER_CARRIAGE_TEST 0
 #endif
+#ifndef PRINTER_SOLID_LINE
+#define PRINTER_SOLID_LINE 1
+#endif
 /* Cyan-line branch: APP-triggered validated single-color print; no startup motion. */
 #ifndef PRINTER_BOUNDED_LINE
 #define PRINTER_BOUNDED_LINE 1
@@ -19,7 +22,7 @@
 #error Carriage test must not enable bounded printing
 #endif
 #ifndef PRINTER_BOUNDED_CHANNEL_MASK
-#define PRINTER_BOUNDED_CHANNEL_MASK 1 /* 1=C, 2=M, 4=Y; not a D1..D6 mask */
+#define PRINTER_BOUNDED_CHANNEL_MASK 4 /* 1=C, 2=M, 4=Y; not a D1..D6 mask */
 #endif
 #if PRINTER_BOUNDED_LINE && !PRINTER_DATA_AUDIT
 #error Bounded line requires the audited receive path

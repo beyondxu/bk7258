@@ -369,8 +369,30 @@ static int printer_run_bounded_line(const uint8_t *bin, uint32_t length)
     capture.channel_mask = PRINTER_BOUNDED_CHANNEL_MASK;
     capture.min_column = 200;
     capture.max_column = 999;
-    int result = printer_map_bin_capture(bin, length, &cfg, &stats, &capture,
+    int result;
+    if (PRINTER_SOLID_LINE) {
+        /* Validate the complete incoming job, but generate diagnostic pixels
+         * independently of the APP image's dithered color planes.
+         */
+        result = printer_map_bin_dry_run(bin, length, &cfg, &stats,
+                                       printer_map_psram_alloc, printer_map_psram_free, printer_map_yield_cpu);
+        unsigned channel = capture.channel_mask == 1 ? 0 : capture.channel_mask == 2 ? 1 : 2;
+        if (capture.channel_mask != (1U << channel)) result = -1;
+        if (!result) result = printer_map_solid_line(columns, capture.buffer_bytes,
+                                  capture.column_limit, 300, 899, channel, 175, &cfg);
+        if (!result) {
+            printer_map_route_t route;
+            printer_map_route(channel, 175, &cfg, &route);
+            capture.selected_dots[channel] = 600;
+            capture.first_active = 300;
+            capture.last_active = 899;
+            os_printf("[SOLID_LINE] source=GENERATED channel=%u row=175 slot=%lu data=0x%02lX first=300 last=899 dots=600 waveform_unchanged\r\n",
+                      channel, (unsigned long)route.slot, (unsigned long)route.mask);
+        }
+    } else {
+        result = printer_map_bin_capture(bin, length, &cfg, &stats, &capture,
                                         printer_map_psram_alloc, printer_map_psram_free, printer_map_yield_cpu);
+    }
     unsigned dots = capture.selected_dots[0] + capture.selected_dots[1] + capture.selected_dots[2];
     if (!result && dots < 64) result = -6;
     os_printf("[LINE_PLAN] result=%d y=576 row=175 mask=%u dots_CMY=%lu,%lu,%lu first=%lu last=%lu columns=1180 steps=7480 feed=0\r\n",
