@@ -8,6 +8,9 @@
 #ifndef PRINTER_CARRIAGE_TEST
 #define PRINTER_CARRIAGE_TEST 0
 #endif
+#ifndef PRINTER_ALIGN_PATTERN
+#define PRINTER_ALIGN_PATTERN 1
+#endif
 #ifndef PRINTER_SOLID_LINE
 #define PRINTER_SOLID_LINE 1
 #endif
@@ -22,7 +25,7 @@
 #error Carriage test must not enable bounded printing
 #endif
 #ifndef PRINTER_BOUNDED_CHANNEL_MASK
-#define PRINTER_BOUNDED_CHANNEL_MASK 4 /* 1=C, 2=M, 4=Y; not a D1..D6 mask */
+#define PRINTER_BOUNDED_CHANNEL_MASK 7 /* 1=C, 2=M, 4=Y; not a D1..D6 mask */
 #endif
 #if PRINTER_BOUNDED_LINE && !PRINTER_DATA_AUDIT
 #error Bounded line requires the audited receive path

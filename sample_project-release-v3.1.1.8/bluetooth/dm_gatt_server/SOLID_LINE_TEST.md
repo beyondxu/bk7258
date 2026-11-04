@@ -1,3 +1,5 @@
+> 当前 `codex/printer-cmy-align` 的步骤见 [CMY_ALIGNMENT_TEST.md](CMY_ALIGNMENT_TEST.md)，下文为单色测试历史说明。
+
 # 连续单喷嘴黄色测试
 
 分支 `codex/printer-solid-line`，沿用已验证的运动分支 `codex/printer-cyan-line`。

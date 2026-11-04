@@ -298,3 +298,29 @@ int printer_map_solid_line(uint8_t *columns, uint32_t buffer_bytes,
         columns[x * 100U + route.slot] = (uint8_t)route.mask;
     return 0;
 }
+
+int printer_map_alignment_pattern(uint8_t *columns, uint32_t buffer_bytes,
+                                  uint32_t column_count, uint32_t channel_mask,
+                                  uint32_t row, const printer_map_config_t *cfg)
+{
+    printer_map_route_t routes[3];
+    if (!columns || !column_count || column_count > MAP_MAX_WIDTH ||
+        buffer_bytes < column_count * 100U || !channel_mask || (channel_mask & ~7U)) return -1;
+    for (uint32_t ch = 0; ch < 3; ++ch) {
+        if (!(channel_mask & (1U << ch))) continue;
+        if (printer_map_route(ch, row, cfg, &routes[ch]) ||
+            849U + routes[ch].delay_columns >= column_count ||
+            849U + routes[ch].delay_columns > 999U) return -1;
+    }
+    memset(columns, 0, column_count * 100U);
+    for (uint32_t ch = 0; ch < 3; ++ch) {
+        if (!(channel_mask & (1U << ch))) continue;
+        for (uint32_t bar = 0; bar < 3; ++bar) {
+            for (uint32_t x = 300U + bar * 200U; x < 450U + bar * 200U; ++x) {
+                uint32_t output_x = x + routes[ch].delay_columns;
+                columns[output_x * 100U + routes[ch].slot] |= (uint8_t)routes[ch].mask;
+            }
+        }
+    }
+    return 0;
+}
