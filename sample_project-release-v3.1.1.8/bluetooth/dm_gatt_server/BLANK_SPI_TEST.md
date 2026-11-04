@@ -1,6 +1,7 @@
 # 字车 + 全零 SPI 列对比
 
-基准为用户实机验证的 `xqj/carriage-working` / `7f89a27`。
+基准为 `xqj/carriage-working` / `7f89a27`，并同步用户实机验证的
+`xqj/motor-fixed` / `fd60189` 起步延时修正：1000改为3000。
 新分支 `codex/printer-blank-spi`，不修改用户基准分支。
 只更新 BK7258。HC32 保持 `codex/printer-bounded-line` / `f87a450`。
 
@@ -23,14 +24,14 @@ make bk7258 SDK_DIR=~/armino/bk_avdk_smp
 
 ## 与已验证基准的差异
 
-原来的两个 shuttle 函数保留不动，新加单独的空白 SPI 测试路径并替换开机调用。
+原来的两个 shuttle 函数保留，并同步起步延时3000，新加单独的空白 SPI 测试路径并替换开机调用。
 沿用基准的 GPIO 配置、升压等待60ms、细分111、SLEEP/RESET/ENABLE顺序，
-单程7480步、250步加减速、1000→260→1000的延时参数和 STEP 高电平参数4。
+单程7480步、250步加减速、3000→260→3000的延时参数和 STEP 高电平参数4。
 基准里 delay_us 实际已调用 bk_delay_us，本分支保留其实现，不再替换延时。
 
 唯一新增的前进节奏：先走200步，之后在第200+6*k步前（k=0..1179）
 通过现有SPI握手发100字节全零列，再继续走步，最后走完余下行程。
-200+1180*6+200=7480，没有增加步数。原250步速度斜坡保留，SPI窗口会覆盖部分斜坡。
+200+1180*6+200=7480，没有增加步数。250步速度斜坡保留，SPI窗口会覆盖部分斜坡。
 SPI握手会增加步间停顿，这是本次对比的对象；不保证它与纯运动速度相同。
 返回仍为原来的无SPI梯形运动。
 
@@ -44,7 +45,7 @@ SPI握手失败即停止并下电，不执行整段盲目返回。
 正常 BK 日志包含：
 
 ```text
-[BLANK_SPI_BEGIN] base=7f89a27 columns=1180 bytes_each=100 zero_only=1 head=OFF feed=0 cycles=1
+[BLANK_SPI_BEGIN] base=7f89a27 motor_fix=fd60189 start_delay_us=3000 columns=1180 bytes_each=100 zero_only=1 head=OFF feed=0 cycles=1
 [BLANK_SPI_END] result=0 columns=1180/1180 forward=7480 reverse=7480 ...
 ```
 

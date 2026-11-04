@@ -42,7 +42,7 @@ static void delay_us(uint32_t us){
  else if(phase==1){assert(us==4&&step);phase=2;}
  else {
   assert(!step);unsigned i=index_in_leg;
-  unsigned expected=i<250?1000-740*i/250:i>=7230?1000-740*(7479-i)/250:260;
+  unsigned expected=i<250?3000-2740*i/250:i>=7230?3000-2740*(7479-i)/250:260;
   assert(us==expected);++index_in_leg;phase=1;
  }
 }

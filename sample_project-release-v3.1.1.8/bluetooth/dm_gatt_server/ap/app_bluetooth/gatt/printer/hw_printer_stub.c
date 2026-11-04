@@ -531,7 +531,7 @@ static void carriage_shuttle_move_ramped(uint8_t direction, uint32_t total_steps
     delay_us(50); // 方向建立时间
 
     // 2. 梯形速度曲线参数
-    uint32_t start_delay_us  = 1000; // 起步慢速 (1000us) 稳健力矩起动
+    uint32_t start_delay_us  = 3000; // 用户实机验证的起步延时 3000us
     uint32_t cruise_delay_us = 260;  // 巡航高速 (260us) 平稳匀速段
     uint32_t current_delay   = start_delay_us;
 
@@ -565,7 +565,7 @@ static void carriage_shuttle_move_ramped(uint8_t direction, uint32_t total_steps
 void standalone_carriage_shuttle_test(uint32_t test_cycles) {
     os_printf("\r\n========================================================\r\n");
     os_printf(">>> [STANDALONE] Carriage Motor Shuttle Test Starting... <<<\r\n");
-    os_printf("Stroke: %d steps, Speed: Ramp(1000us->260us)\r\n", SHUTTLE_TOTAL_STEPS);
+    os_printf("Stroke: %d steps, Speed: Ramp(3000us->260us)\r\n", SHUTTLE_TOTAL_STEPS);
     os_printf("========================================================\r\n");
 
     // 1. 初始化电机 GPIO
@@ -639,7 +639,7 @@ static bool carriage_blank_spi_move_ramped(uint8_t direction, uint32_t total_ste
     delay_us(50); // 方向建立时间
 
     // 2. 梯形速度曲线参数
-    uint32_t start_delay_us  = 1000; // 起步慢速 (1000us) 稳健力矩起动
+    uint32_t start_delay_us  = 3000; // 用户实机验证的起步延时 3000us
     uint32_t cruise_delay_us = 260;  // 巡航高速 (260us) 平稳匀速段
     uint32_t current_delay   = start_delay_us;
 
@@ -687,9 +687,9 @@ void standalone_carriage_blank_spi_test(void) {
         os_printf("[BLANK_SPI_END] head_OFF_handshake_failed NO_MOTION\r\n");
         return;
     }
-    os_printf("[BLANK_SPI_BEGIN] base=7f89a27 columns=1180 bytes_each=100 zero_only=1 head=OFF feed=0 cycles=1\r\n");
+    os_printf("[BLANK_SPI_BEGIN] base=7f89a27 motor_fix=fd60189 start_delay_us=3000 columns=1180 bytes_each=100 zero_only=1 head=OFF feed=0 cycles=1\r\n");
     os_printf(">>> [BLANK_SPI] Carriage plus zero-column transport <<<\r\n");
-    os_printf("Stroke: %d steps, Speed: Ramp(1000us->260us)\r\n", SHUTTLE_TOTAL_STEPS);
+    os_printf("Stroke: %d steps, Speed: Ramp(3000us->260us)\r\n", SHUTTLE_TOTAL_STEPS);
     os_printf("========================================================\r\n");
 
     // 1. 初始化电机 GPIO
