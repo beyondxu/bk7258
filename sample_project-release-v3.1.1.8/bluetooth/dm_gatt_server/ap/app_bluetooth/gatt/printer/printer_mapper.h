@@ -45,6 +45,12 @@ int printer_map_solid_line(uint8_t *columns, uint32_t buffer_bytes,
                           uint32_t column_count, uint32_t first, uint32_t last,
                           uint32_t channel, uint32_t row,
                           const printer_map_config_t *cfg);
+#define PRINTER_MAP_TEST_ROW_C 95U
+#define PRINTER_MAP_TEST_ROW_M 135U
+#define PRINTER_MAP_TEST_ROW_Y 175U
+int printer_map_color_rows_pattern(uint8_t *columns, uint32_t buffer_bytes,
+                                  uint32_t column_count, uint32_t channel_mask,
+                                  const printer_map_config_t *cfg);
 /* Three 150-column bars at logical x=300,500,700 with per-domain delay. */
 int printer_map_alignment_pattern(uint8_t *columns, uint32_t buffer_bytes,
                                   uint32_t column_count, uint32_t channel_mask,

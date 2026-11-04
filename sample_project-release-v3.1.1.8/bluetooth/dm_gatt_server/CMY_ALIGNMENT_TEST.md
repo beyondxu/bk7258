@@ -1,3 +1,5 @@
+> 当前 `codex/printer-cmy-rows` 的步骤见 [CMY_ROWS_TEST.md](CMY_ROWS_TEST.md)，下文为同排叠合的历史测试说明。
+
 # CMY 三色位置重合测试
 
 分支 `codex/printer-cmy-align`，保留已验证的3000起步、260巡航、7480步运动和原HC32喷墨波形。

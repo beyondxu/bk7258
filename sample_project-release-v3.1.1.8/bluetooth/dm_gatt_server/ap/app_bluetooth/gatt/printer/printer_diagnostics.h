@@ -9,7 +9,7 @@
 #define PRINTER_CARRIAGE_TEST 0
 #endif
 #ifndef PRINTER_ALIGN_PATTERN
-#define PRINTER_ALIGN_PATTERN 1
+#define PRINTER_ALIGN_PATTERN 2 /* 1=overlaid, 2=separated C/M/Y nozzle rows */
 #endif
 #ifndef PRINTER_SOLID_LINE
 #define PRINTER_SOLID_LINE 1
@@ -44,10 +44,10 @@
 #error Mapping audit requires receive-only mode; do not enable uncalibrated firing
 #endif
 #ifndef PRINTER_MAP_X_PITCH_CENTI_UM
-#define PRINTER_MAP_X_PITCH_CENTI_UM 4233
+#define PRINTER_MAP_X_PITCH_CENTI_UM 3000
 #endif
 #ifndef PRINTER_MAP_X_DIRECTION
-#define PRINTER_MAP_X_DIRECTION 1
+#define PRINTER_MAP_X_DIRECTION -1
 #endif
 #ifndef PRINTER_MAP_FIRST_NOZZLE
 #define PRINTER_MAP_FIRST_NOZZLE 0

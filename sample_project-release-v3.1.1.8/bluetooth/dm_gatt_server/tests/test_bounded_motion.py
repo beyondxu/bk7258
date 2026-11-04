@@ -43,9 +43,10 @@ int printer_map_bin_capture(const uint8_t*b,uint32_t n,const printer_map_config_
  return scenario==1?-5:0;
 }
 int printer_map_bin_dry_run(const uint8_t*b,uint32_t n,const printer_map_config_t*c,printer_map_stats_t*s,void*(*a)(size_t),void(*f)(void*),void(*y)(void)){return scenario==1?-3:0;}
-int printer_map_route(uint32_t ch,uint32_t row,const printer_map_config_t*c,printer_map_route_t*r){assert(row==175);r->slot=15;r->mask=1U<<(ch*2+1);r->delay_columns=ch*21+1;return 0;}
+int printer_map_route(uint32_t ch,uint32_t row,const printer_map_config_t*c,printer_map_route_t*r){assert(row==175 || row==95);r->slot=15;r->mask=1U<<(ch*2+1);r->delay_columns=ch*21+1;return 0;}
 int printer_map_solid_line(uint8_t*p,uint32_t size,uint32_t count,uint32_t first,uint32_t last,uint32_t ch,uint32_t row,const printer_map_config_t*c){assert(size==118000&&count==1180&&first==300&&last==899&&ch==0&&row==175);return 0;}
 int printer_map_alignment_pattern(uint8_t*p,uint32_t size,uint32_t count,uint32_t mask,uint32_t row,const printer_map_config_t*c){assert(size==118000&&count==1180&&mask==1&&row==175);return 0;}
+int printer_map_color_rows_pattern(uint8_t*p,uint32_t size,uint32_t count,uint32_t mask,const printer_map_config_t*c){assert(size==118000&&count==1180&&mask==1);return 0;}
 static int printer_execute_cyan_line(const uint8_t *p){assert(p);++sweeps;return scenario==2?-9:0;}
 static int tph_mcu_comm_init(void){++comm;return 0;}
 static int tph_mcu_set_head_power(uint8_t on){
@@ -71,6 +72,6 @@ int main(int argc,char**argv){
 '''.replace('HELPER',helper)
 with tempfile.TemporaryDirectory() as tmp:
  p=Path(tmp);(p/'test.c').write_text(harness)
- for physical,solid,align in [(0,0,0),(1,0,0),(0,1,0),(1,1,0),(0,1,1),(1,1,1)]:
+ for physical,solid,align in [(0,0,0),(1,0,0),(0,1,0),(1,1,0),(0,1,1),(1,1,1),(0,1,2),(1,1,2)]:
   subprocess.run(['cc','-std=c99',f'-DPRINTER_BOUNDED_PRINT={physical}',f'-DPRINTER_SOLID_LINE={solid}',f'-DPRINTER_ALIGN_PATTERN={align}','-I',str(root/'ap/app_bluetooth/gatt/printer'),str(p/'test.c'),'-o',str(p/'test')],check=True)
   for scenario in [0,1,2]:subprocess.run([str(p/'test'),str(scenario)],check=True)

@@ -377,25 +377,34 @@ static int printer_run_bounded_line(const uint8_t *bin, uint32_t length)
         result = printer_map_bin_dry_run(bin, length, &cfg, &stats,
                                        printer_map_psram_alloc, printer_map_psram_free, printer_map_yield_cpu);
         if (PRINTER_ALIGN_PATTERN) {
-            if (!result) result = printer_map_alignment_pattern(columns, capture.buffer_bytes,
-                                    capture.column_limit, capture.channel_mask, 175, &cfg);
+            if (!result) {
+                if (PRINTER_ALIGN_PATTERN == 2)
+                    result = printer_map_color_rows_pattern(columns, capture.buffer_bytes,
+                                        capture.column_limit, capture.channel_mask, &cfg);
+                else
+                    result = printer_map_alignment_pattern(columns, capture.buffer_bytes,
+                                        capture.column_limit, capture.channel_mask, 175, &cfg);
+            }
             if (!result) {
                 capture.first_active = UINT32_MAX;
                 for (unsigned channel = 0; channel < 3; ++channel) {
                     if (!(capture.channel_mask & (1U << channel))) continue;
                     printer_map_route_t route;
-                    printer_map_route(channel, 175, &cfg, &route);
+                    unsigned row = 175;
+                    if (PRINTER_ALIGN_PATTERN == 2)
+                        row = channel == 0 ? PRINTER_MAP_TEST_ROW_C : channel == 1 ? PRINTER_MAP_TEST_ROW_M : PRINTER_MAP_TEST_ROW_Y;
+                    printer_map_route(channel, row, &cfg, &route);
                     capture.selected_dots[channel] = 450;
                     unsigned first = 300U + route.delay_columns;
                     unsigned last = 849U + route.delay_columns;
                     if (first < capture.first_active) capture.first_active = first;
                     if (last > capture.last_active) capture.last_active = last;
-                    os_printf("[ALIGN_ROUTE] channel=%u slot=%lu data=0x%02lX delay=%lu first=%u last=%u CANDIDATE_GEOMETRY\r\n",
-                              channel, (unsigned long)route.slot, (unsigned long)route.mask,
+                    os_printf("[ALIGN_ROUTE] channel=%u row=%u slot=%lu data=0x%02lX delay=%lu first=%u last=%u CANDIDATE_GEOMETRY\r\n",
+                              channel, row, (unsigned long)route.slot, (unsigned long)route.mask,
                               (unsigned long)route.delay_columns, first, last);
                 }
-                os_printf("[ALIGN_PATTERN] source=GENERATED mask=%u bars=300..449,500..649,700..849 dots_per_color=450 waveform_unchanged\r\n",
-                          (unsigned)capture.channel_mask);
+                os_printf("[ALIGN_PATTERN] source=GENERATED mask=%u bars=300..449,500..649,700..849 dots_per_color=450 row_mode=%u waveform_unchanged\r\n",
+                          (unsigned)capture.channel_mask, (unsigned)PRINTER_ALIGN_PATTERN);
             }
         } else {
             unsigned channel = capture.channel_mask == 1 ? 0 : capture.channel_mask == 2 ? 1 : 2;
@@ -418,7 +427,7 @@ static int printer_run_bounded_line(const uint8_t *bin, uint32_t length)
     }
     unsigned dots = capture.selected_dots[0] + capture.selected_dots[1] + capture.selected_dots[2];
     if (!result && dots < 64) result = -6;
-    os_printf("[LINE_PLAN] result=%d y=576 row=175 mask=%u dots_CMY=%lu,%lu,%lu first=%lu last=%lu columns=1180 steps=7480 feed=0\r\n",
+    os_printf("[LINE_PLAN] result=%d mask=%u dots_CMY=%lu,%lu,%lu first=%lu last=%lu columns=1180 steps=7480 feed=0\r\n",
               result, (unsigned)capture.channel_mask, (unsigned long)capture.selected_dots[0],
               (unsigned long)capture.selected_dots[1], (unsigned long)capture.selected_dots[2],
               (unsigned long)capture.first_active, (unsigned long)capture.last_active);

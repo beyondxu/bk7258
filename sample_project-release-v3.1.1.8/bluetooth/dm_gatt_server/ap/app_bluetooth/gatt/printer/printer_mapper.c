@@ -299,16 +299,16 @@ int printer_map_solid_line(uint8_t *columns, uint32_t buffer_bytes,
     return 0;
 }
 
-int printer_map_alignment_pattern(uint8_t *columns, uint32_t buffer_bytes,
+static int map_registration_rows(uint8_t *columns, uint32_t buffer_bytes,
                                   uint32_t column_count, uint32_t channel_mask,
-                                  uint32_t row, const printer_map_config_t *cfg)
+                                  const uint32_t rows[3], const printer_map_config_t *cfg)
 {
     printer_map_route_t routes[3];
     if (!columns || !column_count || column_count > MAP_MAX_WIDTH ||
         buffer_bytes < column_count * 100U || !channel_mask || (channel_mask & ~7U)) return -1;
     for (uint32_t ch = 0; ch < 3; ++ch) {
         if (!(channel_mask & (1U << ch))) continue;
-        if (printer_map_route(ch, row, cfg, &routes[ch]) ||
+        if (printer_map_route(ch, rows[ch], cfg, &routes[ch]) ||
             849U + routes[ch].delay_columns >= column_count ||
             849U + routes[ch].delay_columns > 999U) return -1;
     }
@@ -323,4 +323,19 @@ int printer_map_alignment_pattern(uint8_t *columns, uint32_t buffer_bytes,
         }
     }
     return 0;
+}
+
+int printer_map_alignment_pattern(uint8_t *columns, uint32_t buffer_bytes,
+                                  uint32_t column_count, uint32_t channel_mask,
+                                  uint32_t row, const printer_map_config_t *cfg)
+{
+    const uint32_t rows[3] = {row, row, row};
+    return map_registration_rows(columns, buffer_bytes, column_count, channel_mask, rows, cfg);
+}
+int printer_map_color_rows_pattern(uint8_t *columns, uint32_t buffer_bytes,
+                                  uint32_t column_count, uint32_t channel_mask,
+                                  const printer_map_config_t *cfg)
+{
+    const uint32_t rows[3] = {PRINTER_MAP_TEST_ROW_C, PRINTER_MAP_TEST_ROW_M, PRINTER_MAP_TEST_ROW_Y};
+    return map_registration_rows(columns, buffer_bytes, column_count, channel_mask, rows, cfg);
 }
