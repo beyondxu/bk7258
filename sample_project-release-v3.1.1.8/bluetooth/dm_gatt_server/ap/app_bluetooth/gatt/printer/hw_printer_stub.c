@@ -531,7 +531,7 @@ static void carriage_shuttle_move_ramped(uint8_t direction, uint32_t total_steps
     delay_us(50); // 方向建立时间
 
     // 2. 梯形速度曲线参数
-    uint32_t start_delay_us  = 1000; // 起步慢速 (1000us) 稳健力矩起动
+    uint32_t start_delay_us  = 3000; // 起步慢速 (1000us) 稳健力矩起动
     uint32_t cruise_delay_us = 260;  // 巡航高速 (260us) 平稳匀速段
     uint32_t current_delay   = start_delay_us;
 
