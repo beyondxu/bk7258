@@ -1,3 +1,5 @@
+> 本分支 `codex/printer-cyan-line` 的当前步骤以 [CYAN_LINE_TEST.md](CYAN_LINE_TEST.md) 为准；下文是早期测试说明。
+
 # 单色横线测试（BK7258 / HC32 必须配套）
 
 本分支用于定位“黑线变成多条不同颜色的线”，不是完整照片打印版本。

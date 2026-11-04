@@ -36,6 +36,7 @@ int printer_map_bin_capture(const uint8_t*b,uint32_t n,const printer_map_config_
  p->selected_dots[0]=369;p->first_active=231;p->last_active=948;
  return scenario==1?-5:0;
 }
+static int printer_execute_cyan_line(const uint8_t *p){assert(p);++sweeps;return scenario==2?-9:0;}
 static int tph_mcu_comm_init(void){++comm;return 0;}
 static int tph_mcu_set_head_power(uint8_t on){
  if(on){assert(stage==2);stage=3;}else if(stage==0)stage=1;else if(stage==4)stage=5;
@@ -51,7 +52,7 @@ int main(int argc,char**argv){
  scenario=atoi(argv[1]);int result=printer_run_bounded_line(NULL,0);
  if(!PRINTER_BOUNDED_PRINT || scenario==1){assert(!comm&&!sweeps&&!returns);}
  else {
-  assert(sweeps==1 && returns==(scenario==0) && !powered && s_final_swath_cols==NULL);
+  assert(sweeps==1 && returns==0 && !powered && s_final_swath_cols==NULL);
   assert((result==0)==(scenario==0));
   if(scenario==0){assert(printer_run_bounded_line(NULL,0)==-7);assert(sweeps==1);}
  }

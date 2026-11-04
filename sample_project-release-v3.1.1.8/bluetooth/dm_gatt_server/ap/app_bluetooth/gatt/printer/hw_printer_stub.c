@@ -344,6 +344,7 @@ static void printer_run_mapping_audit(const uint8_t *bin, uint32_t length)
 }
 
 extern bool printer_link_is_ready(void);
+static int printer_execute_cyan_line(const uint8_t *columns);
 /* One explicitly selected APP strip; no page feed, no trajectory extension. */
 static int printer_run_bounded_line(const uint8_t *bin, uint32_t length)
 {
@@ -383,22 +384,7 @@ static int printer_run_bounded_line(const uint8_t *bin, uint32_t length)
     }
     if (attempted || !printer_link_is_ready()) { result = -7; goto done; }
     attempted = true; /* Never automatically repeat a potentially fired job. */
-    if (tph_mcu_comm_init() != BK_OK || tph_mcu_set_head_power(0) != BK_OK) { result = -8; goto done; }
-    motor_all_power_up_and_enable();
-    bk_motor_set_state(0, 0); /* paper motor stays asleep throughout */
-    if (tph_mcu_set_head_power(1) != BK_OK) { result = -8; goto stop; }
-    s_final_swath_cols = (uint8_t (*)[TPH_COLUMN_BYTES])columns;
-    if (!sweep_and_fire_line_direct()) { result = -9; goto stop; }
-    if (tph_mcu_set_head_power(0) != BK_OK) { result = -8; goto stop; }
-    motor_carriage_return_home(CARRIAGE_RUN_STEPS);
-    os_printf("[LINE_DONE] sweep_and_return=1 feed=0 ink_unverified\r\n");
-stop:
-    if (result) {
-        (void)tph_mcu_set_head_power(0);
-        os_printf("[LINE_STOP] code=%d no_blind_return_after_failure\r\n", result);
-    }
-    motor_all_power_down();
-    s_final_swath_cols = NULL;
+    result = printer_execute_cyan_line(columns);
 done:
     printer_map_psram_free(columns);
     return result;
@@ -629,7 +615,7 @@ void standalone_carriage_shuttle_test(uint32_t test_cycles) {
  */
 static uint32_t s_blank_spi_columns, s_blank_spi_steps[2];
 static bool s_blank_spi_failed;
-static bool carriage_blank_spi_move_ramped(uint8_t direction, uint32_t total_steps) {
+static bool carriage_stream_move_ramped(uint8_t direction, uint32_t total_steps, const uint8_t *columns) {
     // 1. 设置物理方向
     if (direction) {
         GPIO_UP(TPH_MOT_DIR);   // 向右
@@ -649,7 +635,7 @@ static bool carriage_blank_spi_move_ramped(uint8_t direction, uint32_t total_ste
          */
         if (direction && i >= 200U && i < 7280U && (i - 200U) % 6U == 0U) {
             static const uint8_t blank[TPH_COLUMN_BYTES] = {0};
-            if (tph_fire_raw_column_bytes(blank) != BK_OK) {
+            if (tph_fire_raw_column_bytes(columns ? columns + s_blank_spi_columns * TPH_COLUMN_BYTES : blank) != BK_OK) {
                 s_blank_spi_failed = true;
                 return false; /* caller powers down; no blind full return */
             }
@@ -679,19 +665,7 @@ static bool carriage_blank_spi_move_ramped(uint8_t direction, uint32_t total_ste
     return true;
 }
 
-void standalone_carriage_blank_spi_test(void) {
-    s_blank_spi_columns = 0;
-    s_blank_spi_steps[0] = s_blank_spi_steps[1] = 0;
-    s_blank_spi_failed = false;
-    if (tph_mcu_set_head_power(0) != BK_OK) {
-        os_printf("[BLANK_SPI_END] head_OFF_handshake_failed NO_MOTION\r\n");
-        return;
-    }
-    os_printf("[BLANK_SPI_BEGIN] base=7f89a27 motor_fix=fd60189 start_delay_us=3000 columns=1180 bytes_each=100 zero_only=1 head=OFF feed=0 cycles=1\r\n");
-    os_printf(">>> [BLANK_SPI] Carriage plus zero-column transport <<<\r\n");
-    os_printf("Stroke: %d steps, Speed: Ramp(3000us->260us)\r\n", SHUTTLE_TOTAL_STEPS);
-    os_printf("========================================================\r\n");
-
+static void carriage_verified_power_up(void) {
     // 1. 初始化电机 GPIO
     bk_motor_gpio_config_init();
 
@@ -714,13 +688,37 @@ void standalone_carriage_blank_spi_test(void) {
     GPIO_DOWN(TPH_MOT_EN);
     rtos_delay_milliseconds(10); // 建立初始锁紧力矩
 
+}
+
+static void carriage_verified_power_down(void) {
+    GPIO_UP(TPH_MOT_EN);     // 关断输出
+    GPIO_DOWN(TPH_MOT_SLEEP);// 休眠
+    GPIO_DOWN(TPH_MOT_RES);
+    bk_motor_boost_power(0); // 关断 15V
+}
+
+void standalone_carriage_blank_spi_test(void) {
+    s_blank_spi_columns = 0;
+    s_blank_spi_steps[0] = s_blank_spi_steps[1] = 0;
+    s_blank_spi_failed = false;
+    if (tph_mcu_set_head_power(0) != BK_OK) {
+        os_printf("[BLANK_SPI_END] head_OFF_handshake_failed NO_MOTION\r\n");
+        return;
+    }
+    os_printf("[BLANK_SPI_BEGIN] base=7f89a27 motor_fix=fd60189 start_delay_us=3000 columns=1180 bytes_each=100 zero_only=1 head=OFF feed=0 cycles=1\r\n");
+    os_printf(">>> [BLANK_SPI] Carriage plus zero-column transport <<<\r\n");
+    os_printf("Stroke: %d steps, Speed: Ramp(3000us->260us)\r\n", SHUTTLE_TOTAL_STEPS);
+    os_printf("========================================================\r\n");
+
+    carriage_verified_power_up();
+
     uint32_t current_cycle = 0;
     while (1) {
         current_cycle++;
         os_printf("[SHUTTLE] Cycle #%lu: Moving RIGHT >>>\r\n", (unsigned long)current_cycle);
 
         // ---- 向右前行 7480 步 ----
-        if (!carriage_blank_spi_move_ramped(1, SHUTTLE_TOTAL_STEPS)) break;
+        if (!carriage_stream_move_ramped(1, SHUTTLE_TOTAL_STEPS, NULL)) break;
 
         // 扫掠到右端停顿 200ms
         rtos_delay_milliseconds(200);
@@ -728,7 +726,7 @@ void standalone_carriage_blank_spi_test(void) {
         os_printf("[SHUTTLE] Cycle #%lu: Moving LEFT <<<\r\n", (unsigned long)current_cycle);
 
         // ---- 向左退回 7480 步 (严丝合缝回到原点) ----
-        if (!carriage_blank_spi_move_ramped(0, SHUTTLE_TOTAL_STEPS)) break;
+        if (!carriage_stream_move_ramped(0, SHUTTLE_TOTAL_STEPS, NULL)) break;
 
         // 退回左端停顿 300ms (喂看门狗并让机械彻底稳定)
         rtos_delay_milliseconds(300);
@@ -741,11 +739,38 @@ void standalone_carriage_blank_spi_test(void) {
 
     // 测试完毕，安全下电休眠
     os_printf(">>> Shuttle Test Finished! Entering Safe Sleep. <<<\r\n");
-    GPIO_UP(TPH_MOT_EN);     // 关断输出
-    GPIO_DOWN(TPH_MOT_SLEEP);// 休眠
-    GPIO_DOWN(TPH_MOT_RES);
-    bk_motor_boost_power(0); // 关断 15V
+    carriage_verified_power_down();
     os_printf("[BLANK_SPI_END] result=%d columns=%lu/1180 forward=%lu reverse=%lu pulse_counts_only inspect_actual_motion\r\n",
               s_blank_spi_failed ? -1 : 0, (unsigned long)s_blank_spi_columns,
               (unsigned long)s_blank_spi_steps[1], (unsigned long)s_blank_spi_steps[0]);
+}
+
+/* APP capture is fully validated before this function is entered. Same step
+ * loop/power sequence as blank-SPI test, with selected cyan data and head ON.
+ */
+static int printer_execute_cyan_line(const uint8_t *columns) {
+    int result = 0;
+    s_blank_spi_columns = 0;
+    s_blank_spi_steps[0] = s_blank_spi_steps[1] = 0;
+    s_blank_spi_failed = false;
+    if (tph_mcu_set_head_power(0) != BK_OK) return -8;
+    carriage_verified_power_up();
+    if (tph_mcu_set_head_power(1) != BK_OK) { result = -8; goto stop; }
+    os_printf("[CYAN_LINE_BEGIN] motion_base=29a973b start=3000 cruise=260 columns=1180 steps=7480 feed=0\r\n");
+    if (!carriage_stream_move_ramped(1, SHUTTLE_TOTAL_STEPS, columns)) { result = -9; goto stop; }
+    if (tph_mcu_set_head_power(0) != BK_OK) { result = -8; goto stop; }
+    rtos_delay_milliseconds(200);
+    if (!carriage_stream_move_ramped(0, SHUTTLE_TOTAL_STEPS, NULL)) { result = -9; goto stop; }
+    rtos_delay_milliseconds(300);
+    os_printf("[LINE_DONE] sweep_and_return=1 feed=0 ink_unverified\r\n");
+stop:
+    if (result) {
+        (void)tph_mcu_set_head_power(0);
+        os_printf("[LINE_STOP] code=%d no_blind_return_after_failure\r\n", result);
+    }
+    carriage_verified_power_down();
+    os_printf("[CYAN_LINE_END] result=%d columns=%lu/1180 forward=%lu reverse=%lu ink_unverified\r\n",
+              result, (unsigned long)s_blank_spi_columns,
+              (unsigned long)s_blank_spi_steps[1], (unsigned long)s_blank_spi_steps[0]);
+    return result;
 }

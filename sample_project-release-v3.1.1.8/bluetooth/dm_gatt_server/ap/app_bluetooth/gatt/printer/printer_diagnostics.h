@@ -6,14 +6,14 @@
 #define PRINTER_DATA_AUDIT 1
 #endif
 #ifndef PRINTER_CARRIAGE_TEST
-#define PRINTER_CARRIAGE_TEST 1
+#define PRINTER_CARRIAGE_TEST 0
 #endif
-/* Bounded-line branch: default is PLAN ONLY, with all physical outputs off. */
+/* Cyan-line branch: APP-triggered validated single-color print; no startup motion. */
 #ifndef PRINTER_BOUNDED_LINE
 #define PRINTER_BOUNDED_LINE 1
 #endif
 #ifndef PRINTER_BOUNDED_PRINT
-#define PRINTER_BOUNDED_PRINT 0
+#define PRINTER_BOUNDED_PRINT 1
 #endif
 #if PRINTER_CARRIAGE_TEST && PRINTER_BOUNDED_PRINT
 #error Carriage test must not enable bounded printing

@@ -25,6 +25,9 @@ h=r'''
 #define os_printf printf
 static unsigned dir,step,phase,index_in_leg,pulses[2],columns,delay_count,init_count,off_calls;
 static int blank_mode,fail_column=-1,off_fail;
+static uint8_t cyan[118000];
+static unsigned head_power,command_count,power_commands[16],boost;
+static int command_fail=-1;
 static uint32_t expected_delays[40000],actual_delays[40000];
 static void up(unsigned pin){
  if(pin==50){assert(!step);dir=1;phase=0;index_in_leg=0;}
@@ -48,18 +51,24 @@ static void delay_us(uint32_t us){
 }
 static void rtos_delay_milliseconds(unsigned ms){assert(!step);(void)ms;}
 static int bk_motor_gpio_config_init(void){++init_count;return 0;}
-static void bk_motor_boost_power(unsigned on){(void)on;}
-static int tph_mcu_set_head_power(uint8_t on){assert(!on);++off_calls;return off_fail?-1:0;}
+static void bk_motor_boost_power(unsigned on){boost=on;}
+static int tph_mcu_set_head_power(uint8_t on){
+ if(blank_mode!=2)assert(!on);
+ power_commands[command_count++]=on;head_power=on;++off_calls;
+ return off_fail || (int)command_count==command_fail ? -1:0;
+}
 static int tph_fire_raw_column_bytes(const uint8_t *p){
  assert(blank_mode && dir==1 && !step && phase==1);
+ if(blank_mode==2){assert(head_power);assert(!memcmp(p,cyan+columns*100,100));}
+ else assert(!head_power);
  assert(index_in_leg==200+columns*6);
- for(unsigned i=0;i<100;i++)assert(!p[i]);
+ if(blank_mode!=2)for(unsigned i=0;i<100;i++)assert(!p[i]);
  if((int)columns==fail_column)return -1;
  ++columns;return 0;
 }
 REFERENCE
 NEW
-static void reset(void){step=phase=delay_count=init_count=off_calls=columns=0;pulses[0]=pulses[1]=0;off_fail=0;fail_column=-1;}
+static void reset(void){step=phase=delay_count=init_count=off_calls=columns=0;pulses[0]=pulses[1]=0;off_fail=0;fail_column=-1;head_power=command_count=boost=0;command_fail=-1;}
 int main(void){
  reset();standalone_carriage_shuttle_test(1);
  assert(pulses[0]==7480&&pulses[1]==7480&&columns==0);
@@ -71,7 +80,18 @@ int main(void){
  assert(s_blank_spi_failed&&columns==10&&pulses[1]==260&&pulses[0]==0&&!step);
  reset();off_fail=1;standalone_carriage_blank_spi_test();
  assert(!init_count&&!columns&&!pulses[0]&&!pulses[1]);
- puts("PASS: exact reference delay sequence/counts, 1180 zero columns spaced six steps, OFF only, no return after SPI failure, no motion on OFF failure");
+ reset();blank_mode=2;cyan[231*100+15]=2;cyan[948*100+15]=2;
+ assert(printer_execute_cyan_line(cyan)==0);
+ assert(columns==1180&&pulses[1]==7480&&pulses[0]==7480&&!head_power&&!boost);
+ assert(command_count==3&&power_commands[0]==0&&power_commands[1]==1&&power_commands[2]==0);
+ assert(delay_count==expected_count&&!memcmp(expected_delays,actual_delays,delay_count*sizeof(uint32_t)));
+ reset();fail_column=10;assert(printer_execute_cyan_line(cyan)==-9);
+ assert(columns==10&&pulses[1]==260&&!pulses[0]&&!head_power&&!boost);
+ reset();command_fail=2;assert(printer_execute_cyan_line(cyan)==-8);
+ assert(!pulses[0]&&!pulses[1]&&!head_power&&!boost);
+ reset();command_fail=3;assert(printer_execute_cyan_line(cyan)==-8);
+ assert(pulses[1]==7480&&!pulses[0]&&!head_power&&!boost);
+ puts("PASS: cyan data and power sequencing, failures without blind return; exact reference delay sequence/counts, 1180 zero columns spaced six steps, OFF only, no return after SPI failure, no motion on OFF failure");
 }
 '''.replace('REFERENCE',reference).replace('NEW',new)
 with tempfile.TemporaryDirectory() as tmp:
