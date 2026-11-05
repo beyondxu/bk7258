@@ -160,9 +160,23 @@ static int flush_swath(const uint8_t *planes, uint32_t width, uint32_t y,
     stats->max_delay = delay;
     return 0;
 }
+static int dispatch_swath(const uint8_t *planes, uint32_t width, uint32_t y,
+                          const printer_map_config_t *cfg, printer_map_stats_t *stats,
+                          uint32_t *crc, void (*yield_cpu)(void), printer_map_capture_t *capture,
+                          printer_map_visitor_t visitor, void *context)
+{
+    if (!visitor) return flush_swath(planes, width, y, cfg, stats, crc, yield_cpu, capture);
+    int result = visitor(planes, width, y, context);
+    if (result) return result;
+    ++stats->swaths;
+    if (width > stats->max_width) stats->max_width = width;
+    if (yield_cpu) yield_cpu();
+    return 0;
+}
 static int map_bin_run(const uint8_t *bin, uint32_t length,
                            const printer_map_config_t *cfg, printer_map_stats_t *stats,
-                           void *(*allocate)(size_t), void (*release)(void *), void (*yield_cpu)(void), printer_map_capture_t *capture)
+                           void *(*allocate)(size_t), void (*release)(void *), void (*yield_cpu)(void), printer_map_capture_t *capture,
+                           printer_map_visitor_t visitor, void *context)
 {
     if (!bin || !length || !stats || !allocate || !release || !config_valid(cfg)) return -1;
     memset(stats, 0, sizeof(*stats));
@@ -184,7 +198,7 @@ static int map_bin_run(const uint8_t *bin, uint32_t length,
         if (first == 12) {
             if (seen) {
                 if (seen != 7) break;
-                int code = flush_swath(planes, width, y, cfg, stats, &crc, yield_cpu, capture);
+                int code = dispatch_swath(planes, width, y, cfg, stats, &crc, yield_cpu, capture, visitor, context);
                 if (code) { result = code; break; }
             }
             if (!stats->swaths || read_byte(&reader) != -1) break;
@@ -219,7 +233,7 @@ static int map_bin_run(const uint8_t *bin, uint32_t length,
             if (feed < 0) break;
             if (feed != 192) { result = -4; break; }
             if (seen != 7) break;
-            int code = flush_swath(planes, width, y, cfg, stats, &crc, yield_cpu, capture);
+            int code = dispatch_swath(planes, width, y, cfg, stats, &crc, yield_cpu, capture, visitor, context);
             if (code) { result = code; break; }
             seen = 0;
             channel = 3;
@@ -263,7 +277,7 @@ int printer_map_bin_dry_run(const uint8_t *bin, uint32_t length,
                            const printer_map_config_t *cfg, printer_map_stats_t *stats,
                            void *(*allocate)(size_t), void (*release)(void *), void (*yield_cpu)(void))
 {
-    return map_bin_run(bin, length, cfg, stats, allocate, release, yield_cpu, NULL);
+    return map_bin_run(bin, length, cfg, stats, allocate, release, yield_cpu, NULL, NULL, NULL);
 }
 int printer_map_bin_capture(const uint8_t *bin, uint32_t length,
                            const printer_map_config_t *cfg, printer_map_stats_t *stats,
@@ -279,7 +293,7 @@ int printer_map_bin_capture(const uint8_t *bin, uint32_t length,
     capture->found = 0;
     memset(capture->selected_dots, 0, sizeof(capture->selected_dots));
     capture->first_active = UINT32_MAX; capture->last_active = 0;
-    int result = map_bin_run(bin, length, cfg, stats, allocate, release, yield_cpu, capture);
+    int result = map_bin_run(bin, length, cfg, stats, allocate, release, yield_cpu, capture, NULL, NULL);
     if (!result && (!capture->found || capture->first_active == UINT32_MAX)) result = -5;
     return result;
 }
@@ -338,4 +352,13 @@ int printer_map_color_rows_pattern(uint8_t *columns, uint32_t buffer_bytes,
 {
     const uint32_t rows[3] = {PRINTER_MAP_TEST_ROW_C, PRINTER_MAP_TEST_ROW_M, PRINTER_MAP_TEST_ROW_Y};
     return map_registration_rows(columns, buffer_bytes, column_count, channel_mask, rows, cfg);
+}
+
+int printer_map_visit_bin(const uint8_t *bin, uint32_t length,
+                         const printer_map_config_t *cfg, printer_map_stats_t *stats,
+                         printer_map_visitor_t visitor, void *context,
+                         void *(*allocate)(size_t), void (*release)(void *), void (*yield_cpu)(void))
+{
+    if (!visitor) return -1;
+    return map_bin_run(bin, length, cfg, stats, allocate, release, yield_cpu, NULL, visitor, context);
 }

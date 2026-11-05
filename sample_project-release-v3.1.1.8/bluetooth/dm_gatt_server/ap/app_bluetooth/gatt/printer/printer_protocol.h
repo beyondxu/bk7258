@@ -31,6 +31,8 @@ void printer_set_status(const dn20_printer_status_t *status);
 void printer_report_status(void);
 /* Called after the audit worker has released its buffer. */
 void printer_protocol_audit_complete(uint32_t saved_len, uint32_t saved_crc);
+bool printer_protocol_job_buffer_valid(uint32_t saved_len, uint32_t saved_crc);
+void printer_protocol_page_complete(uint32_t saved_len, uint32_t saved_crc, int result);
 void printer_protocol_bounded_complete(uint32_t saved_len, uint32_t saved_crc, int test_result);
 
 #ifdef __cplusplus

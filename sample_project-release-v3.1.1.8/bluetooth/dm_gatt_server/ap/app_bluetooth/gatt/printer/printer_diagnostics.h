@@ -1,6 +1,21 @@
 #ifndef PRINTER_DIAGNOSTICS_H
 #define PRINTER_DIAGNOSTICS_H
 
+#ifndef PRINTER_FULL_PAGE
+#define PRINTER_FULL_PAGE 1
+#endif
+#ifndef PRINTER_PAGE_TRANSFORM
+#define PRINTER_PAGE_TRANSFORM 0U /* bit0=mirror X, bit1=flip Y; test TOP/END first */
+#endif
+#ifndef PRINTER_PAGE_FEED_STEPS
+#define PRINTER_PAGE_FEED_STEPS 2340U /* original candidate for 192 nozzle rows */
+#endif
+#ifndef PRINTER_PAGE_FEED_DIRECTION
+#define PRINTER_PAGE_FEED_DIRECTION 0 /* original forward-feed pin level LOW */
+#endif
+#if PRINTER_FULL_PAGE && (PRINTER_PAGE_FEED_STEPS < 1 || PRINTER_PAGE_FEED_STEPS > 5000)
+#error Page feed must be 1..5000 pulses per 192 nozzle rows
+#endif
 /* Receive-only investigation: disables ALL startup firing/motion diagnostics. */
 #ifndef PRINTER_DATA_AUDIT
 #define PRINTER_DATA_AUDIT 1
@@ -38,7 +53,7 @@
 #endif
 /* Mapping audit emits fingerprints only, never SPI or motor commands. */
 #ifndef PRINTER_MAP_AUDIT
-#define PRINTER_MAP_AUDIT 1
+#define PRINTER_MAP_AUDIT 0
 #endif
 #if PRINTER_MAP_AUDIT && !PRINTER_DATA_AUDIT
 #error Mapping audit requires receive-only mode; do not enable uncalibrated firing
@@ -57,7 +72,7 @@
 #endif
 
 #ifndef PRINTER_AUDIT_DUMP_MAX_BYTES
-#define PRINTER_AUDIT_DUMP_MAX_BYTES 65536U
+#define PRINTER_AUDIT_DUMP_MAX_BYTES 0U
 #endif
 
 /* Rebuild BK7258 after changing these values. No APK data is used.

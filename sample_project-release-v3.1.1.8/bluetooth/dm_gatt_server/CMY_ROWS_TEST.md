@@ -1,3 +1,5 @@
+> 当前 `codex/printer-full-page` 的步骤见 [FULL_PAGE_TEST.md](FULL_PAGE_TEST.md)，下文为旧固定三排图案说明。
+
 # 同纸三排颜色定位图
 
 分支 `codex/printer-cmy-rows`。当前目标是比较同一次扫描中的三色端点和长度，

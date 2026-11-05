@@ -11,6 +11,7 @@
 #include "printer_diagnostics.h"
 #include "printer_audit_utils.h"
 #include "printer_mapper.h"
+#include "printer_page.h"
 #include "ble_printer_service.h"
 #include "gpio_driver.h"
 
@@ -345,6 +346,9 @@ static void printer_run_mapping_audit(const uint8_t *bin, uint32_t length)
 
 extern bool printer_link_is_ready(void);
 static int printer_execute_cyan_line(const uint8_t *columns);
+#if PRINTER_FULL_PAGE
+static int printer_run_full_page(const uint8_t *bin, uint32_t length);
+#endif
 /* One explicitly selected APP strip; no page feed, no trajectory extension. */
 static int printer_run_bounded_line(const uint8_t *bin, uint32_t length)
 {
@@ -447,6 +451,14 @@ done:
 static void printer_worker_thread(void *arg) {
     while (1) {
         rtos_get_semaphore(&s_print_sem, BEKEN_WAIT_FOREVER);
+#if PRINTER_FULL_PAGE
+        uint32_t length = s_buffer_len;
+        uint32_t crc = printer_crc32(s_print_buffer, length);
+        int result = printer_protocol_job_buffer_valid(length, crc) ? printer_run_full_page(s_print_buffer, length) : -11;
+        hw_printer_clear_buffer();
+        printer_protocol_page_complete(length, crc, result);
+        continue;
+#endif
         if (PRINTER_DATA_AUDIT) {
             uint32_t length = s_buffer_len;
             uint32_t crc = printer_crc32(s_print_buffer, length);
@@ -828,3 +840,7 @@ stop:
               (unsigned long)s_blank_spi_steps[1], (unsigned long)s_blank_spi_steps[0]);
     return result;
 }
+
+#if PRINTER_FULL_PAGE
+#include "printer_page_job.h"
+#endif

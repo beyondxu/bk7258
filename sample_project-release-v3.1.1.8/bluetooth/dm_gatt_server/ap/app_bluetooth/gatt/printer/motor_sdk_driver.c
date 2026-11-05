@@ -705,3 +705,32 @@ bk_err_t motor_carriage_test_leg(uint8_t direction, uint32_t steps, uint32_t *se
            direction, (unsigned long)*sent, (unsigned long)elapsed_us);
     return BK_OK; /* Pulse generation only; physical movement is unverified. */
 }
+
+/* Page feed: U5 only, no long interrupt masking. Direction defaults to the
+ * original motor_feed_paper(..., 1) LOW setting; physical distance is calibrated
+ * by PRINTER_PAGE_FEED_STEPS, not claimed from pulse counts.
+ */
+bk_err_t motor_page_feed(uint32_t steps, uint8_t direction, uint32_t *sent) {
+    if (!sent || !steps || steps > 5000U) return BK_FAIL;
+    *sent = 0;
+    bk_motor_gpio_config_init(); /* U4 remains disabled/asleep */
+    bk_motor_boost_power(1);
+    rtos_delay_milliseconds(60);
+    SET_GPIO_HIGH(PAPER_MOT_MS1); SET_GPIO_HIGH(PAPER_MOT_MS2); SET_GPIO_HIGH(PAPER_MOT_MS3);
+    SET_GPIO_HIGH(PAPER_MOT_SLEEP); rtos_delay_milliseconds(5);
+    SET_GPIO_HIGH(PAPER_MOT_RES); SET_GPIO_LOW(PAPER_MOT_EN);
+    rtos_delay_milliseconds(10);
+    SET_GPIO_LEVEL(PAPER_MOT_DIR, direction != 0);
+    bk_delay_us(50);
+    for (uint32_t i = 0; i < steps; ++i) {
+        uint32_t edge = i < steps - 1U - i ? i : steps - 1U - i;
+        uint32_t low_us = edge < 250U ? 3000U - 2000U * edge / 250U : 1000U;
+        SET_GPIO_HIGH(PAPER_MOT_STEP); bk_delay_us(4);
+        SET_GPIO_LOW(PAPER_MOT_STEP); bk_delay_us(low_us);
+        ++*sent;
+        if ((i & 31U) == 31U) rtos_delay_milliseconds(1);
+    }
+    bk_motor_set_state(0, 0);
+    bk_motor_boost_power(0);
+    return BK_OK;
+}

@@ -55,6 +55,14 @@ int printer_map_color_rows_pattern(uint8_t *columns, uint32_t buffer_bytes,
 int printer_map_alignment_pattern(uint8_t *columns, uint32_t buffer_bytes,
                                   uint32_t column_count, uint32_t channel_mask,
                                   uint32_t row, const printer_map_config_t *cfg);
+/* Visitor receives complete C/M/Y planes (width*72 bytes) per 192-row strip.
+ * Caller must not drive hardware: a later parse error can invalidate prior strips.
+ */
+typedef int (*printer_map_visitor_t)(const uint8_t *, uint32_t, uint32_t, void *);
+int printer_map_visit_bin(const uint8_t *bin, uint32_t length,
+                         const printer_map_config_t *cfg, printer_map_stats_t *stats,
+                         printer_map_visitor_t visitor, void *context,
+                         void *(*allocate)(size_t), void (*release)(void *), void (*yield_cpu)(void));
 void printer_map_default_config(printer_map_config_t *cfg);
 int printer_map_route(uint32_t channel, uint32_t row, const printer_map_config_t *cfg,
                       printer_map_route_t *route);

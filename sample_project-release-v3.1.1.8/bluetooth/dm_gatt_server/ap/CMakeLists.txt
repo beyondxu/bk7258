@@ -27,6 +27,7 @@ if (CONFIG_BT)
 		app_bluetooth/gatt/printer/ble_printer_service.c
 		app_bluetooth/gatt/printer/printer_protocol.c
         app_bluetooth/gatt/printer/printer_mapper.c
+        app_bluetooth/gatt/printer/printer_page.c
                app_bluetooth/gatt/printer/hw_printer_stub.c
                app_bluetooth/gatt/printer/motor_sdk_driver.c
                 app_bluetooth/gatt/printer/tph_driver.c

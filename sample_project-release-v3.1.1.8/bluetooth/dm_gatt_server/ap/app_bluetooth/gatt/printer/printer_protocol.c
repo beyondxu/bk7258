@@ -338,3 +338,19 @@ void printer_protocol_bounded_complete(uint32_t saved_len, uint32_t saved_crc, i
     s_status.fault = ok ? 0 : 8;
     s_job.state = JOB_STATE_IDLE;
 }
+
+void printer_protocol_page_complete(uint32_t saved_len, uint32_t saved_crc, int result)
+{
+    bool ok = result == 0 && saved_len == s_job.total_bin_len && saved_crc == s_job.expected_crc;
+    os_printf("[PAGE_RESULT] task=%u code=%d transport_motion=%s ink_and_feed_unverified\r\n",
+              s_job.task_id, result, ok ? "PASS" : "FAIL");
+    audit_send_finish(s_job.task_id, ok ? 0 : 1);
+    s_status.work = 0;
+    s_status.fault = ok ? 0 : 8;
+    s_job.state = JOB_STATE_IDLE;
+}
+
+bool printer_protocol_job_buffer_valid(uint32_t saved_len, uint32_t saved_crc)
+{
+    return s_job.state == JOB_STATE_PRINTING && saved_len == s_job.total_bin_len && saved_crc == s_job.expected_crc;
+}
