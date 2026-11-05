@@ -31,7 +31,7 @@ static void bk_delay_us(unsigned us){if(high)assert(us==4);else assert(us>=50&&u
 static void rtos_delay_milliseconds(unsigned ms){assert(!high);(void)ms;}
 static void bk_motor_set_state(unsigned motor,unsigned state){assert(motor==0&&state==0);}
 FUNC
-int main(void){uint32_t sent;assert(!motor_page_feed(2340,0,&sent));assert(sent==2340&&pulses==2340&&!boost&&!high&&dir==0);assert(motor_page_feed(5001,0,&sent)==-1);}
+int main(void){uint32_t sent;assert(!motor_page_feed(3170,0,&sent));assert(sent==3170&&pulses==3170&&!boost&&!high&&dir==0);assert(motor_page_feed(5001,0,&sent)==-1);}
 '''.replace('FUNC',func)
 with tempfile.TemporaryDirectory() as tmp:
  p=Path(tmp);(p/'test.c').write_text(h)

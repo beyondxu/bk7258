@@ -8,7 +8,7 @@
 #define PRINTER_PAGE_TRANSFORM 0U /* bit0=mirror X, bit1=flip Y; test TOP/END first */
 #endif
 #ifndef PRINTER_PAGE_FEED_STEPS
-#define PRINTER_PAGE_FEED_STEPS 2340U /* original candidate for 192 nozzle rows */
+#define PRINTER_PAGE_FEED_STEPS 3170U /* measured: 5*2340 pulses moved 30mm; target 40.64mm */
 #endif
 #ifndef PRINTER_PAGE_FEED_DIRECTION
 #define PRINTER_PAGE_FEED_DIRECTION 0 /* original forward-feed pin level LOW */

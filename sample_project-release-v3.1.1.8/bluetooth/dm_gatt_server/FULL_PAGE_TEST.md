@@ -25,7 +25,9 @@ HC32保持当前 `codex/printer-latch-reset` / `f5d53d4`；本次只更新BK7258
 
 ## 重要未标定项
 
-纸张进给使用旧代码候选值：每192喷嘴行2340脉冲，方向引脚LOW（旧motor_feed_paper(...,1)）。
+纸张进给默认每192喷嘴行3170脉冲，方向引脚LOW（旧motor_feed_paper(...,1)）。
+校准依据：旧2340脉冲累计5次实测30mm，方向正确且无打滑；目标5次40.64mm，
+新值=round(2340*40.64/30)=3170。此为依据实测的一次修正，仍需打印确认实际距离。
 这相当于目标8.128mm，但实际距离及方向未验证，不能仅凭计数声称正确。
 第一张完整结构图用于检查页方向、全部条带、纵向间隙/重叠及颜色位置。
 如果出纸反向、卡住或碰边，立即断电，不用手推通电字车。
@@ -46,7 +48,7 @@ cd sample_project-release-v3.1.1.8/bluetooth/dm_gatt_server
 make bk7258 SDK_DIR=~/armino/bk_avdk_smp
 ```
 
-参数保持默认：FULL_PAGE=1，列距3000，方向-1，PAGE_FEED_STEPS=2340，PAGE_FEED_DIRECTION=0，
+参数保持默认：FULL_PAGE=1，列距3000，方向-1，PAGE_FEED_STEPS=3170，PAGE_FEED_DIRECTION=0，
 PAGE_TRANSFORM=0。不需要再改CHANNEL_MASK，整图始终打印收到的全部CMY数据。
 只烧录BK7258，HC32不改。主机验证已通过，但本环境未完成完整SDK构建，最终以本地编译/实机为准。
 
@@ -70,7 +72,7 @@ https://raw.githubusercontent.com/beyondxu/bk7258/codex/printer-full-page/sample
 [PAGE_DOTS] source_CMY=... resized_CMY=...
 [PAGE_SWATH] index=1/6 y=0 dots_CMY=...
 [CYAN_LINE_END] ...
-[PAGE_FEED] after=1 pulses=2340/2340 result=0 distance_unverified
+[PAGE_FEED] after=1 pulses=3170/3170 result=0 distance_unverified
 ...
 [PAGE_DONE] swaths=6 no_auto_eject ...
 [PAGE_RESULT] ... code=0 transport_motion=PASS ...

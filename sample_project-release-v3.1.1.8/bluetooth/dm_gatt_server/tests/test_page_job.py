@@ -17,7 +17,7 @@ h=r'''
 #define PRINTER_MAP_X_DIRECTION -1
 #define PRINTER_MAP_FIRST_NOZZLE 0
 #define PRINTER_MAP_REVERSE_Y 0
-#define PRINTER_PAGE_FEED_STEPS 2340U
+#define PRINTER_PAGE_FEED_STEPS 3170U
 #define PRINTER_PAGE_TRANSFORM 0
 #define PRINTER_PAGE_FEED_DIRECTION 0
 #define os_printf printf
@@ -29,7 +29,7 @@ static void printer_map_yield_cpu(void){}
 static bool printer_link_is_ready(void){return true;}
 static int printer_execute_cyan_line(const uint8_t *columns){assert(columns);for(unsigned i=0;i<118000;i++)assert(!(columns[i]&0xC0));++moves;return fail_motion?-9:0;}
 static int tph_mcu_set_head_power(uint8_t on){assert(!on);++off_calls;return 0;}
-static int motor_page_feed(uint32_t steps,uint8_t direction,uint32_t*sent){assert(steps==2340&&direction==0&&off_calls==feeds+1);++feeds;*sent=fail_feed?10:steps;return fail_feed?-1:0;}
+static int motor_page_feed(uint32_t steps,uint8_t direction,uint32_t*sent){assert(steps==3170&&direction==0&&off_calls==feeds+1);++feeds;*sent=fail_feed?10:steps;return fail_feed?-1:0;}
 #include "printer_page_job.h"
 int main(int argc,char**argv){
  assert(argc==3);FILE*f=fopen(argv[1],"rb");assert(f);fseek(f,0,SEEK_END);long n=ftell(f);rewind(f);uint8_t*b=malloc(n);assert(fread(b,1,n,f)==(size_t)n);fclose(f);
