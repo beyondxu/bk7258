@@ -4,6 +4,12 @@
 #ifndef PRINTER_FULL_PAGE
 #define PRINTER_FULL_PAGE 1
 #endif
+#ifndef PRINTER_PAGE_COLOR_MODE
+#define PRINTER_PAGE_COLOR_MODE 2 /* 1=CMY together; 2=C pass then M+Y pass */
+#endif
+#if PRINTER_PAGE_COLOR_MODE != 1 && PRINTER_PAGE_COLOR_MODE != 2
+#error Page color mode must be 1 or 2
+#endif
 #ifndef PRINTER_PAGE_TRANSFORM
 #define PRINTER_PAGE_TRANSFORM 0U /* bit0=mirror X, bit1=flip Y; test TOP/END first */
 #endif

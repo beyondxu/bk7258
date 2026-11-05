@@ -1,3 +1,5 @@
+> 当前 `codex/printer-full-page-groups` 在完整图基础上分为青色和品红+黄色两组扫描，步骤以 [FULL_PAGE_GROUPS_TEST.md](FULL_PAGE_GROUPS_TEST.md) 为准。
+
 # 完整图片打印路径：首次整页与走纸拼接验证
 
 分支 `codex/printer-full-page`。暂缓频繁擦拭/堵塞专项，不再改HC32波形或做单色线反复测试。

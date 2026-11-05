@@ -19,6 +19,9 @@ int printer_page_prepare(const uint8_t *bin, uint32_t length,
                          const printer_map_config_t *cfg, printer_page_t *page,
                          void *(*allocate)(size_t), void (*release)(void *), void (*yield_cpu)(void));
 /* flags bit0=mirror X, bit1=flip whole-page Y; no motor direction changes. */
+/* Color-only filtering: mask bit0=C, bit1=M, bit2=Y. Source stays intact. */
+int printer_page_color_columns(const uint8_t *source, uint8_t *target,
+                               uint32_t bytes, uint32_t channel_mask);
 int printer_page_transform(printer_page_t *page, uint32_t flags, void (*yield_cpu)(void));
 void printer_page_release(printer_page_t *page, void (*release)(void *));
 int printer_page_render(const printer_page_t *page, uint32_t swath,

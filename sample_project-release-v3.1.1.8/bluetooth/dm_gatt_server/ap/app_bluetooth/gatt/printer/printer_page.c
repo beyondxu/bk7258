@@ -127,3 +127,15 @@ int printer_page_transform(printer_page_t *page, uint32_t flags, void (*yield_cp
         }
     return 0;
 }
+
+int printer_page_color_columns(const uint8_t *source, uint8_t *target,
+                               uint32_t bytes, uint32_t channel_mask) {
+    if (!source || !target || source == target || !bytes || !channel_mask || (channel_mask & ~7U)) return -1;
+    uintptr_t a = (uintptr_t)source, b = (uintptr_t)target;
+    if (a < b ? b - a < bytes : a - b < bytes) return -1;
+    uint8_t domains = 0;
+    for (unsigned ch = 0; ch < 3; ++ch) if (channel_mask & (1U << ch)) domains |= (uint8_t)(3U << (2U * ch));
+    for (uint32_t i = 0; i < bytes; ++i) if (source[i] & 0xC0U) return -1;
+    for (uint32_t i = 0; i < bytes; ++i) target[i] = source[i] & domains;
+    return 0;
+}

@@ -59,6 +59,19 @@ class FullPage(unittest.TestCase):
     self.assertEqual(self.renderer.lib.printer_page_transform(C.byref(p),flags,self.renderer.yield_cpu),0)
     for ch,x,y in before:self.assertTrue(get_bit(p,ch,x,y))
    finally:self.renderer.close(p)
+ def test_color_groups_recombine_exactly_without_source_changes(self):
+  source=bytes(i%64 for i in range(118000));a=(C.c_uint8*len(source)).from_buffer_copy(source)
+  b=(C.c_uint8*len(source))();c=(C.c_uint8*len(source))()
+  self.assertEqual(self.renderer.lib.printer_page_color_columns(a,b,len(a),1),0)
+  self.assertEqual(self.renderer.lib.printer_page_color_columns(a,c,len(a),6),0)
+  self.assertEqual(bytes(a),source)
+  self.assertEqual(bytes(x|y for x,y in zip(b,c)),source)
+  self.assertFalse(any(v&60 for v in b));self.assertFalse(any(v&3 for v in c))
+  self.assertNotEqual(self.renderer.lib.printer_page_color_columns(a,a,len(a),1),0)
+  self.assertNotEqual(self.renderer.lib.printer_page_color_columns(a,b,len(a),8),0)
+  a[700]=128;b[:]=[255]*len(b)
+  self.assertNotEqual(self.renderer.lib.printer_page_color_columns(a,b,len(a),1),0)
+  self.assertEqual(bytes(b),b'\xff'*len(b))
  def test_blank_page_and_last_padding_remain_blank(self):
   code,p=self.renderer.prepare(blob(set()));self.assertEqual(code,0)
   try:

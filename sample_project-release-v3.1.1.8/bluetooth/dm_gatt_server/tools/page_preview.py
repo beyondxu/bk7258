@@ -16,6 +16,7 @@ class Renderer:
   self.lib.printer_page_release.argtypes=[C.POINTER(Page),FREE]
   self.lib.printer_page_render.argtypes=[C.POINTER(Page),C.c_uint32,p,C.c_uint32,p,C.c_uint32,C.POINTER(C.c_uint32),YIELD]
   self.lib.printer_page_transform.argtypes=[C.POINTER(Page),C.c_uint32,YIELD]
+  self.lib.printer_page_color_columns.argtypes=[p,p,C.c_uint32,C.c_uint32]
   libc=C.CDLL(None);self.allocate=ALLOC(('malloc',libc));self.release=FREE(('free',libc));self.yield_cpu=YIELD(0)
  def prepare(self,blob,cfg=None):
   cfg=cfg or Config(3000,-1,0,0);page=Page();data=(C.c_uint8*len(blob)).from_buffer_copy(blob)
