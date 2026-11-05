@@ -382,7 +382,10 @@ static int printer_run_bounded_line(const uint8_t *bin, uint32_t length)
                                        printer_map_psram_alloc, printer_map_psram_free, printer_map_yield_cpu);
         if (PRINTER_ALIGN_PATTERN) {
             if (!result) {
-                if (PRINTER_ALIGN_PATTERN == 2)
+                if (PRINTER_ALIGN_PATTERN == 3)
+                    result = printer_map_nozzle_chart(columns, capture.buffer_bytes,
+                                        capture.column_limit, capture.channel_mask, &cfg);
+                else if (PRINTER_ALIGN_PATTERN == 2)
                     result = printer_map_color_rows_pattern(columns, capture.buffer_bytes,
                                         capture.column_limit, capture.channel_mask, &cfg);
                 else
@@ -390,25 +393,40 @@ static int printer_run_bounded_line(const uint8_t *bin, uint32_t length)
                                         capture.column_limit, capture.channel_mask, 175, &cfg);
             }
             if (!result) {
-                capture.first_active = UINT32_MAX;
-                for (unsigned channel = 0; channel < 3; ++channel) {
-                    if (!(capture.channel_mask & (1U << channel))) continue;
-                    printer_map_route_t route;
-                    unsigned row = 175;
-                    if (PRINTER_ALIGN_PATTERN == 2)
-                        row = channel == 0 ? PRINTER_MAP_TEST_ROW_C : channel == 1 ? PRINTER_MAP_TEST_ROW_M : PRINTER_MAP_TEST_ROW_Y;
-                    printer_map_route(channel, row, &cfg, &route);
-                    capture.selected_dots[channel] = 450;
-                    unsigned first = 300U + route.delay_columns;
-                    unsigned last = 849U + route.delay_columns;
-                    if (first < capture.first_active) capture.first_active = first;
-                    if (last > capture.last_active) capture.last_active = last;
-                    os_printf("[ALIGN_ROUTE] channel=%u row=%u slot=%lu data=0x%02lX delay=%lu first=%u last=%u CANDIDATE_GEOMETRY\r\n",
-                              channel, row, (unsigned long)route.slot, (unsigned long)route.mask,
-                              (unsigned long)route.delay_columns, first, last);
+                if (PRINTER_ALIGN_PATTERN == 3) {
+                    capture.first_active = UINT32_MAX;
+                    for (uint32_t x = 0; x < capture.column_limit; ++x) {
+                        for (unsigned slot = 0; slot < 100; ++slot) {
+                            uint8_t value = columns[x * 100U + slot];
+                            if (!value) continue;
+                            if (x < capture.first_active) capture.first_active = x;
+                            if (x > capture.last_active) capture.last_active = x;
+                            for (unsigned bit = 0; bit < 6; ++bit)
+                                capture.selected_dots[bit / 2U] += (value >> bit) & 1U;
+                        }
+                    }
+                    os_printf("[NOZZLE_CHART] rows_each=192 strokes_each=192 dots_per_stroke=12 expected_dots_each=2304 row_pitch_centi_um=4233 target_height_centi_um=808503 feed=0\r\n");
+                } else {
+                    capture.first_active = UINT32_MAX;
+                    for (unsigned channel = 0; channel < 3; ++channel) {
+                        if (!(capture.channel_mask & (1U << channel))) continue;
+                        printer_map_route_t route;
+                        unsigned row = 175;
+                        if (PRINTER_ALIGN_PATTERN == 2)
+                            row = channel == 0 ? PRINTER_MAP_TEST_ROW_C : channel == 1 ? PRINTER_MAP_TEST_ROW_M : PRINTER_MAP_TEST_ROW_Y;
+                        printer_map_route(channel, row, &cfg, &route);
+                        capture.selected_dots[channel] = 450;
+                        unsigned first = 300U + route.delay_columns;
+                        unsigned last = 849U + route.delay_columns;
+                        if (first < capture.first_active) capture.first_active = first;
+                        if (last > capture.last_active) capture.last_active = last;
+                        os_printf("[ALIGN_ROUTE] channel=%u row=%u slot=%lu data=0x%02lX delay=%lu first=%u last=%u CANDIDATE_GEOMETRY\r\n",
+                                  channel, row, (unsigned long)route.slot, (unsigned long)route.mask,
+                                  (unsigned long)route.delay_columns, first, last);
+                    }
+                    os_printf("[ALIGN_PATTERN] source=GENERATED mask=%u bars=300..449,500..649,700..849 dots_per_color=450 row_mode=%u waveform_unchanged\r\n",
+                              (unsigned)capture.channel_mask, (unsigned)PRINTER_ALIGN_PATTERN);
                 }
-                os_printf("[ALIGN_PATTERN] source=GENERATED mask=%u bars=300..449,500..649,700..849 dots_per_color=450 row_mode=%u waveform_unchanged\r\n",
-                          (unsigned)capture.channel_mask, (unsigned)PRINTER_ALIGN_PATTERN);
             }
         } else {
             unsigned channel = capture.channel_mask == 1 ? 0 : capture.channel_mask == 2 ? 1 : 2;

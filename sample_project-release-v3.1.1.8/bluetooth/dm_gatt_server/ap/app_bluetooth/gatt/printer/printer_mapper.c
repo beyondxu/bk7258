@@ -362,3 +362,31 @@ int printer_map_visit_bin(const uint8_t *bin, uint32_t length,
     if (!visitor) return -1;
     return map_bin_run(bin, length, cfg, stats, allocate, release, yield_cpu, NULL, visitor, context);
 }
+
+int printer_map_nozzle_chart(uint8_t *columns, uint32_t buffer_bytes,
+                             uint32_t column_count, uint32_t channel_mask,
+                             const printer_map_config_t *cfg)
+{
+    if (!columns || !column_count || column_count > MAP_MAX_WIDTH ||
+        buffer_bytes < column_count * 100U || !channel_mask || (channel_mask & ~7U)) return -1;
+    /* Validate every output bound before modifying caller storage. */
+    for (uint32_t ch = 0; ch < 3; ++ch) if (channel_mask & (1U << ch)) {
+        for (uint32_t row = 0; row < 192; ++row) {
+            printer_map_route_t route;
+            if (printer_map_route(ch, row, cfg, &route)) return -1;
+            uint32_t last = 200U + ch * 250U + row % 8U * 14U + 11U + route.delay_columns;
+            if (last >= column_count || last > 999U) return -1;
+        }
+    }
+    memset(columns, 0, column_count * 100U);
+    for (uint32_t ch = 0; ch < 3; ++ch) if (channel_mask & (1U << ch)) {
+        for (uint32_t row = 0; row < 192; ++row) {
+            printer_map_route_t route;
+            printer_map_route(ch, row, cfg, &route);
+            uint32_t first = 200U + ch * 250U + row % 8U * 14U + route.delay_columns;
+            for (uint32_t x = first; x < first + 12U; ++x)
+                columns[x * 100U + route.slot] |= (uint8_t)route.mask;
+        }
+    }
+    return 0;
+}

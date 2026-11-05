@@ -2,7 +2,7 @@
 #define PRINTER_DIAGNOSTICS_H
 
 #ifndef PRINTER_FULL_PAGE
-#define PRINTER_FULL_PAGE 1
+#define PRINTER_FULL_PAGE 0
 #endif
 #ifndef PRINTER_PAGE_TRANSFORM
 #define PRINTER_PAGE_TRANSFORM 0U /* bit0=mirror X, bit1=flip Y; test TOP/END first */
@@ -24,7 +24,7 @@
 #define PRINTER_CARRIAGE_TEST 0
 #endif
 #ifndef PRINTER_ALIGN_PATTERN
-#define PRINTER_ALIGN_PATTERN 2 /* 1=overlaid, 2=separated C/M/Y nozzle rows */
+#define PRINTER_ALIGN_PATTERN 3 /* full 192-row nozzle chart, one sweep, no feed */
 #endif
 #ifndef PRINTER_SOLID_LINE
 #define PRINTER_SOLID_LINE 1

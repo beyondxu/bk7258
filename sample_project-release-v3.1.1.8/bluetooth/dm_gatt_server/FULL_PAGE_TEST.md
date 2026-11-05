@@ -1,3 +1,5 @@
+> 当前 `codex/printer-nozzle-coverage` 是针对整图缺段的单次喷嘴覆盖诊断，步骤见 [NOZZLE_COVERAGE_TEST.md](NOZZLE_COVERAGE_TEST.md)。完整图模式保留在 `codex/printer-full-page`。
+
 # 完整图片打印路径：首次整页与走纸拼接验证
 
 分支 `codex/printer-full-page`。暂缓频繁擦拭/堵塞专项，不再改HC32波形或做单色线反复测试。
