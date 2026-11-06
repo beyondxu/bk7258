@@ -1,3 +1,8 @@
+# 低负载版本入口
+
+本分支默认打印去程STEP低电平延时乘4，详细更新和对照步骤见[NOZZLE_LOW_LOAD_TEST.md](NOZZLE_LOW_LOAD_TEST.md)。
+下文保留原速度检查说明；本版本耗时预计50～60秒，见NOZZLE_LOAD日志。
+
 # 可见喷嘴短线检查（BK专用分支）
 
 分支codex/printer-nozzle-lines，从7e642a4完整图分组版建立。只更新BK7258。

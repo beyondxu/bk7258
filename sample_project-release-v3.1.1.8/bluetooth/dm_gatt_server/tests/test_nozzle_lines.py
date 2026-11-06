@@ -32,6 +32,7 @@ class NozzleLines(unittest.TestCase):
 #include <stdlib.h>
 #include <stdio.h>
 #include "printer_page.h"
+#define PRINTER_NOZZLE_TIME_SCALE 4U
 #define PRINTER_MAP_X_PITCH_CENTI_UM 3000
 #define PRINTER_MAP_X_DIRECTION -1
 #define PRINTER_MAP_FIRST_NOZZLE 0

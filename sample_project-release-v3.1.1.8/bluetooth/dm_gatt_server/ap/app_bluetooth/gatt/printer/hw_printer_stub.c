@@ -731,6 +731,12 @@ static bool carriage_stream_move_ramped(uint8_t direction, uint32_t total_steps,
             current_delay = cruise_delay_us;
         }
 
+#if PRINTER_NOZZLE_CHECK
+        /* Same six-step column positions and STEP-high width. Only stretch the
+         * active diagnostic forward low time; return and blank tests are intact.
+         */
+        if (direction && columns) current_delay *= PRINTER_NOZZLE_TIME_SCALE;
+#endif
         // 发送 STEP 物理脉冲
         GPIO_UP(TPH_MOT_STEP);
         delay_us(4); // 脉冲保持时间
@@ -832,7 +838,7 @@ static int printer_execute_cyan_line(const uint8_t *columns) {
     if (tph_mcu_set_head_power(0) != BK_OK) return -8;
     carriage_verified_power_up();
     if (tph_mcu_set_head_power(1) != BK_OK) { result = -8; goto stop; }
-    os_printf("[CYAN_LINE_BEGIN] motion_base=29a973b start=3000 cruise=260 columns=1180 steps=7480 feed=0\r\n");
+    os_printf("[CYAN_LINE_BEGIN] motion_base=29a973b base_start=3000 base_cruise=260 columns=1180 steps=7480 feed=0\r\n");
     if (!carriage_stream_move_ramped(1, SHUTTLE_TOTAL_STEPS, columns)) { result = -9; goto stop; }
     if (tph_mcu_set_head_power(0) != BK_OK) { result = -8; goto stop; }
     rtos_delay_milliseconds(200);

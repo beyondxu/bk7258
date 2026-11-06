@@ -5,6 +5,13 @@
 #define PRINTER_NOZZLE_CHECK 1 /* APP-triggered 192-row C/M/Y check, generated pixels */
 #endif
 
+#ifndef PRINTER_NOZZLE_TIME_SCALE
+#define PRINTER_NOZZLE_TIME_SCALE 4U /* only the active diagnostic forward STEP-low delays */
+#endif
+#if PRINTER_NOZZLE_TIME_SCALE != 1 && PRINTER_NOZZLE_TIME_SCALE != 4
+#error Nozzle timing comparison supports baseline 1 or low-load 4 only
+#endif
+
 #ifndef PRINTER_FULL_PAGE
 #define PRINTER_FULL_PAGE 1
 #endif

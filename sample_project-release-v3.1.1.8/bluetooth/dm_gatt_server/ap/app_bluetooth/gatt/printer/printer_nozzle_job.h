@@ -21,6 +21,9 @@ static int printer_run_nozzle_check(const uint8_t *bin, uint32_t length) {
         if (result) goto done;
     }
     os_printf("[NOZZLE_LINES_BEGIN] source=GENERATED used_rows=192 of_200 length_columns=96 blocks=6 lines_each=32 dots_each_color=18432 feed_steps=3170 pulses_unchanged\r\n");
+    os_printf("[NOZZLE_LOAD] forward_motor_delay_scale=%u start_low_us=%u cruise_low_us=%u return_scale=1 column_data_unchanged head_waveform_unchanged actual_fire_interval_unmeasured\r\n",
+              (unsigned)PRINTER_NOZZLE_TIME_SCALE, (unsigned)(3000U * PRINTER_NOZZLE_TIME_SCALE),
+              (unsigned)(260U * PRINTER_NOZZLE_TIME_SCALE));
     failed = true;
     for (unsigned ch = 0; ch < 3; ++ch) {
         os_printf("[NOZZLE_LINES_PASS] channel=%u rows=0..191 expected_dots=18432\r\n", ch);
