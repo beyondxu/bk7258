@@ -1,5 +1,10 @@
 # 当前分支入口
 
+本分支为固定地址逐段波形对照，实际4条青色线、0进纸，见[SECTION_SCOPE_TEST.md](SECTION_SCOPE_TEST.md)。
+下文仅保留历史版本说明。
+
+# 当前分支入口
+
 本分支为两批交错喷嘴对照，字车恢复原速，见[NOZZLE_BATCHES_TEST.md](NOZZLE_BATCHES_TEST.md)。
 下文为历史版本说明，不作为当前分支的更新步骤。
 

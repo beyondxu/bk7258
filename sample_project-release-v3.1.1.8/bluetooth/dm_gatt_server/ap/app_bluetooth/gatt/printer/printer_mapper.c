@@ -391,3 +391,17 @@ int printer_map_nozzle_lines(uint8_t *columns, uint32_t buffer_bytes,
                              const printer_map_config_t *cfg) {
     return printer_map_nozzle_lines_batch(columns, buffer_bytes, column_count, channel, 0U, 1U, cfg);
 }
+
+int printer_map_section_scope(uint8_t *columns, uint32_t buffer_bytes,
+                              uint32_t column_count, uint32_t section,
+                              const printer_map_config_t *cfg) {
+    if (!columns || !config_valid(cfg) || section >= 4U || column_count != 1180U ||
+        buffer_bytes < 118000U || cfg->x_pitch_centi_um != 3000U || cfg->x_direction != -1 ||
+        cfg->first_nozzle || cfg->reverse_y) return -1;
+    printer_map_route_t route;
+    if (printer_map_route(0U, 25U + section * 50U, cfg, &route) ||
+        route.slot != 12U + section || route.mask != 0x02U) return -1;
+    memset(columns, 0, 118000U);
+    for (uint32_t x = 300U; x < 900U; ++x) columns[x * 100U + route.slot] = 0x02U;
+    return 0;
+}

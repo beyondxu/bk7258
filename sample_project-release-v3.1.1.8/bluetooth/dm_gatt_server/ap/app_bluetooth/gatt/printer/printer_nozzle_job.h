@@ -1,5 +1,11 @@
+#if PRINTER_SECTION_SCOPE
+#include "printer_section_scope_job.h"
+#endif
 /* APP job is fully parsed before any movement; its pixels do not select this chart. */
 static int printer_run_nozzle_check(const uint8_t *bin, uint32_t length) {
+#if PRINTER_SECTION_SCOPE
+    return printer_run_section_scope(bin, length);
+#else
     static bool failed = false;
     if (failed || !printer_link_is_ready()) return -7;
     printer_map_config_t cfg;
@@ -49,4 +55,5 @@ done:
     printer_map_psram_free(columns);
     os_printf("[NOZZLE_LINES_END] code=%d locked=%u ink_unverified\r\n", result, (unsigned)failed);
     return result;
+#endif
 }

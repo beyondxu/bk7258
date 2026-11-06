@@ -1,3 +1,8 @@
+# 当前分支入口
+
+本分支为固定地址逐段波形对照，实际4条青色线、0进纸，见[SECTION_SCOPE_TEST.md](SECTION_SCOPE_TEST.md)。
+下文仅保留历史版本说明。
+
 # 喷嘴检查：两批交错输出，原速运动
 
 分支codex/printer-nozzle-batches。只更新BK7258；HC32保持能出墨的3e7e161。
