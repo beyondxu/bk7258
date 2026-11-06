@@ -1,3 +1,8 @@
+# 当前分支入口
+
+本分支为回程喷墨V版，图案仍是R版，见[PAPER_RETURN_SCAN_TEST.md](PAPER_RETURN_SCAN_TEST.md)。
+下文为原去程R版，保留供对照。
+
 # 同一批喷嘴，交换短线左右列
 
 分支codex/printer-paper-reverse-columns，基于fa114bc的T纸面对照版。

@@ -22,10 +22,15 @@ static int printer_run_section_paper(const uint8_t *bin, uint32_t length) {
     os_printf("[SECTION_PAPER_BEGIN] source=GENERATED C_D2 addr=1..25 sections=1..4 nozzles=100 dots_each_nozzle=96 sweeps=4 feed=0 waveform_unchanged\r\n");
     os_printf("[SECTION_PAPER_ORDER] reverse_columns=%u expected_column_mapping=%s nozzle_rows_unchanged waveform_unchanged\r\n",
               (unsigned)PRINTER_SECTION_REVERSE_COLUMNS, PRINTER_SECTION_REVERSE_COLUMNS ? "5,4,3,2,1" : "1,2,3,4,5");
+    os_printf("[SECTION_PAPER_SCAN] ink_on_return=%u same_R_chart_same_nozzles position_counts_only inspect_registration\r\n", (unsigned)PRINTER_SECTION_RETURN_SCAN);
     failed = true;
     for (unsigned section = 0; section < 4; ++section) {
         os_printf("[SECTION_PAPER_PASS] section=%u addresses=25 expected_dots=2400 max_bits_per_column=5 feed=0\r\n", section + 1U);
+#if PRINTER_SECTION_RETURN_SCAN
+        result = printer_execute_section_return_line(columns + section * 118000U);
+#else
         result = printer_execute_cyan_line(columns + section * 118000U);
+#endif
         if (result) goto done;
     }
     failed = false;

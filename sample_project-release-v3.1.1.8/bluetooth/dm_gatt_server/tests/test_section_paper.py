@@ -60,6 +60,9 @@ static int printer_execute_cyan_line(const uint8_t*p){
  }
  ++moves;return (scenario==1&&moves==2)||(scenario==2&&moves==1)?-9:0;
 }
+#if PRINTER_SECTION_RETURN_SCAN
+static int printer_execute_section_return_line(const uint8_t*p){return printer_execute_cyan_line(p);}
+#endif
 #include "printer_section_paper_job.h"
 int main(int argc,char**argv){
  assert(argc==3);scenario=atoi(argv[2]);FILE*f=fopen(argv[1],"rb");assert(f);
@@ -74,6 +77,7 @@ int main(int argc,char**argv){
 '''
   with tempfile.TemporaryDirectory() as tmp:
    p=Path(tmp);(p/'t.c').write_text(h);(p/'in.bin').write_bytes(blob(set()))
-   subprocess.run(['cc','-std=c99','-Wall','-Wextra','-Werror','-I'+str(SRC),str(p/'t.c'),str(SRC/'printer_mapper.c'),'-o',str(p/'t')],check=True)
-   for case in range(3):subprocess.run([str(p/'t'),str(p/'in.bin'),str(case)],check=True,stdout=subprocess.DEVNULL)
+   for return_scan in [0,1]:
+    subprocess.run(['cc','-std=c99','-Wall','-Wextra','-Werror',f'-DPRINTER_SECTION_RETURN_SCAN={return_scan}','-I'+str(SRC),str(p/'t.c'),str(SRC/'printer_mapper.c'),'-o',str(p/'t')],check=True)
+    for case in range(3):subprocess.run([str(p/'t'),str(p/'in.bin'),str(case)],check=True,stdout=subprocess.DEVNULL)
 if __name__=='__main__':unittest.main()

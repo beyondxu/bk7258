@@ -1,6 +1,10 @@
 #ifndef PRINTER_DIAGNOSTICS_H
 #define PRINTER_DIAGNOSTICS_H
 
+#ifndef PRINTER_SECTION_RETURN_SCAN
+#define PRINTER_SECTION_RETURN_SCAN 1 /* blank outward move, ink on return at identical physical STEP coordinates */
+#endif
+
 #ifndef PRINTER_SECTION_REVERSE_COLUMNS
 #define PRINTER_SECTION_REVERSE_COLUMNS 1U /* swap chart column 1<->5 and 2<->4 only */
 #endif

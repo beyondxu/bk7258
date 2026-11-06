@@ -857,6 +857,9 @@ stop:
     return result;
 }
 
+#if PRINTER_SECTION_PAPER && PRINTER_SECTION_RETURN_SCAN
+#include "printer_return_scan.h"
+#endif
 #if PRINTER_FULL_PAGE
 #include "printer_page_job.h"
 #if PRINTER_NOZZLE_CHECK
