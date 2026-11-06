@@ -40,6 +40,11 @@ static int printer_execute_section_return_line(const uint8_t *columns) {
     if (!carriage_return_compare_move(1, 7480U, NULL)) { result = -9; goto stop; }
     rtos_delay_milliseconds(200);
     if (tph_mcu_set_head_power(1) != BK_OK) { result = -8; goto stop; }
+#if PRINTER_HEAD_SETTLE_MS > 0
+    os_printf("[HEAD_SETTLE] delay_ms=%u head=ON carriage=STILL no_column_SPI\r\n", (unsigned)PRINTER_HEAD_SETTLE_MS);
+    rtos_delay_milliseconds(PRINTER_HEAD_SETTLE_MS);
+    os_printf("[HEAD_SETTLE_DONE] begin_return_scan\r\n");
+#endif
     if (!carriage_return_compare_move(0, 7480U, columns)) { result = -9; goto stop; }
     if (tph_mcu_set_head_power(0) != BK_OK) { result = -8; goto stop; }
     rtos_delay_milliseconds(300);

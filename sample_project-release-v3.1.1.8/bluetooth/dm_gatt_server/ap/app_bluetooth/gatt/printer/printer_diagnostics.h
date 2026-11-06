@@ -1,6 +1,13 @@
 #ifndef PRINTER_DIAGNOSTICS_H
 #define PRINTER_DIAGNOSTICS_H
 
+#ifndef PRINTER_HEAD_SETTLE_MS
+#define PRINTER_HEAD_SETTLE_MS 2000U /* head ON, no columns or carriage steps before return ink */
+#endif
+#if PRINTER_HEAD_SETTLE_MS != 0 && PRINTER_HEAD_SETTLE_MS != 2000
+#error Head settle comparison supports 0 or 2000 milliseconds
+#endif
+
 #ifndef PRINTER_SECTION_RETURN_SCAN
 #define PRINTER_SECTION_RETURN_SCAN 1 /* blank outward move, ink on return at identical physical STEP coordinates */
 #endif

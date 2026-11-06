@@ -1,3 +1,8 @@
+# 当前分支入口
+
+本分支在回程喷墨前增加上电静置2秒，见[HEAD_SETTLE_TEST.md](HEAD_SETTLE_TEST.md)。
+以下为无等待V基线说明，保留供对照。
+
 # 回程喷墨对照：相同R图，相反扫描方向
 
 分支codex/printer-paper-return-scan，基于c1630c5的R图版。仅更新BK。
