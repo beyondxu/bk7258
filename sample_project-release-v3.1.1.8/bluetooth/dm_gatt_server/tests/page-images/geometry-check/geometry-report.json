@@ -1,0 +1,36 @@
+{
+  "input": "synthetic_fixture_or_supplied_bin_not_hardware_capture",
+  "width": 1119,
+  "height": 992,
+  "swaths": 6,
+  "expected_bits": 93016,
+  "decoded_bits": 93016,
+  "missing": 0,
+  "extra": 0,
+  "duplicates": 0,
+  "section_dots_CMY": [
+    [
+      4255,
+      10006,
+      11640,
+      5109
+    ],
+    [
+      4255,
+      10006,
+      11626,
+      5109
+    ],
+    [
+      4255,
+      10006,
+      11640,
+      5109
+    ]
+  ],
+  "nozzle_rows": 192,
+  "y_pitch_um": 42.33,
+  "nominal_feed_mm": 8.12736,
+  "five_feed_nominal_mm": 40.6368,
+  "note": "Does not prove physical nozzles fire, feed calibration, CSV transcription, or pin wiring."
+}
