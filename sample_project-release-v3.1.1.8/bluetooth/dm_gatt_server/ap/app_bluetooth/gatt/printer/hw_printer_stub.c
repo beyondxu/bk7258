@@ -348,6 +348,9 @@ extern bool printer_link_is_ready(void);
 static int printer_execute_cyan_line(const uint8_t *columns);
 #if PRINTER_FULL_PAGE
 static int printer_run_full_page(const uint8_t *bin, uint32_t length);
+#if PRINTER_NOZZLE_CHECK
+static int printer_run_nozzle_check(const uint8_t *bin, uint32_t length);
+#endif
 #endif
 /* One explicitly selected APP strip; no page feed, no trajectory extension. */
 static int printer_run_bounded_line(const uint8_t *bin, uint32_t length)
@@ -454,7 +457,14 @@ static void printer_worker_thread(void *arg) {
 #if PRINTER_FULL_PAGE
         uint32_t length = s_buffer_len;
         uint32_t crc = printer_crc32(s_print_buffer, length);
-        int result = printer_protocol_job_buffer_valid(length, crc) ? printer_run_full_page(s_print_buffer, length) : -11;
+        int result = -11;
+        if (printer_protocol_job_buffer_valid(length, crc)) {
+#if PRINTER_NOZZLE_CHECK
+            result = printer_run_nozzle_check(s_print_buffer, length);
+#else
+            result = printer_run_full_page(s_print_buffer, length);
+#endif
+        }
         hw_printer_clear_buffer();
         printer_protocol_page_complete(length, crc, result);
         continue;
@@ -843,4 +853,7 @@ stop:
 
 #if PRINTER_FULL_PAGE
 #include "printer_page_job.h"
+#if PRINTER_NOZZLE_CHECK
+#include "printer_nozzle_job.h"
+#endif
 #endif

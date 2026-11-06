@@ -1,8 +1,15 @@
 #ifndef PRINTER_DIAGNOSTICS_H
 #define PRINTER_DIAGNOSTICS_H
 
+#ifndef PRINTER_NOZZLE_CHECK
+#define PRINTER_NOZZLE_CHECK 1 /* APP-triggered 192-row C/M/Y check, generated pixels */
+#endif
+
 #ifndef PRINTER_FULL_PAGE
 #define PRINTER_FULL_PAGE 1
+#endif
+#if PRINTER_NOZZLE_CHECK && !PRINTER_FULL_PAGE
+#error Nozzle check requires the complete-job worker
 #endif
 #ifndef PRINTER_PAGE_COLOR_MODE
 #define PRINTER_PAGE_COLOR_MODE 2 /* 1=CMY together; 2=C pass then M+Y pass */

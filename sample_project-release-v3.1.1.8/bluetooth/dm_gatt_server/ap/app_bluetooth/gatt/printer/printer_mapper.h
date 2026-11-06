@@ -51,6 +51,10 @@ int printer_map_solid_line(uint8_t *columns, uint32_t buffer_bytes,
 int printer_map_color_rows_pattern(uint8_t *columns, uint32_t buffer_bytes,
                                   uint32_t column_count, uint32_t channel_mask,
                                   const printer_map_config_t *cfg);
+/* 192 used nozzle rows: six interleaved blocks, 96 points per nozzle. */
+int printer_map_nozzle_lines(uint8_t *columns, uint32_t buffer_bytes,
+                             uint32_t column_count, uint32_t channel,
+                             const printer_map_config_t *cfg);
 /* Three 150-column bars at logical x=300,500,700 with per-domain delay. */
 int printer_map_alignment_pattern(uint8_t *columns, uint32_t buffer_bytes,
                                   uint32_t column_count, uint32_t channel_mask,
