@@ -1,8 +1,12 @@
 #ifndef PRINTER_DIAGNOSTICS_H
 #define PRINTER_DIAGNOSTICS_H
 
+#ifndef PRINTER_SECTION_PAPER
+#define PRINTER_SECTION_PAPER 1 /* C/D2: all 25 addresses per section, paper-only comparison */
+#endif
+
 #ifndef PRINTER_SECTION_SCOPE
-#define PRINTER_SECTION_SCOPE 1 /* four C/D2 nozzles, same address, one section per sweep */
+#define PRINTER_SECTION_SCOPE 0 /* four C/D2 nozzles, same address, one section per sweep */
 #endif
 
 #ifndef PRINTER_NOZZLE_CHECK

@@ -1,9 +1,14 @@
+#if PRINTER_SECTION_PAPER
+#include "printer_section_paper_job.h"
+#endif
 #if PRINTER_SECTION_SCOPE
 #include "printer_section_scope_job.h"
 #endif
 /* APP job is fully parsed before any movement; its pixels do not select this chart. */
 static int printer_run_nozzle_check(const uint8_t *bin, uint32_t length) {
-#if PRINTER_SECTION_SCOPE
+#if PRINTER_SECTION_PAPER
+    return printer_run_section_paper(bin, length);
+#elif PRINTER_SECTION_SCOPE
     return printer_run_section_scope(bin, length);
 #else
     static bool failed = false;

@@ -51,6 +51,9 @@ int printer_map_solid_line(uint8_t *columns, uint32_t buffer_bytes,
 int printer_map_color_rows_pattern(uint8_t *columns, uint32_t buffer_bytes,
                                   uint32_t column_count, uint32_t channel_mask,
                                   const printer_map_config_t *cfg);
+int printer_map_section_paper(uint8_t *columns, uint32_t buffer_bytes,
+                              uint32_t column_count, uint32_t section,
+                              const printer_map_config_t *cfg);
 int printer_map_section_scope(uint8_t *columns, uint32_t buffer_bytes,
                               uint32_t column_count, uint32_t section,
                               const printer_map_config_t *cfg);

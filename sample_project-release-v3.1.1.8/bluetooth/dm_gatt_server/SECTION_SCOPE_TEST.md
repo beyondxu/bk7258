@@ -1,3 +1,8 @@
+# 当前分支入口
+
+本分支改为纸面检查，不要求示波器，见[SECTION_PAPER_TEST.md](SECTION_PAPER_TEST.md)。
+以下仅为历史波形版说明。
+
 # 固定地址4、青色D2，逐段抓波形
 
 分支codex/printer-section-scope。只更新BK；HC32固定3e7e161。
