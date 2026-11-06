@@ -406,10 +406,10 @@ int printer_map_section_scope(uint8_t *columns, uint32_t buffer_bytes,
     return 0;
 }
 
-int printer_map_section_paper(uint8_t *columns, uint32_t buffer_bytes,
+int printer_map_section_paper_order(uint8_t *columns, uint32_t buffer_bytes,
                               uint32_t column_count, uint32_t section,
-                              const printer_map_config_t *cfg) {
-    if (!columns || !config_valid(cfg) || section >= 4U || column_count != 1180U ||
+                              uint32_t reverse_columns, const printer_map_config_t *cfg) {
+    if (reverse_columns > 1U || !columns || !config_valid(cfg) || section >= 4U || column_count != 1180U ||
         buffer_bytes < 118000U || cfg->x_pitch_centi_um != 3000U || cfg->x_direction != -1 ||
         cfg->first_nozzle || cfg->reverse_y) return -1;
     /* D2 has 25 nozzles per section, sorted by physical Y in the 200-row LUT.
@@ -422,8 +422,16 @@ int printer_map_section_paper(uint8_t *columns, uint32_t buffer_bytes,
     memset(columns, 0, 118000U);
     for (uint32_t i = 0; i < 25U; ++i) {
         uint32_t slot = map_row_slot[section * 50U + i * 2U + 1U];
-        uint32_t first = 160U + (i % 5U) * 180U;
+        uint32_t tile = i % 5U;
+        if (reverse_columns) tile = 4U - tile;
+        uint32_t first = 160U + tile * 180U;
         for (uint32_t x = first; x < first + 96U; ++x) columns[x * 100U + slot] = 0x02U;
     }
     return 0;
+}
+
+int printer_map_section_paper(uint8_t *columns, uint32_t buffer_bytes,
+                              uint32_t column_count, uint32_t section,
+                              const printer_map_config_t *cfg) {
+    return printer_map_section_paper_order(columns, buffer_bytes, column_count, section, 0U, cfg);
 }

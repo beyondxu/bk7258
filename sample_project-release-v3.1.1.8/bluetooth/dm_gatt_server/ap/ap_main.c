@@ -337,7 +337,7 @@ static void app_printer_task_entry(void *arg) {
 	
 	   // 打印完成之后，再进入 BLE 监听服务
 	// ★ 测试 1：打印青色 (Cyan, 0x03) 2 行 ★
-		os_printf("[SYS] APP_SECTION_PAPER color=C domain=D2 addr=1..25 sections=1..4 sweeps=4 feeds=0 no_startup_motion\r\n");
+		os_printf("[SYS] APP_SECTION_PAPER_REVERSE color=C domain=D2 addr=1..25 sections=1..4 sweeps=4 feeds=0 reverse_columns=1 no_startup_motion\r\n");
 	 // ★★★ 在这里调用测试！打印 600 列宽，连续打 4 行 ★★★
       // ★★★ 直接调这行即可：内部自动先霍尔寻原点，再打 6 行纯绿 ★★★
      // ★★★ 在此调用 7 色测试：色块宽度 600 列 ★★★

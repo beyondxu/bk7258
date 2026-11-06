@@ -35,6 +35,7 @@ class Paper(unittest.TestCase):
 #include <stdlib.h>
 #include <stdio.h>
 #include "printer_page.h"
+#define PRINTER_SECTION_REVERSE_COLUMNS 1
 #define PRINTER_NOZZLE_TIME_SCALE 1
 #define PRINTER_MAP_X_PITCH_CENTI_UM 3000
 #define PRINTER_MAP_X_DIRECTION -1
@@ -52,6 +53,11 @@ static int printer_execute_cyan_line(const uint8_t*p){
  for(unsigned x=0;x<1180;x++)for(unsigned slot=0;slot<100;slot++)if(p[x*100+slot]){
  assert(slot%4==sec&&p[x*100+slot]==2);++total;++hits[slot];}
  assert(total==2400);for(unsigned a=0;a<25;a++)assert(hits[a*4+sec]==96);
+ /* CSV: address1 was leftmost and address2 rightmost. Verify actual dispatch swaps them. */
+ for(unsigned x=0;x<1180;x++){
+ assert(p[x*100+sec]==(x>=880&&x<976?2:0));
+ assert(p[x*100+4+sec]==(x>=160&&x<256?2:0));
+ }
  ++moves;return (scenario==1&&moves==2)||(scenario==2&&moves==1)?-9:0;
 }
 #include "printer_section_paper_job.h"

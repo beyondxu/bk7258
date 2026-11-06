@@ -1,6 +1,13 @@
 #ifndef PRINTER_DIAGNOSTICS_H
 #define PRINTER_DIAGNOSTICS_H
 
+#ifndef PRINTER_SECTION_REVERSE_COLUMNS
+#define PRINTER_SECTION_REVERSE_COLUMNS 1U /* swap chart column 1<->5 and 2<->4 only */
+#endif
+#if PRINTER_SECTION_REVERSE_COLUMNS > 1
+#error Section paper column order must be 0 or 1
+#endif
+
 #ifndef PRINTER_SECTION_PAPER
 #define PRINTER_SECTION_PAPER 1 /* C/D2: all 25 addresses per section, paper-only comparison */
 #endif

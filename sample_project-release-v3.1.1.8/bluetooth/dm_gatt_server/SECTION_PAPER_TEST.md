@@ -1,3 +1,8 @@
+# 当前分支入口
+
+本分支为左右列交换R版，见[SECTION_PAPER_REVERSE_TEST.md](SECTION_PAPER_REVERSE_TEST.md)。
+下文为原T版说明，保留供对照。
+
 # 纸面分段/地址对照：不用示波器
 
 分支codex/printer-section-paper。只更新BK7258；HC32保持能出墨的3e7e161。
