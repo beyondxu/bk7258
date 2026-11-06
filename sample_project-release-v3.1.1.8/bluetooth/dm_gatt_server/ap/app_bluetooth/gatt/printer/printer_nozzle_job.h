@@ -14,21 +14,27 @@ static int printer_run_nozzle_check(const uint8_t *bin, uint32_t length) {
     int result = printer_map_bin_dry_run(bin, length, &cfg, &stats,
                                        printer_map_psram_alloc, printer_map_psram_free, printer_map_yield_cpu);
     if (result) return result;
-    uint8_t *columns = printer_map_psram_alloc(3U * 118000U);
+    uint8_t *columns = printer_map_psram_alloc(3U * PRINTER_NOZZLE_BATCHES * 118000U);
     if (!columns) return -2;
     for (unsigned ch = 0; ch < 3; ++ch) {
-        result = printer_map_nozzle_lines(columns + ch * 118000U, 118000U, 1180U, ch, &cfg);
-        if (result) goto done;
+        for (unsigned batch = 0; batch < PRINTER_NOZZLE_BATCHES; ++batch) {
+            result = printer_map_nozzle_lines_batch(columns + (ch * PRINTER_NOZZLE_BATCHES + batch) * 118000U,
+                                                    118000U, 1180U, ch, batch, PRINTER_NOZZLE_BATCHES, &cfg);
+            if (result) goto done;
+        }
     }
     os_printf("[NOZZLE_LINES_BEGIN] source=GENERATED used_rows=192 of_200 length_columns=96 blocks=6 lines_each=32 dots_each_color=18432 feed_steps=3170 pulses_unchanged\r\n");
-    os_printf("[NOZZLE_LOAD] forward_motor_delay_scale=%u start_low_us=%u cruise_low_us=%u return_scale=1 column_data_unchanged head_waveform_unchanged actual_fire_interval_unmeasured\r\n",
+    os_printf("[NOZZLE_LOAD] forward_motor_delay_scale=%u start_low_us=%u cruise_low_us=%u return_scale=1 combined_chart_unchanged head_waveform_unchanged actual_fire_interval_unmeasured\r\n",
               (unsigned)PRINTER_NOZZLE_TIME_SCALE, (unsigned)(3000U * PRINTER_NOZZLE_TIME_SCALE),
               (unsigned)(260U * PRINTER_NOZZLE_TIME_SCALE));
     failed = true;
     for (unsigned ch = 0; ch < 3; ++ch) {
-        os_printf("[NOZZLE_LINES_PASS] channel=%u rows=0..191 expected_dots=18432\r\n", ch);
-        result = printer_execute_cyan_line(columns + ch * 118000U);
-        if (result) goto done;
+        for (unsigned batch = 0; batch < PRINTER_NOZZLE_BATCHES; ++batch) {
+            os_printf("[NOZZLE_BATCH] channel=%u batch=%u/%u expected_dots=%u no_feed_between_batches motor_scale=%u\r\n",
+                      ch, batch + 1U, (unsigned)PRINTER_NOZZLE_BATCHES, (unsigned)(18432U / PRINTER_NOZZLE_BATCHES), (unsigned)PRINTER_NOZZLE_TIME_SCALE);
+            result = printer_execute_cyan_line(columns + (ch * PRINTER_NOZZLE_BATCHES + batch) * 118000U);
+            if (result) goto done;
+        }
         if (ch < 2) {
             uint32_t sent = 0;
             result = tph_mcu_set_head_power(0);

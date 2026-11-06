@@ -1,3 +1,8 @@
+# 当前分支入口
+
+本分支为两批交错喷嘴对照，字车恢复原速，见[NOZZLE_BATCHES_TEST.md](NOZZLE_BATCHES_TEST.md)。
+下文为历史版本说明，不作为当前分支的更新步骤。
+
 # 低负载版本入口
 
 本分支默认打印去程STEP低电平延时乘4，详细更新和对照步骤见[NOZZLE_LOW_LOAD_TEST.md](NOZZLE_LOW_LOAD_TEST.md)。

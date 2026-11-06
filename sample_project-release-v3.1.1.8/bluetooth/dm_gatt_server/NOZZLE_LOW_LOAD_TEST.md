@@ -1,3 +1,8 @@
+# 当前分支入口
+
+本分支为两批交错喷嘴对照，字车恢复原速，见[NOZZLE_BATCHES_TEST.md](NOZZLE_BATCHES_TEST.md)。
+下文为历史版本说明，不作为当前分支的更新步骤。
+
 # 喷嘴检查：降平均喷射频率对照
 
 分支codex/printer-nozzle-low-load，基于14cd8b1可见短线检查版。

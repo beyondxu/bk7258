@@ -363,10 +363,10 @@ int printer_map_visit_bin(const uint8_t *bin, uint32_t length,
     return map_bin_run(bin, length, cfg, stats, allocate, release, yield_cpu, NULL, visitor, context);
 }
 
-int printer_map_nozzle_lines(uint8_t *columns, uint32_t buffer_bytes,
+int printer_map_nozzle_lines_batch(uint8_t *columns, uint32_t buffer_bytes,
                              uint32_t column_count, uint32_t channel,
-                             const printer_map_config_t *cfg) {
-    if (!columns || !config_valid(cfg) || channel >= 3 || column_count != 1180U ||
+                             uint32_t batch, uint32_t batches, const printer_map_config_t *cfg) {
+    if ((batches != 1U && batches != 2U) || batch >= batches || !columns || !config_valid(cfg) || channel >= 3 || column_count != 1180U ||
         buffer_bytes < column_count * 100U) return -1;
     /* Validate every route before altering the caller's output. */
     for (uint32_t row = 0; row < 192U; ++row) {
@@ -376,6 +376,7 @@ int printer_map_nozzle_lines(uint8_t *columns, uint32_t buffer_bytes,
     }
     memset(columns, 0, column_count * 100U);
     for (uint32_t row = 0; row < 192U; ++row) {
+        if ((row / 6U) % batches != batch) continue;
         printer_map_route_t route;
         if (printer_map_route(channel, row, cfg, &route)) return -1;
         uint32_t first = 120U + (row % 6U) * 160U + route.delay_columns;
@@ -383,4 +384,10 @@ int printer_map_nozzle_lines(uint8_t *columns, uint32_t buffer_bytes,
             columns[x * 100U + route.slot] |= (uint8_t)route.mask;
     }
     return 0;
+}
+
+int printer_map_nozzle_lines(uint8_t *columns, uint32_t buffer_bytes,
+                             uint32_t column_count, uint32_t channel,
+                             const printer_map_config_t *cfg) {
+    return printer_map_nozzle_lines_batch(columns, buffer_bytes, column_count, channel, 0U, 1U, cfg);
 }
