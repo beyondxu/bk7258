@@ -822,6 +822,11 @@ static int printer_execute_cyan_line(const uint8_t *columns) {
     if (tph_mcu_set_head_power(0) != BK_OK) return -8;
     carriage_verified_power_up();
     if (tph_mcu_set_head_power(1) != BK_OK) { result = -8; goto stop; }
+#if PRINTER_PAGE_HEAD_SETTLE_MS > 0
+    os_printf("[PAGE_HEAD_SETTLE] delay_ms=%u head=ON carriage=STILL no_column_SPI\r\n", (unsigned)PRINTER_PAGE_HEAD_SETTLE_MS);
+    rtos_delay_milliseconds(PRINTER_PAGE_HEAD_SETTLE_MS);
+    os_printf("[PAGE_HEAD_SETTLE_DONE] begin_forward_image_scan\r\n");
+#endif
     os_printf("[CYAN_LINE_BEGIN] motion_base=29a973b start=3000 cruise=260 columns=1180 steps=7480 feed=0\r\n");
     if (!carriage_stream_move_ramped(1, SHUTTLE_TOTAL_STEPS, columns)) { result = -9; goto stop; }
     if (tph_mcu_set_head_power(0) != BK_OK) { result = -8; goto stop; }

@@ -1,3 +1,8 @@
+# 当前完整图片入口
+
+本分支实际打印APP完整图片，加入每条带2秒等待并默认CMY同扫，见[FULL_PAGE_SETTLE_TEST.md](FULL_PAGE_SETTLE_TEST.md)。
+下文是历史版本说明。
+
 # 完整图分组扫描对照：青色单独，品红+黄色随后
 
 分支 `codex/printer-full-page-groups`，从完整图及3170步校准版 `f2eef83` 建立，

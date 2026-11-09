@@ -1,11 +1,18 @@
 #ifndef PRINTER_DIAGNOSTICS_H
 #define PRINTER_DIAGNOSTICS_H
 
+#ifndef PRINTER_PAGE_HEAD_SETTLE_MS
+#define PRINTER_PAGE_HEAD_SETTLE_MS 2000U /* powered idle, no columns before each actual image swath */
+#endif
+#if PRINTER_PAGE_HEAD_SETTLE_MS != 0 && PRINTER_PAGE_HEAD_SETTLE_MS != 2000
+#error Page head settle comparison supports 0 or 2000 milliseconds
+#endif
+
 #ifndef PRINTER_FULL_PAGE
 #define PRINTER_FULL_PAGE 1
 #endif
 #ifndef PRINTER_PAGE_COLOR_MODE
-#define PRINTER_PAGE_COLOR_MODE 2 /* 1=CMY together; 2=C pass then M+Y pass */
+#define PRINTER_PAGE_COLOR_MODE 1 /* 1=CMY together; 2=C pass then M+Y pass */
 #endif
 #if PRINTER_PAGE_COLOR_MODE != 1 && PRINTER_PAGE_COLOR_MODE != 2
 #error Page color mode must be 1 or 2

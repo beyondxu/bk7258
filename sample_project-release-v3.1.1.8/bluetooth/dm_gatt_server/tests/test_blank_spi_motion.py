@@ -49,7 +49,11 @@ static void delay_us(uint32_t us){
   assert(us==expected);++index_in_leg;phase=1;
  }
 }
-static void rtos_delay_milliseconds(unsigned ms){assert(!step);(void)ms;}
+static unsigned settle_count;
+static void rtos_delay_milliseconds(unsigned ms){
+ assert(!step);
+ if(ms==2000){assert(PRINTER_PAGE_HEAD_SETTLE_MS==2000&&blank_mode==2&&head_power&&boost);assert(!columns&&!pulses[0]&&!pulses[1]);++settle_count;}
+}
 static int bk_motor_gpio_config_init(void){++init_count;return 0;}
 static void bk_motor_boost_power(unsigned on){boost=on;}
 static int tph_mcu_set_head_power(uint8_t on){
@@ -68,7 +72,7 @@ static int tph_fire_raw_column_bytes(const uint8_t *p){
 }
 REFERENCE
 NEW
-static void reset(void){step=phase=delay_count=init_count=off_calls=columns=0;pulses[0]=pulses[1]=0;off_fail=0;fail_column=-1;head_power=command_count=boost=0;command_fail=-1;}
+static void reset(void){settle_count=0;step=phase=delay_count=init_count=off_calls=columns=0;pulses[0]=pulses[1]=0;off_fail=0;fail_column=-1;head_power=command_count=boost=0;command_fail=-1;}
 int main(void){
  reset();standalone_carriage_shuttle_test(1);
  assert(pulses[0]==7480&&pulses[1]==7480&&columns==0);
@@ -83,6 +87,7 @@ int main(void){
  reset();blank_mode=2;cyan[231*100+15]=2;cyan[948*100+15]=2;
  assert(printer_execute_cyan_line(cyan)==0);
  assert(columns==1180&&pulses[1]==7480&&pulses[0]==7480&&!head_power&&!boost);
+ assert(settle_count==(PRINTER_PAGE_HEAD_SETTLE_MS?1U:0U));
  assert(command_count==3&&power_commands[0]==0&&power_commands[1]==1&&power_commands[2]==0);
  assert(delay_count==expected_count&&!memcmp(expected_delays,actual_delays,delay_count*sizeof(uint32_t)));
  reset();fail_column=10;assert(printer_execute_cyan_line(cyan)==-9);
@@ -96,5 +101,6 @@ int main(void){
 '''.replace('REFERENCE',reference).replace('NEW',new)
 with tempfile.TemporaryDirectory() as tmp:
  p=Path(tmp);(p/'test.c').write_text(h)
- subprocess.run(['cc','-std=c99','-Wall','-Wextra','-Werror',str(p/'test.c'),'-o',str(p/'test')],check=True)
- subprocess.run([str(p/'test')],check=True)
+ for settle in [0,2000]:
+  subprocess.run(['cc','-std=c99','-Wall','-Wextra','-Werror',f'-DPRINTER_PAGE_HEAD_SETTLE_MS={settle}',str(p/'test.c'),'-o',str(p/'test')],check=True)
+  subprocess.run([str(p/'test')],check=True)
