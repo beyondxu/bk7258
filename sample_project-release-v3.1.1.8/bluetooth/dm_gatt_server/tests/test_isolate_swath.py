@@ -28,6 +28,9 @@ static void *printer_map_psram_alloc(size_t n){if(oom)return NULL;void*p=malloc(
 static void printer_map_psram_free(void*p){assert(live);--live;free(p);}
 static void printer_map_yield_cpu(void){}
 static bool printer_link_is_ready(void){return true;}
+#if PRINTER_PAGE_REPEAT_SAME_POWER
+#define printer_execute_cyan_line printer_execute_same_power_repeat
+#endif
 static int printer_execute_cyan_line(const uint8_t*p){assert(!memcmp(p,expected,118000));++moves;return fail?-9:0;}
 static int tph_mcu_set_head_power(unsigned on){(void)on;abort();}
 static int motor_page_feed(uint32_t n,uint8_t dir,uint32_t*sent){(void)n;(void)dir;(void)sent;abort();}
@@ -51,7 +54,7 @@ with tempfile.TemporaryDirectory() as tmp:
  data=blob(points);(p/'input.bin').write_bytes(data);(p/'blank.bin').write_bytes(blob(set()))
  renderer=Renderer();code,page=renderer.prepare(data);assert code==0
  golden,_=renderer.render(page,4);renderer.close(page);(p/'golden.bin').write_bytes(golden)
- for selected in [4,6]:
-  subprocess.run(['cc','-std=c99','-Wall','-Wextra','-Werror',f'-DPRINTER_PAGE_ONLY_SWATH={selected}','-I'+str(SRC),str(p/'test.c'),str(SRC/'printer_page.c'),str(SRC/'printer_mapper.c'),'-o',str(p/'test')],check=True)
+ for selected,repeat in [(4,0),(6,0),(4,1)]:
+  subprocess.run(['cc','-std=c99','-Wall','-Wextra','-Werror',f'-DPRINTER_PAGE_ONLY_SWATH={selected}',f'-DPRINTER_PAGE_REPEAT_SAME_POWER={repeat}','-I'+str(SRC),str(p/'test.c'),str(SRC/'printer_page.c'),str(SRC/'printer_mapper.c'),'-o',str(p/'test')],check=True)
   for fail in [0,1]:subprocess.run([str(p/'test'),str(p/'input.bin'),str(p/'blank.bin'),str(p/'golden.bin'),str(fail)],check=True,stdout=subprocess.DEVNULL)
  print('PASS: selected swath matches original 118000 bytes, no feed/other scan, empty/out-of-range/OOM rejection, failure lock and successful repeat')

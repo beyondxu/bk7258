@@ -1,3 +1,8 @@
+# 当前分支入口
+
+当前为两份连续上电对照，见 [SAME_POWER_REPEAT_TEST.md](SAME_POWER_REPEAT_TEST.md)。
+下文是先前单份隔离试验记录。
+
 # 原第5条带作为第一次物理扫描，不进纸
 
 分支codex/printer-isolate-bottom-swath，基于当前完整图版本，只更新BK。

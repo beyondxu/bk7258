@@ -710,12 +710,13 @@ bk_err_t motor_carriage_test_leg(uint8_t direction, uint32_t steps, uint32_t *se
  * original motor_feed_paper(..., 1) LOW setting; physical distance is calibrated
  * by PRINTER_PAGE_FEED_STEPS, not claimed from pulse counts.
  */
-bk_err_t motor_page_feed(uint32_t steps, uint8_t direction, uint32_t *sent) {
+static bk_err_t motor_page_feed_impl(uint32_t steps, uint8_t direction, uint32_t *sent, uint8_t own_boost) {
     if (!sent || !steps || steps > 5000U) return BK_FAIL;
     *sent = 0;
-    bk_motor_gpio_config_init(); /* U4 remains disabled/asleep */
-    bk_motor_boost_power(1);
-    rtos_delay_milliseconds(60);
+    /* GPIO init forces boost LOW: never call it in an owned power session. */
+    if (own_boost) bk_motor_gpio_config_init();
+    else bk_motor_set_state(1, 0); /* park already-configured U4 */
+    if (own_boost) { bk_motor_boost_power(1); rtos_delay_milliseconds(60); }
     SET_GPIO_HIGH(PAPER_MOT_MS1); SET_GPIO_HIGH(PAPER_MOT_MS2); SET_GPIO_HIGH(PAPER_MOT_MS3);
     SET_GPIO_HIGH(PAPER_MOT_SLEEP); rtos_delay_milliseconds(5);
     SET_GPIO_HIGH(PAPER_MOT_RES); SET_GPIO_LOW(PAPER_MOT_EN);
@@ -731,6 +732,14 @@ bk_err_t motor_page_feed(uint32_t steps, uint8_t direction, uint32_t *sent) {
         if ((i & 31U) == 31U) rtos_delay_milliseconds(1);
     }
     bk_motor_set_state(0, 0);
-    bk_motor_boost_power(0);
+    if (own_boost) bk_motor_boost_power(0);
     return BK_OK;
+}
+
+/* Normal page jobs own the boost; repeat test keeps it owned by its caller. */
+bk_err_t motor_page_feed(uint32_t steps, uint8_t direction, uint32_t *sent) {
+    return motor_page_feed_impl(steps, direction, sent, 1);
+}
+bk_err_t motor_page_feed_keep_power(uint32_t steps, uint8_t direction, uint32_t *sent) {
+    return motor_page_feed_impl(steps, direction, sent, 0);
 }

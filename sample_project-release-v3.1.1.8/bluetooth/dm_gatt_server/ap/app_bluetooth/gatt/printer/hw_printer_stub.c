@@ -731,15 +731,8 @@ static bool carriage_stream_move_ramped(uint8_t direction, uint32_t total_steps,
     return true;
 }
 
-static void carriage_verified_power_up(void) {
-    // 1. 初始化电机 GPIO
-    bk_motor_gpio_config_init();
-
-    // 2. 开启 15V 主升压电源并延时等待稳定
-    os_printf("Step 1: 15V Power Boosting...\r\n");
-    bk_motor_boost_power(1);
-    rtos_delay_milliseconds(60);
-
+/* Wake U4 without touching the shared boost or HC32 head power. */
+static void carriage_wake_on_powered_rail(void) {
     // 3. 配置 ATD5984 (U4) 为 1/16 高精度微步细分 (MS1=1, MS2=1, MS3=1)
     GPIO_UP(TPH_MOT_MS1);
     GPIO_UP(TPH_MOT_MS2);
@@ -754,6 +747,18 @@ static void carriage_verified_power_up(void) {
     GPIO_DOWN(TPH_MOT_EN);
     rtos_delay_milliseconds(10); // 建立初始锁紧力矩
 
+}
+
+static void carriage_verified_power_up(void) {
+    // 1. 初始化电机 GPIO
+    bk_motor_gpio_config_init();
+
+    // 2. 开启 15V 主升压电源并延时等待稳定
+    os_printf("Step 1: 15V Power Boosting...\r\n");
+    bk_motor_boost_power(1);
+    rtos_delay_milliseconds(60);
+
+    carriage_wake_on_powered_rail();
 }
 
 static void carriage_verified_power_down(void) {
@@ -847,5 +852,8 @@ stop:
 }
 
 #if PRINTER_FULL_PAGE
+#if PRINTER_PAGE_REPEAT_SAME_POWER
+#include "printer_same_power_repeat.h"
+#endif
 #include "printer_page_job.h"
 #endif

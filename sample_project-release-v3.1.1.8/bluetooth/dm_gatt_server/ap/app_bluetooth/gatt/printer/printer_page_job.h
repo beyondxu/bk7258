@@ -1,5 +1,11 @@
+#ifndef PRINTER_PAGE_REPEAT_SAME_POWER
+#define PRINTER_PAGE_REPEAT_SAME_POWER 0
+#endif
 #ifndef PRINTER_PAGE_ONLY_SWATH
 #define PRINTER_PAGE_ONLY_SWATH (-1) /* default for older hosts: full page */
+#endif
+#if PRINTER_PAGE_REPEAT_SAME_POWER && (PRINTER_PAGE_ONLY_SWATH != 4 || PRINTER_PAGE_COLOR_MODE != 1)
+#error Same-power repeat requires original swath 5 and combined CMY
 #endif
 /* Private hardware orchestrator. Included after verified shuttle helpers. */
 static int printer_run_full_page(const uint8_t *bin, uint32_t length) {
@@ -38,7 +44,7 @@ static int printer_run_full_page(const uint8_t *bin, uint32_t length) {
               (unsigned long)page.source_dots[0], (unsigned long)page.source_dots[1], (unsigned long)page.source_dots[2],
               (unsigned long)page.output_dots[0], (unsigned long)page.output_dots[1], (unsigned long)page.output_dots[2]);
     if (PRINTER_PAGE_ONLY_SWATH >= 0)
-        os_printf("[PAGE_ISOLATE] original_swath=%u first_physical_scan=1 feed=0 original_nozzle_rows_and_columns\r\n", (unsigned)PRINTER_PAGE_ONLY_SWATH + 1U);
+        os_printf("[PAGE_ISOLATE] original_swath=%u first_physical_scan=1 no_feed_before_first original_nozzle_rows_and_columns\r\n", (unsigned)PRINTER_PAGE_ONLY_SWATH + 1U);
     for (uint32_t strip = 0; strip < page.swaths; ++strip) {
         if (PRINTER_PAGE_ONLY_SWATH >= 0 && strip != (uint32_t)PRINTER_PAGE_ONLY_SWATH) continue;
         uint32_t dots[3];
@@ -66,7 +72,11 @@ static int printer_run_full_page(const uint8_t *bin, uint32_t length) {
             os_printf("[PAGE_PASS] swath=%lu group=%u/%u mask=%u dots=%lu no_feed_between_passes\r\n",
                       (unsigned long)(strip + 1U), group + 1U, groups, mask, (unsigned long)pass_dots);
             failure_locked = true;
+#if PRINTER_PAGE_REPEAT_SAME_POWER
+            result = printer_execute_same_power_repeat(data);
+#else
             result = printer_execute_cyan_line(data);
+#endif
             if (result) goto done;
         }
         if (PRINTER_PAGE_ONLY_SWATH < 0 && strip + 1U < page.swaths) {
@@ -80,9 +90,13 @@ static int printer_run_full_page(const uint8_t *bin, uint32_t length) {
         }
     }
     failure_locked = false;
+#if PRINTER_PAGE_REPEAT_SAME_POWER
+    os_printf("[PAGE_REPEAT_DONE] copies=2 feeds=1 head_sessions=1 ink_unverified\r\n");
+#else
     if (PRINTER_PAGE_ONLY_SWATH >= 0)
         os_printf("[PAGE_ISOLATE_DONE] original_swath=%u feed=0 ink_unverified\r\n", (unsigned)PRINTER_PAGE_ONLY_SWATH + 1U);
     else os_printf("[PAGE_DONE] swaths=%lu no_auto_eject feed_distance_and_ink_unverified\r\n", (unsigned long)page.swaths);
+#endif
 done:
     if (columns) printer_map_psram_free(columns);
     if (scratch) printer_map_psram_free(scratch);

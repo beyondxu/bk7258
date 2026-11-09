@@ -2,11 +2,15 @@
 #define PRINTER_DIAGNOSTICS_H
 
 #ifndef PRINTER_PAGE_ONLY_SWATH
-#define PRINTER_PAGE_ONLY_SWATH 4 /* zero-based: original swath 5 only, no paper feed */
+#define PRINTER_PAGE_ONLY_SWATH 4 /* zero-based: keep original swath 5 nozzle rows */
+#endif
+
+#ifndef PRINTER_PAGE_REPEAT_SAME_POWER
+#define PRINTER_PAGE_REPEAT_SAME_POWER 1 /* two identical scans, one head power session */
 #endif
 
 #ifndef PRINTER_PAGE_HEAD_SETTLE_MS
-#define PRINTER_PAGE_HEAD_SETTLE_MS 2000U /* powered idle, no columns before each actual image swath */
+#define PRINTER_PAGE_HEAD_SETTLE_MS 2000U /* powered idle, no columns; once before a same-power pair */
 #endif
 #if PRINTER_PAGE_HEAD_SETTLE_MS != 0 && PRINTER_PAGE_HEAD_SETTLE_MS != 2000
 #error Page head settle comparison supports 0 or 2000 milliseconds
@@ -25,7 +29,7 @@
 #define PRINTER_PAGE_TRANSFORM 0U /* bit0=mirror X, bit1=flip Y; test TOP/END first */
 #endif
 #ifndef PRINTER_PAGE_FEED_STEPS
-#define PRINTER_PAGE_FEED_STEPS 3170U /* measured: 5*2340 pulses moved 30mm; target 40.64mm */
+#define PRINTER_PAGE_FEED_STEPS 3170U /* measured: 11700 pulses / 30mm; 3170 pulses ~8.13mm */
 #endif
 #ifndef PRINTER_PAGE_FEED_DIRECTION
 #define PRINTER_PAGE_FEED_DIRECTION 0 /* original forward-feed pin level LOW */

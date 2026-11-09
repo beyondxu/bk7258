@@ -1,6 +1,6 @@
 # 当前分支入口
 
-本分支只隔离原第5条带，不进纸，见[ISOLATE_BOTTOM_SWATH_TEST.md](ISOLATE_BOTTOM_SWATH_TEST.md)。
+本分支把原第5条带在同一次上电期间打印两份，中间进纸一次，见[SAME_POWER_REPEAT_TEST.md](SAME_POWER_REPEAT_TEST.md)。
 下文保留原完整图说明，当前诊断模式不执行完整页。
 
 # 实际APP完整图：每个条带上电等待2秒
