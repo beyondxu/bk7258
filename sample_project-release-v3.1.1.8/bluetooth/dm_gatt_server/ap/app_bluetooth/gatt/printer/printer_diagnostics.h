@@ -1,6 +1,10 @@
 #ifndef PRINTER_DIAGNOSTICS_H
 #define PRINTER_DIAGNOSTICS_H
 
+#ifndef PRINTER_PAGE_ONLY_SWATH
+#define PRINTER_PAGE_ONLY_SWATH 4 /* zero-based: original swath 5 only, no paper feed */
+#endif
+
 #ifndef PRINTER_PAGE_HEAD_SETTLE_MS
 #define PRINTER_PAGE_HEAD_SETTLE_MS 2000U /* powered idle, no columns before each actual image swath */
 #endif

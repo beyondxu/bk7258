@@ -1,3 +1,6 @@
+#ifndef PRINTER_PAGE_ONLY_SWATH
+#define PRINTER_PAGE_ONLY_SWATH (-1) /* default for older hosts: full page */
+#endif
 /* Private hardware orchestrator. Included after verified shuttle helpers. */
 static int printer_run_full_page(const uint8_t *bin, uint32_t length) {
     static bool failure_locked = false;
@@ -18,6 +21,9 @@ static int printer_run_full_page(const uint8_t *bin, uint32_t length) {
         os_printf("[PAGE_REJECT] code=%d no_motion\r\n", result);
         return result;
     }
+    if (PRINTER_PAGE_ONLY_SWATH >= 0 && (uint32_t)PRINTER_PAGE_ONLY_SWATH >= page.swaths) {
+        printer_page_release(&page, printer_map_psram_free); return -4;
+    }
     result = printer_page_transform(&page, PRINTER_PAGE_TRANSFORM, printer_map_yield_cpu);
     if (result) { printer_page_release(&page, printer_map_psram_free); return result; }
     uint8_t *columns = printer_map_psram_alloc(PRINTER_PAGE_COLUMNS * 100U);
@@ -31,7 +37,10 @@ static int printer_run_full_page(const uint8_t *bin, uint32_t length) {
     os_printf("[PAGE_DOTS] source_CMY=%lu,%lu,%lu resized_CMY=%lu,%lu,%lu\r\n",
               (unsigned long)page.source_dots[0], (unsigned long)page.source_dots[1], (unsigned long)page.source_dots[2],
               (unsigned long)page.output_dots[0], (unsigned long)page.output_dots[1], (unsigned long)page.output_dots[2]);
+    if (PRINTER_PAGE_ONLY_SWATH >= 0)
+        os_printf("[PAGE_ISOLATE] original_swath=%u first_physical_scan=1 feed=0 original_nozzle_rows_and_columns\r\n", (unsigned)PRINTER_PAGE_ONLY_SWATH + 1U);
     for (uint32_t strip = 0; strip < page.swaths; ++strip) {
+        if (PRINTER_PAGE_ONLY_SWATH >= 0 && strip != (uint32_t)PRINTER_PAGE_ONLY_SWATH) continue;
         uint32_t dots[3];
         result = printer_page_render(&page, strip, columns, PRINTER_PAGE_COLUMNS * 100U,
                                     scratch, page.width * 72U, dots, printer_map_yield_cpu);
@@ -39,6 +48,9 @@ static int printer_run_full_page(const uint8_t *bin, uint32_t length) {
         os_printf("[PAGE_SWATH] index=%lu/%lu y=%lu dots_CMY=%lu,%lu,%lu\r\n",
                   (unsigned long)(strip + 1U), (unsigned long)page.swaths, (unsigned long)(strip * 192U),
                   (unsigned long)dots[0], (unsigned long)dots[1], (unsigned long)dots[2]);
+        if (PRINTER_PAGE_ONLY_SWATH >= 0 && !(dots[0] || dots[1] || dots[2])) {
+            os_printf("[PAGE_ISOLATE_EMPTY] no_motion\r\n"); result = -6; goto done;
+        }
         unsigned groups = PRINTER_PAGE_COLOR_MODE == 2 ? 2U : 1U;
         for (unsigned group = 0; group < groups; ++group) {
             unsigned mask = groups == 1 ? 7U : group == 0 ? 1U : 6U;
@@ -57,7 +69,7 @@ static int printer_run_full_page(const uint8_t *bin, uint32_t length) {
             result = printer_execute_cyan_line(data);
             if (result) goto done;
         }
-        if (strip + 1U < page.swaths) {
+        if (PRINTER_PAGE_ONLY_SWATH < 0 && strip + 1U < page.swaths) {
             uint32_t sent = 0;
             failure_locked = true;
             if (tph_mcu_set_head_power(0) != BK_OK) { result = -8; goto done; }
@@ -68,7 +80,9 @@ static int printer_run_full_page(const uint8_t *bin, uint32_t length) {
         }
     }
     failure_locked = false;
-    os_printf("[PAGE_DONE] swaths=%lu no_auto_eject feed_distance_and_ink_unverified\r\n", (unsigned long)page.swaths);
+    if (PRINTER_PAGE_ONLY_SWATH >= 0)
+        os_printf("[PAGE_ISOLATE_DONE] original_swath=%u feed=0 ink_unverified\r\n", (unsigned)PRINTER_PAGE_ONLY_SWATH + 1U);
+    else os_printf("[PAGE_DONE] swaths=%lu no_auto_eject feed_distance_and_ink_unverified\r\n", (unsigned long)page.swaths);
 done:
     if (columns) printer_map_psram_free(columns);
     if (scratch) printer_map_psram_free(scratch);
