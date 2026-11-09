@@ -17,3 +17,8 @@ assert ImageChops.difference(ImageChops.lighter(horizontal,vertical),blank()).ge
 blue=blank();ImageDraw.Draw(blue).rectangle((80,110,1100,1320),outline=cyan,width=12)
 for name,im in [('F1-full-frame.png',full),('F2-horizontal-edges.png',horizontal),('F3-vertical-edges.png',vertical),('F4-cyan-frame.png',blue)]:
  im.save(OUT/name);print(name,(OUT/name).stat().st_size)
+
+# F5 copies lower-edge RGB pixels only; APP/native nozzle mapping is NOT invariant.
+moved=blank();moved.paste(horizontal.crop((0,1309,W,1321)),(0,166))
+assert ImageChops.difference(horizontal.crop((0,1309,W,1321)),moved.crop((0,166,W,178))).getbbox() is None
+moved.save(OUT/'F5-bottom-edge-moved-up.png')
