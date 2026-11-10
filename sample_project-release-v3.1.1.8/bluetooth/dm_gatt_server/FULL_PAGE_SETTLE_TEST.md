@@ -1,3 +1,8 @@
+# 当前分支模式
+
+当前恢复APP完整图片自由测试，见 [FREE_IMAGE_TEST.md](FREE_IMAGE_TEST.md)。
+以下保留之前的试验说明，不是本分支默认动作。
+
 # 当前分支入口
 
 本分支把原第5条带在同一次上电期间打印两份，中间进纸一次，见[SAME_POWER_REPEAT_TEST.md](SAME_POWER_REPEAT_TEST.md)。

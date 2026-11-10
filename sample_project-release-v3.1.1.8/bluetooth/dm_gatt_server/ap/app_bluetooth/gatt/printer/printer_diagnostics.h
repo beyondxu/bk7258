@@ -2,15 +2,15 @@
 #define PRINTER_DIAGNOSTICS_H
 
 #ifndef PRINTER_PAGE_ONLY_SWATH
-#define PRINTER_PAGE_ONLY_SWATH 4 /* zero-based: keep original swath 5 nozzle rows */
+#define PRINTER_PAGE_ONLY_SWATH (-1) /* print the complete APP image */
 #endif
 
 #ifndef PRINTER_PAGE_REPEAT_SAME_POWER
-#define PRINTER_PAGE_REPEAT_SAME_POWER 1 /* two identical scans, one head power session */
+#define PRINTER_PAGE_REPEAT_SAME_POWER 0 /* no automatic duplicate scans */
 #endif
 
 #ifndef PRINTER_PAGE_HEAD_SETTLE_MS
-#define PRINTER_PAGE_HEAD_SETTLE_MS 2000U /* powered idle, no columns; once before a same-power pair */
+#define PRINTER_PAGE_HEAD_SETTLE_MS 2000U /* powered idle, no columns before each nonempty image swath */
 #endif
 #if PRINTER_PAGE_HEAD_SETTLE_MS != 0 && PRINTER_PAGE_HEAD_SETTLE_MS != 2000
 #error Page head settle comparison supports 0 or 2000 milliseconds
