@@ -1,8 +1,3 @@
-# 当前分支模式
-
-当前恢复APP完整图片自由测试，见 [FREE_IMAGE_TEST.md](FREE_IMAGE_TEST.md)。
-以下保留之前的试验说明，不是本分支默认动作。
-
 # 当前分支入口
 
 当前为两份连续上电对照，见 [SAME_POWER_REPEAT_TEST.md](SAME_POWER_REPEAT_TEST.md)。

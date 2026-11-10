@@ -1,8 +1,3 @@
-# 当前分支模式
-
-当前恢复APP完整图片自由测试，见 [FREE_IMAGE_TEST.md](FREE_IMAGE_TEST.md)。
-以下保留之前的试验说明，不是本分支默认动作。
-
 # 原第5条带：同一缓冲区、同一次上电，连续打印两份
 
 BK分支 `codex/printer-repeat-same-power`，基于 `ddd932e` 的第5条带隔离试验。
