@@ -1,3 +1,8 @@
+# 当前分支模式
+
+当前为分色逐喷嘴检查，见 [NOZZLE_CHECK_TEST.md](NOZZLE_CHECK_TEST.md)。
+下文为历史试验说明，不是当前默认动作。
+
 # 原第5条带：同一缓冲区、同一次上电，连续打印两份
 
 BK分支 `codex/printer-repeat-same-power`，基于 `ddd932e` 的第5条带隔离试验。

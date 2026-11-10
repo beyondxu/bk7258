@@ -855,5 +855,8 @@ stop:
 #if PRINTER_PAGE_REPEAT_SAME_POWER
 #include "printer_same_power_repeat.h"
 #endif
+#if PRINTER_NOZZLE_CHECK
+#include "printer_nozzle_check_job.h"
+#endif
 #include "printer_page_job.h"
 #endif

@@ -1,3 +1,6 @@
+#ifndef PRINTER_NOZZLE_CHECK
+#define PRINTER_NOZZLE_CHECK 0
+#endif
 #ifndef PRINTER_PAGE_REPEAT_SAME_POWER
 #define PRINTER_PAGE_REPEAT_SAME_POWER 0
 #endif
@@ -9,6 +12,9 @@
 #endif
 /* Private hardware orchestrator. Included after verified shuttle helpers. */
 static int printer_run_full_page(const uint8_t *bin, uint32_t length) {
+#if PRINTER_NOZZLE_CHECK
+    return printer_run_nozzle_check(bin, length);
+#endif
     static bool failure_locked = false;
     if (failure_locked || !printer_link_is_ready()) {
         os_printf("[PAGE_BLOCKED] previous_failure_or_link_unavailable restart_and_restore_origin\r\n");

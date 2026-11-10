@@ -1,3 +1,8 @@
+# 当前分支模式
+
+当前为分色逐喷嘴检查，见 [NOZZLE_CHECK_TEST.md](NOZZLE_CHECK_TEST.md)。
+下文为历史试验说明，不是当前默认动作。
+
 # 当前分支入口
 
 本分支把原第5条带在同一次上电期间打印两份，中间进纸一次，见[SAME_POWER_REPEAT_TEST.md](SAME_POWER_REPEAT_TEST.md)。
