@@ -858,5 +858,8 @@ stop:
 #if PRINTER_NOZZLE_CHECK
 #include "printer_nozzle_check_job.h"
 #endif
+#if PRINTER_LINE_CONTROL
+#include "printer_line_control_job.h"
+#endif
 #include "printer_page_job.h"
 #endif

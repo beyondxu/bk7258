@@ -1,8 +1,12 @@
 #ifndef PRINTER_DIAGNOSTICS_H
 #define PRINTER_DIAGNOSTICS_H
 
+#ifndef PRINTER_LINE_CONTROL
+#define PRINTER_LINE_CONTROL 1 /* actual F2 swath: CMY,C1,M1,Y1,CMY */
+#endif
+
 #ifndef PRINTER_NOZZLE_CHECK
-#define PRINTER_NOZZLE_CHECK 1 /* APP-triggered, CMY 200-nozzle coverage test */
+#define PRINTER_NOZZLE_CHECK 0 /* keep the 600-nozzle short-line test available */
 #endif
 
 #ifndef PRINTER_PAGE_ONLY_SWATH

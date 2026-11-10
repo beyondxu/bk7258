@@ -1,5 +1,10 @@
 # 当前分支模式
 
+当前为五条长线对照，见 [LONG_LINE_CONTROL_TEST.md](LONG_LINE_CONTROL_TEST.md)。
+下文保留历史试验说明，不是本分支默认动作。
+
+# 当前分支模式
+
 当前为分色逐喷嘴检查，见 [NOZZLE_CHECK_TEST.md](NOZZLE_CHECK_TEST.md)。
 下文为历史试验说明，不是当前默认动作。
 

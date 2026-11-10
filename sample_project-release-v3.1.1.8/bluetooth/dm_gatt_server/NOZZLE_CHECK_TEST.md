@@ -1,3 +1,8 @@
+# 当前分支模式
+
+当前为五条长线对照，见 [LONG_LINE_CONTROL_TEST.md](LONG_LINE_CONTROL_TEST.md)。
+下文保留历史试验说明，不是本分支默认动作。
+
 # 分色、分组逐喷嘴检查
 
 BK分支 `codex/printer-nozzle-check`，仅更新BK。
