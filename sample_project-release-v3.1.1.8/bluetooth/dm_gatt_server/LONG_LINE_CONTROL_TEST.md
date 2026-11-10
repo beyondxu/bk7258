@@ -1,5 +1,10 @@
 # 当前分支模式
 
+当前为同地址D1/D2/双选对照，见 [DOMAIN_PAIR_TEST.md](DOMAIN_PAIR_TEST.md)。
+下文保留历史试验说明，不是本分支默认动作。
+
+# 当前分支模式
+
 当前为原青色喷嘴正反序清单对照，见 [CYAN_INVENTORY_TEST.md](CYAN_INVENTORY_TEST.md)。
 下文保留历史试验说明，不是本分支默认动作。
 

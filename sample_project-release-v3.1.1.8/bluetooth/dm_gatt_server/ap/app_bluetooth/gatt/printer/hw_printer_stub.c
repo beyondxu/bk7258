@@ -864,5 +864,8 @@ stop:
 #if PRINTER_CYAN_INVENTORY
 #include "printer_cyan_inventory_job.h"
 #endif
+#if PRINTER_DOMAIN_PAIR
+#include "printer_domain_pair_job.h"
+#endif
 #include "printer_page_job.h"
 #endif

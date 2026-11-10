@@ -1,3 +1,6 @@
+#ifndef PRINTER_DOMAIN_PAIR
+#define PRINTER_DOMAIN_PAIR 0
+#endif
 #ifndef PRINTER_CYAN_INVENTORY
 #define PRINTER_CYAN_INVENTORY 0
 #endif
@@ -18,6 +21,9 @@
 #endif
 /* Private hardware orchestrator. Included after verified shuttle helpers. */
 static int printer_run_full_page(const uint8_t *bin, uint32_t length) {
+#if PRINTER_DOMAIN_PAIR
+    return printer_run_domain_pair(bin, length);
+#endif
 #if PRINTER_CYAN_INVENTORY
     return printer_run_cyan_inventory(bin, length);
 #endif

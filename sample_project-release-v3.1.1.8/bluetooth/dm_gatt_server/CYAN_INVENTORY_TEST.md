@@ -1,3 +1,8 @@
+# 当前分支模式
+
+当前为同地址D1/D2/双选对照，见 [DOMAIN_PAIR_TEST.md](DOMAIN_PAIR_TEST.md)。
+下文保留历史试验说明，不是本分支默认动作。
+
 # 原混色线中的青色长线喷嘴：固定清单，逐个打印，交替正反序
 
 分支 `codex/printer-cyan-inventory`，只更新BK。

@@ -1,8 +1,12 @@
 #ifndef PRINTER_DIAGNOSTICS_H
 #define PRINTER_DIAGNOSTICS_H
 
+#ifndef PRINTER_DOMAIN_PAIR
+#define PRINTER_DOMAIN_PAIR 1 /* fixed-address S2 D1/D2/paired comparison */
+#endif
+
 #ifndef PRINTER_CYAN_INVENTORY
-#define PRINTER_CYAN_INVENTORY 1 /* actual long C traces, frozen, alternate scan order */
+#define PRINTER_CYAN_INVENTORY 0 /* previous C-nozzle inventory */
 #endif
 
 #ifndef PRINTER_LINE_CONTROL
