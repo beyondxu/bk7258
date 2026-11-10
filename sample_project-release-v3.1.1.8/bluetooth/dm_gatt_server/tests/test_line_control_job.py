@@ -25,9 +25,9 @@ h=r'''
 #define PRINTER_LINE_CONTROL 1
 #define BK_OK 0
 #define os_printf printf
-static unsigned scans,feeds,offs,live;static int scenario,oom,link=1;static uint8_t gold[118000];
+static unsigned scans,feeds,offs,live,buffer_allocs;static uint8_t*frozen_pointer;static int scenario,oom,link=1;static uint8_t gold[118000];
 static bool printer_link_is_ready(void){return link;}
-static void*printer_map_psram_alloc(size_t n){if(oom&&n==118000)return NULL;void*p=malloc(n);if(p)++live;return p;}
+static void*printer_map_psram_alloc(size_t n){if(oom&&n==118000)return NULL;void*p=malloc(n);if(p){++live;if(n==118000&&++buffer_allocs==2)frozen_pointer=p;}return p;}
 static void printer_map_psram_free(void*p){assert(live);--live;free(p);}
 static void printer_map_yield_cpu(void){}
 static int printer_execute_cyan_line(const uint8_t*p){
@@ -44,23 +44,30 @@ static int motor_page_feed(uint32_t n,uint8_t dir,uint32_t*sent){assert(n==3170&
 #include "printer_line_control_job.h"
 #include "printer_page_job.h"
 static uint8_t*readfile(const char*path,uint32_t*n){FILE*f=fopen(path,"rb");assert(f);fseek(f,0,SEEK_END);*n=ftell(f);rewind(f);uint8_t*b=malloc(*n);assert(fread(b,1,*n,f)==*n);fclose(f);return b;}
-int main(int argc,char**argv){assert(argc==5);scenario=atoi(argv[4]);uint32_t n,z,e;uint8_t*b=readfile(argv[1],&n),*blank=readfile(argv[2],&z),*expected=readfile(argv[3],&e);assert(e==118000);memcpy(gold,expected,e);free(expected);
+int main(int argc,char**argv){assert(argc==6);scenario=atoi(argv[5]);uint32_t n,z,e,alt_n;uint8_t*b=readfile(argv[1],&n),*blank=readfile(argv[2],&z),*expected=readfile(argv[3],&e);assert(e==118000);memcpy(gold,expected,e);free(expected);uint8_t*alt=readfile(argv[4],&alt_n);
  assert(printer_run_full_page(b,n-1));assert(!scans&&!feeds&&!live);
  assert(printer_run_full_page(blank,z));assert(!scans&&!feeds&&!live);
  oom=1;assert(printer_run_full_page(b,n));assert(!scans&&!feeds&&!live);oom=0;
  link=0;assert(printer_run_full_page(b,n));assert(!scans&&!feeds&&!live);link=1;
- int result=printer_run_full_page(b,n);assert(!live);
- if(!scenario){assert(!result&&scans==5&&feeds==4&&offs==4);scans=feeds=offs=0;assert(!printer_run_full_page(b,n));assert(scans==5&&feeds==4&&!live);}
- else {assert(result);unsigned before=scans;assert(printer_run_full_page(b,n));assert(scans==before&&!live);if(scenario==1||scenario==7)assert(scans==1&&!feeds);if(scenario==2)assert(scans==3&&feeds==2);if(scenario==3)assert(scans==5&&feeds==4);if(scenario==4||scenario==5)assert(scans==1&&feeds==1);if(scenario==6)assert(scans==1&&!feeds);}
- free(blank);free(b);}
+ buffer_allocs=0;int result=printer_run_full_page(b,n);
+ if(!scenario||scenario>=8){assert(!result&&scans==5&&feeds==4&&offs==4&&live==1);scans=feeds=offs=0;
+ if(scenario==8){assert(frozen_pointer);frozen_pointer[0]^=1;assert(printer_run_full_page(alt,alt_n)==-11);assert(!scans&&!feeds&&!live);assert(printer_run_full_page(b,n)==-7);}
+ else {if(scenario==9){oom=1;assert(printer_run_full_page(alt,alt_n));assert(!scans&&!feeds&&live==1);oom=0;}
+ /* Changed APP pixels and nozzle rows must still print the original frozen plan. */
+ for(unsigned repeat=0;repeat<3;++repeat){assert(!printer_run_full_page(alt,alt_n));assert(scans==5&&feeds==4&&live==1);scans=feeds=offs=0;}}}
+ else {assert(result&&!live);unsigned before=scans;assert(printer_run_full_page(b,n));assert(scans==before&&!live);if(scenario==1||scenario==7)assert(scans==1&&!feeds);if(scenario==2)assert(scans==3&&feeds==2);if(scenario==3)assert(scans==5&&feeds==4);if(scenario==4||scenario==5)assert(scans==1&&feeds==1);if(scenario==6)assert(scans==1&&!feeds);}
+ free(alt);free(blank);free(b);}
 '''
 with tempfile.TemporaryDirectory() as tmp:
  t=Path(tmp);(t/'test.c').write_text(h)
  points={(ch,x,y) for ch in range(3) for x in range(100,1000) for y in range(1300,1311)}
  data=blob(points);(t/'input.bin').write_bytes(data);(t/'blank.bin').write_bytes(blob(set()))
  renderer=Renderer();code,page=renderer.prepare(data);assert not code;gold,_=renderer.render(page,4);renderer.close(page);(t/'gold.bin').write_bytes(gold)
+ alt_points={(ch,x,y) for ch in range(3) for x in range(150,1050) for y in range(1340,1352)}
+ alt_data=blob(alt_points);(t/'alt.bin').write_bytes(alt_data)
+ code,page=renderer.prepare(alt_data);assert not code;alt_gold,_=renderer.render(page,4);renderer.close(page);assert alt_gold!=gold
  subprocess.run(['cc','-std=c99','-Wall','-Wextra','-Werror','-I'+str(D),str(t/'test.c'),str(D/'printer_page.c'),str(D/'printer_mapper.c'),'-o',str(t/'test')],check=True)
  arm=Path('/workspace/.setup/tools/usr/bin/arm-none-eabi-gcc')
  if arm.exists():subprocess.run([str(arm),'-std=gnu99','-mcpu=cortex-m33+nodsp','-mfpu=fpv5-sp-d16','-mfloat-abi=hard','-mcmse','-O2','-Wall','-Wextra','-Werror','-I'+str(D),'-c',str(t/'test.c'),'-o',str(t/'test.o')],check=True)
- for scenario in range(8):subprocess.run([str(t/'test'),str(t/'input.bin'),str(t/'blank.bin'),str(t/'gold.bin'),str(scenario)],check=True,stdout=subprocess.DEVNULL)
-print('PASS: original full-page swath5 bytes as first/last controls, three single-nozzle original subsets, five scans/four feeds, early rejection/repeat/error locks and ARM object check')
+ for scenario in range(10):subprocess.run([str(t/'test'),str(t/'input.bin'),str(t/'blank.bin'),str(t/'gold.bin'),str(t/'alt.bin'),str(scenario)],check=True,stdout=subprocess.DEVNULL)
+print('PASS: original swath5 controls and single-nozzle subsets; changed APP payloads reuse frozen plan and selectors, exactly118000 bytes retained across repeats, cached-data corruption locks before motion, OOM retry preserves cache, five scans/four feeds/error handling and ARM object check')
