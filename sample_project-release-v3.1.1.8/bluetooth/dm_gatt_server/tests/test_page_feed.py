@@ -31,7 +31,7 @@ static void bk_delay_us(unsigned us){if(high)assert(us==4);else assert(us>=50&&u
 static void rtos_delay_milliseconds(unsigned ms){assert(!high);(void)ms;}
 static void bk_motor_set_state(unsigned motor,unsigned state){assert(motor<=1&&state==0);}
 FUNC
-int main(void){uint32_t sent;assert(!motor_page_feed(3170,0,&sent));assert(sent==3170&&pulses==3170&&!boost&&!high&&dir==0);assert(motor_page_feed(5001,0,&sent)==-1);boost=1;unsigned calls=boost_calls;assert(!motor_page_feed_keep_power(3170,0,&sent));assert(sent==3170&&pulses==6340&&boost&&boost_calls==calls&&inits==1);assert(motor_page_feed_keep_power(0,0,&sent)==-1);assert(boost_calls==calls);}
+int main(void){uint32_t sent;assert(!motor_page_feed(3170,0,&sent));assert(sent==3170&&pulses==3170&&!boost&&!high&&dir==0);assert(motor_page_feed(5001,0,&sent)==-1);boost=1;unsigned calls=boost_calls;assert(!motor_page_feed_keep_power(3170,0,&sent));assert(sent==3170&&pulses==6340&&boost&&boost_calls==calls&&inits==1);assert(motor_page_feed_keep_power(0,0,&sent)==-1);assert(boost_calls==calls);assert(!motor_page_feed(780,0,&sent));assert(sent==780&&pulses==7120&&!boost&&!high);assert(!motor_page_feed(1560,0,&sent));assert(sent==1560&&pulses==8680&&!boost&&!high);}
 '''.replace('FUNC',func)
 with tempfile.TemporaryDirectory() as tmp:
  p=Path(tmp);(p/'test.c').write_text(h)

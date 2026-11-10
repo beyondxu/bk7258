@@ -1,4 +1,7 @@
 #include "printer_line_control.h"
+/* 11700 feed pulses / 30mm calibration: ~2mm within a group, ~4mm after it. */
+#define PRINTER_LC_LINE_FEED_STEPS 780U
+#define PRINTER_LC_GROUP_FEED_STEPS 1560U
 /* Only the known original APP swath 5 is used; all five plans are ready and
  * fingerprinted before motion. Existing head OFF and motor sequencing retained. */
 static int printer_run_line_control(const uint8_t *bin, uint32_t length) {
@@ -90,17 +93,18 @@ static int printer_run_line_control(const uint8_t *bin, uint32_t length) {
         if (printer_crc32(out, PRINTER_LC_BYTES) != crc[pass] || printer_crc32(base, PRINTER_LC_BYTES) != baseline_crc) {
             result = -11; goto done;
         }
-        if (pass < 4U) {
+        { /* Advance after every line; final spacing separates the next APP task. */
             uint32_t sent = 0;
+            uint32_t requested = pass < 4U ? PRINTER_LC_LINE_FEED_STEPS : PRINTER_LC_GROUP_FEED_STEPS;
             if (tph_mcu_set_head_power(0) != BK_OK) { result = -8; goto done; }
-            result = motor_page_feed(PRINTER_PAGE_FEED_STEPS, PRINTER_PAGE_FEED_DIRECTION, &sent);
+            result = motor_page_feed(requested, PRINTER_PAGE_FEED_DIRECTION, &sent);
             os_printf("[LINE_CONTROL_FEED] after=%u pulses=%lu/%u result=%d distance_unverified\r\n",
-                      pass + 1U, (unsigned long)sent, (unsigned)PRINTER_PAGE_FEED_STEPS, result);
-            if (result != BK_OK || sent != PRINTER_PAGE_FEED_STEPS) { result = -10; goto done; }
+                      pass + 1U, (unsigned long)sent, (unsigned)requested, result);
+            if (result != BK_OK || sent != requested) { result = -10; goto done; }
         }
     }
     failure_locked = false;
-    os_printf("[LINE_CONTROL_DONE] scans=5/5 feeds=4/4 first_last_same_buffer_data ink_unverified\r\n");
+    os_printf("[LINE_CONTROL_DONE] scans=5/5 feeds=5/5 line_gap_steps=780 group_gap_steps=1560 first_last_same_buffer_data ink_unverified\r\n");
 done:
     if (result) os_printf("[LINE_CONTROL_STOP] code=%d failure_locked=%u no_further_motion\r\n", result, (unsigned)failure_locked);
     if (scratch) printer_map_psram_free(scratch);

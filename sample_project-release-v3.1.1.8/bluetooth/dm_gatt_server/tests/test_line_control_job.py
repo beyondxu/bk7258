@@ -40,7 +40,7 @@ static int printer_execute_cyan_line(const uint8_t*p){
  return 0;
 }
 static int tph_mcu_set_head_power(unsigned on){assert(!on);++offs;return scenario==6?-1:0;}
-static int motor_page_feed(uint32_t n,uint8_t dir,uint32_t*sent){assert(n==3170&&!dir);assert(scans==feeds+1);++feeds;*sent=scenario==5?3000:n;return scenario==4?-1:0;}
+static int motor_page_feed(uint32_t n,uint8_t dir,uint32_t*sent){assert(n==(scans<5?780:1560)&&!dir);assert(scans==feeds+1);++feeds;*sent=(scenario==5||(scenario==10&&scans==5))?n-1:n;return scenario==4?-1:0;}
 #include "printer_line_control_job.h"
 #include "printer_page_job.h"
 static uint8_t*readfile(const char*path,uint32_t*n){FILE*f=fopen(path,"rb");assert(f);fseek(f,0,SEEK_END);*n=ftell(f);rewind(f);uint8_t*b=malloc(*n);assert(fread(b,1,*n,f)==*n);fclose(f);return b;}
@@ -50,12 +50,12 @@ int main(int argc,char**argv){assert(argc==6);scenario=atoi(argv[5]);uint32_t n,
  oom=1;assert(printer_run_full_page(b,n));assert(!scans&&!feeds&&!live);oom=0;
  link=0;assert(printer_run_full_page(b,n));assert(!scans&&!feeds&&!live);link=1;
  buffer_allocs=0;int result=printer_run_full_page(b,n);
- if(!scenario||scenario>=8){assert(!result&&scans==5&&feeds==4&&offs==4&&live==1);scans=feeds=offs=0;
+ if(!scenario||scenario==8||scenario==9){assert(!result&&scans==5&&feeds==5&&offs==5&&live==1);scans=feeds=offs=0;
  if(scenario==8){assert(frozen_pointer);frozen_pointer[0]^=1;assert(printer_run_full_page(alt,alt_n)==-11);assert(!scans&&!feeds&&!live);assert(printer_run_full_page(b,n)==-7);}
  else {if(scenario==9){oom=1;assert(printer_run_full_page(alt,alt_n));assert(!scans&&!feeds&&live==1);oom=0;}
  /* Changed APP pixels and nozzle rows must still print the original frozen plan. */
- for(unsigned repeat=0;repeat<3;++repeat){assert(!printer_run_full_page(alt,alt_n));assert(scans==5&&feeds==4&&live==1);scans=feeds=offs=0;}}}
- else {assert(result&&!live);unsigned before=scans;assert(printer_run_full_page(b,n));assert(scans==before&&!live);if(scenario==1||scenario==7)assert(scans==1&&!feeds);if(scenario==2)assert(scans==3&&feeds==2);if(scenario==3)assert(scans==5&&feeds==4);if(scenario==4||scenario==5)assert(scans==1&&feeds==1);if(scenario==6)assert(scans==1&&!feeds);}
+ for(unsigned repeat=0;repeat<3;++repeat){assert(!printer_run_full_page(alt,alt_n));assert(scans==5&&feeds==5&&live==1);scans=feeds=offs=0;}}}
+ else {assert(result&&!live);unsigned before=scans;assert(printer_run_full_page(b,n));assert(scans==before&&!live);if(scenario==1||scenario==7)assert(scans==1&&!feeds);if(scenario==2)assert(scans==3&&feeds==2);if(scenario==3)assert(scans==5&&feeds==4);if(scenario==4||scenario==5)assert(scans==1&&feeds==1);if(scenario==6)assert(scans==1&&!feeds);if(scenario==10)assert(scans==5&&feeds==5);}
  free(alt);free(blank);free(b);}
 '''
 with tempfile.TemporaryDirectory() as tmp:
@@ -69,5 +69,5 @@ with tempfile.TemporaryDirectory() as tmp:
  subprocess.run(['cc','-std=c99','-Wall','-Wextra','-Werror','-I'+str(D),str(t/'test.c'),str(D/'printer_page.c'),str(D/'printer_mapper.c'),'-o',str(t/'test')],check=True)
  arm=Path('/workspace/.setup/tools/usr/bin/arm-none-eabi-gcc')
  if arm.exists():subprocess.run([str(arm),'-std=gnu99','-mcpu=cortex-m33+nodsp','-mfpu=fpv5-sp-d16','-mfloat-abi=hard','-mcmse','-O2','-Wall','-Wextra','-Werror','-I'+str(D),'-c',str(t/'test.c'),'-o',str(t/'test.o')],check=True)
- for scenario in range(10):subprocess.run([str(t/'test'),str(t/'input.bin'),str(t/'blank.bin'),str(t/'gold.bin'),str(t/'alt.bin'),str(scenario)],check=True,stdout=subprocess.DEVNULL)
-print('PASS: original swath5 controls and single-nozzle subsets; changed APP payloads reuse frozen plan and selectors, exactly118000 bytes retained across repeats, cached-data corruption locks before motion, OOM retry preserves cache, five scans/four feeds/error handling and ARM object check')
+ for scenario in range(11):subprocess.run([str(t/'test'),str(t/'input.bin'),str(t/'blank.bin'),str(t/'gold.bin'),str(t/'alt.bin'),str(scenario)],check=True,stdout=subprocess.DEVNULL)
+print('PASS: original swath5 controls and single-nozzle subsets; changed APP payloads reuse frozen plan and selectors, exactly118000 bytes retained across repeats, cached-data corruption locks before motion, OOM retry preserves cache, five scans/five feeds with780/1560 spacing/error handling and ARM object check')
