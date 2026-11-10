@@ -861,5 +861,8 @@ stop:
 #if PRINTER_LINE_CONTROL
 #include "printer_line_control_job.h"
 #endif
+#if PRINTER_CYAN_INVENTORY
+#include "printer_cyan_inventory_job.h"
+#endif
 #include "printer_page_job.h"
 #endif

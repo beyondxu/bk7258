@@ -1,5 +1,10 @@
 # 当前分支模式
 
+当前为原青色喷嘴正反序清单对照，见 [CYAN_INVENTORY_TEST.md](CYAN_INVENTORY_TEST.md)。
+下文保留历史试验说明，不是本分支默认动作。
+
+# 当前分支模式
+
 当前为五条长线对照，见 [LONG_LINE_CONTROL_TEST.md](LONG_LINE_CONTROL_TEST.md)。
 下文保留历史试验说明，不是本分支默认动作。
 

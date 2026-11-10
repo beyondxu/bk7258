@@ -1,3 +1,6 @@
+#ifndef PRINTER_CYAN_INVENTORY
+#define PRINTER_CYAN_INVENTORY 0
+#endif
 #ifndef PRINTER_LINE_CONTROL
 #define PRINTER_LINE_CONTROL 0
 #endif
@@ -15,6 +18,9 @@
 #endif
 /* Private hardware orchestrator. Included after verified shuttle helpers. */
 static int printer_run_full_page(const uint8_t *bin, uint32_t length) {
+#if PRINTER_CYAN_INVENTORY
+    return printer_run_cyan_inventory(bin, length);
+#endif
 #if PRINTER_LINE_CONTROL
     return printer_run_line_control(bin, length);
 #endif

@@ -1,3 +1,8 @@
+# 当前分支模式
+
+当前为原青色喷嘴正反序清单对照，见 [CYAN_INVENTORY_TEST.md](CYAN_INVENTORY_TEST.md)。
+下文保留历史试验说明，不是本分支默认动作。
+
 # 原长线与单喷嘴长线：首尾原混色线对照
 
 BK分支 `codex/printer-long-line-control`。只更新BK；HC32保留当前实测CE=1.97us的本地固件。

@@ -1,8 +1,12 @@
 #ifndef PRINTER_DIAGNOSTICS_H
 #define PRINTER_DIAGNOSTICS_H
 
+#ifndef PRINTER_CYAN_INVENTORY
+#define PRINTER_CYAN_INVENTORY 1 /* actual long C traces, frozen, alternate scan order */
+#endif
+
 #ifndef PRINTER_LINE_CONTROL
-#define PRINTER_LINE_CONTROL 1 /* actual F2 swath: CMY,C1,M1,Y1,CMY */
+#define PRINTER_LINE_CONTROL 0 /* previous five-line control */
 #endif
 
 #ifndef PRINTER_NOZZLE_CHECK
