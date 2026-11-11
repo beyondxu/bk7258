@@ -5,6 +5,13 @@
 #define PRINTER_IDLE_AB 1 /* frozen-line OFF/ON versus held-power idle comparison */
 #endif
 
+#ifndef PRINTER_IDLE_HELD_ONLY
+#define PRINTER_IDLE_HELD_ONLY 1 /* one held-power phase, six scans per APP trigger */
+#endif
+#ifndef PRINTER_IDLE_AB_GAP_MS
+#define PRINTER_IDLE_AB_GAP_MS 300000U /* five minutes between active-column ACKs */
+#endif
+
 #ifndef PRINTER_DOMAIN_PAIR
 #define PRINTER_DOMAIN_PAIR 0 /* fixed-address S2 D1/D2/paired comparison */
 #endif

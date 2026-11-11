@@ -133,15 +133,19 @@ int main(int argc,char**argv){
  free(alt);free(blank);free(b);
 }
 '''.replace('\nREAL\n','\n'+real+'\n')
-with tempfile.TemporaryDirectory() as tmp:
- t=Path(tmp);(t/'test.c').write_text(h)
- points={(ch,x,y) for ch in range(3) for x in range(100,1000) for y in range(1225,1237)}
- data=blob(points);(t/'input.bin').write_bytes(data);(t/'blank.bin').write_bytes(blob(set()))
- renderer=Renderer();code,page=renderer.prepare(data);assert not code;gold,_=renderer.render(page,4);renderer.close(page);(t/'gold.bin').write_bytes(gold)
- alt=blob({(ch,x,y) for ch in range(3) for x in range(150,1050) for y in range(1340,1352)});(t/'alt.bin').write_bytes(alt)
- subprocess.run(['cc','-std=c99','-O1','-Wall','-Wextra','-Werror','-I'+str(D),str(t/'test.c'),str(D/'printer_page.c'),str(D/'printer_mapper.c'),'-o',str(t/'test')],check=True)
- arm=Path('/workspace/.setup/tools/usr/bin/arm-none-eabi-gcc')
- if arm.exists():subprocess.run([str(arm),'-std=gnu99','-mcpu=cortex-m33+nodsp','-mfpu=fpv5-sp-d16','-mfloat-abi=hard','-mcmse','-O2','-Wall','-Wextra','-Werror','-I'+str(D),'-c',str(t/'test.c'),'-o',str(t/'test.o')],check=True)
- for scenario in [0,1,2,3,4,5,6,7,8,10,12]:
-  subprocess.run([str(t/'test'),str(t/'input.bin'),str(t/'blank.bin'),str(t/'gold.bin'),str(t/'alt.bin'),str(scenario)],check=True)
-print('PASS: real render/frozen bytes, AB+BA, 60s active-ACK scheduling, 12 scans/feeds, B power continuity, native and ARM checks, rejection/OOM/SPI/power/feed/corruption/timing failure stops')
+def run_scenarios(harness, scenarios):
+ with tempfile.TemporaryDirectory() as tmp:
+  t=Path(tmp);(t/'test.c').write_text(harness)
+  points={(ch,x,y) for ch in range(3) for x in range(100,1000) for y in range(1225,1237)}
+  data=blob(points);(t/'input.bin').write_bytes(data);(t/'blank.bin').write_bytes(blob(set()))
+  renderer=Renderer();code,page=renderer.prepare(data);assert not code;gold,_=renderer.render(page,4);renderer.close(page);(t/'gold.bin').write_bytes(gold)
+  alt=blob({(ch,x,y) for ch in range(3) for x in range(150,1050) for y in range(1340,1352)});(t/'alt.bin').write_bytes(alt)
+  subprocess.run(['cc','-std=c99','-O1','-Wall','-Wextra','-Werror','-I'+str(D),str(t/'test.c'),str(D/'printer_page.c'),str(D/'printer_mapper.c'),'-o',str(t/'test')],check=True)
+  arm=Path('/workspace/.setup/tools/usr/bin/arm-none-eabi-gcc')
+  if arm.exists():subprocess.run([str(arm),'-std=gnu99','-mcpu=cortex-m33+nodsp','-mfpu=fpv5-sp-d16','-mfloat-abi=hard','-mcmse','-O2','-Wall','-Wextra','-Werror','-I'+str(D),'-c',str(t/'test.c'),'-o',str(t/'test.o')],check=True)
+  for scenario in scenarios:
+   subprocess.run([str(t/'test'),str(t/'input.bin'),str(t/'blank.bin'),str(t/'gold.bin'),str(t/'alt.bin'),str(scenario)],check=True)
+
+if __name__ == '__main__':
+ run_scenarios(h, [0,1,2,3,4,5,6,7,8,10,12])
+ print('PASS: real render/frozen bytes, AB+BA, 60s active-ACK scheduling, 12 scans/feeds, B power continuity, native and ARM checks, rejection/OOM/SPI/power/feed/corruption/timing failure stops')

@@ -3,11 +3,20 @@
  * No startup motion, no priming, no extra column SPI during return/feed/idle.
  */
 #define PRINTER_IDLE_AB_BYTES (PRINTER_PAGE_COLUMNS * 100U)
-#define PRINTER_IDLE_AB_GAP_US 60000000ULL
+#ifndef PRINTER_IDLE_HELD_ONLY
+#define PRINTER_IDLE_HELD_ONLY 0 /* retained AB mode for older configurations */
+#endif
+#ifndef PRINTER_IDLE_AB_GAP_MS
+#define PRINTER_IDLE_AB_GAP_MS 60000U
+#endif
+#if PRINTER_IDLE_AB_GAP_MS < 10000U || PRINTER_IDLE_AB_GAP_MS > 600000U
+#error Idle comparison supports 10..600 seconds
+#endif
+#define PRINTER_IDLE_AB_GAP_US ((uint64_t)PRINTER_IDLE_AB_GAP_MS * 1000U)
 #define PRINTER_IDLE_AB_LINE_FEED 780U
 #define PRINTER_IDLE_AB_GROUP_FEED 1560U
 
-/* Sleep in bounded chunks, feeding the scheduler; no busy 60-second delay. */
+/* Sleep in bounded chunks, feeding the scheduler; no long busy delay. */
 static void printer_idle_ab_wait_until(uint64_t deadline, const char *phase, const char *state) {
     unsigned last_bucket = 0;
     for (;;) {
@@ -59,8 +68,8 @@ static int printer_idle_ab_scan(const uint8_t *columns, uint32_t crc,
     os_printf("[IDLE_AB_LINE_END] phase=%s kind=%s line=%u/3 columns=%lu/1180 lead_ms=%lu active_gap_ms=%lu crc32=%08lX ink_unverified\r\n",
               phase, kind, copy, (unsigned long)s_blank_spi_columns,
               (unsigned long)(*lead_us / 1000U), (unsigned long)gap_ms, (unsigned long)crc);
-    if (idle_anchor && (gap_ms < 59900U || gap_ms > 60100U)) {
-        os_printf("[IDLE_AB_INVALID] phase=%s actual_gap_outside_60000_plusminus_100ms\r\n", phase);
+    if (idle_anchor && (gap_ms < PRINTER_IDLE_AB_GAP_MS - 100U || gap_ms > PRINTER_IDLE_AB_GAP_MS + 100U)) {
+        os_printf("[IDLE_AB_INVALID] phase=%s actual_gap_outside_target target_ms=%lu tolerance_ms=100\r\n", phase, (unsigned long)PRINTER_IDLE_AB_GAP_MS);
         return -12;
     }
     return 0;
@@ -90,7 +99,7 @@ static int printer_idle_ab_phase(const uint8_t *columns, uint32_t crc, unsigned 
         if (result) return result;
     }
     /* Last acknowledged nonzero column in REF3, not end-of-return or end-of-feed.
-     * Estimate the forward lead using REF3 so first active ACK lands at +60s.
+     * Estimate the forward lead using REF3 so first active ACK lands at the configured interval.
      */
     uint64_t anchor = s_idle_ab_last_ack_us;
     if (lead_us >= PRINTER_IDLE_AB_GAP_US) return -12;
@@ -112,8 +121,8 @@ static int printer_idle_ab_phase(const uint8_t *columns, uint32_t crc, unsigned 
     printer_idle_ab_wait_until(scan_deadline, phase, "head_ON_ready_Ax0_Dx0");
     uint64_t now = bk_aon_rtc_get_us();
     if (now > scan_deadline + 50000U) return -12;
-    os_printf("[IDLE_AB_RESUME] phase=%s estimated_active_gap_ms=60000 lateness_ms=%lu no_preprint_or_priming\r\n",
-              phase, (unsigned long)((now - scan_deadline) / 1000U));
+    os_printf("[IDLE_AB_RESUME] phase=%s estimated_active_gap_ms=%lu lateness_ms=%lu no_preprint_or_priming\r\n",
+              phase, (unsigned long)PRINTER_IDLE_AB_GAP_MS, (unsigned long)((now - scan_deadline) / 1000U));
     for (unsigned line = 1; line <= 3U; ++line) {
         result = printer_idle_ab_scan(columns, crc, phase, "OBS", line,
                                      line == 1U ? anchor : 0, &lead_us);
@@ -172,14 +181,15 @@ static int printer_run_idle_ab(const uint8_t *bin, uint32_t length) {
     if (printer_crc32(frozen, PRINTER_IDLE_AB_BYTES) != frozen_crc) {
         failure_locked = true; result = -11; goto done;
     }
-    os_printf("[IDLE_AB_BEGIN] run=%lu order=%s cache=%s crc32=%08lX scans=12 first_active=%lu last_active=%lu target_gap_ms=60000 HC_CONT_CE_required\r\n",
-              (unsigned long)(completed + 1U), (completed & 1U) ? "BA" : "AB", reuse ? "REUSED" : "CAPTURED",
-              (unsigned long)frozen_crc, (unsigned long)s_idle_ab_first_col, (unsigned long)s_idle_ab_last_col);
+    os_printf("[IDLE_AB_BEGIN] run=%lu order=%s cache=%s crc32=%08lX scans=%u first_active=%lu last_active=%lu target_gap_ms=%lu HC_CONT_CE_required\r\n",
+              (unsigned long)(completed + 1U), PRINTER_IDLE_HELD_ONLY ? "HELD_ONLY" : ((completed & 1U) ? "BA" : "AB"), reuse ? "REUSED" : "CAPTURED",
+              (unsigned long)frozen_crc, PRINTER_IDLE_HELD_ONLY ? 6U : 12U,
+              (unsigned long)s_idle_ab_first_col, (unsigned long)s_idle_ab_last_col, (unsigned long)PRINTER_IDLE_AB_GAP_MS);
     failure_locked = true;
     if (tph_mcu_set_head_power(0) != BK_OK) { result = -8; goto stop; }
     carriage_verified_power_up();
-    for (unsigned phase = 0; phase < 2U; ++phase) {
-        unsigned is_a = (phase ^ (completed & 1U)) == 0U;
+    for (unsigned phase = 0; phase < (PRINTER_IDLE_HELD_ONLY ? 1U : 2U); ++phase) {
+        unsigned is_a = PRINTER_IDLE_HELD_ONLY ? 0U : ((phase ^ (completed & 1U)) == 0U);
         result = printer_idle_ab_phase(frozen, frozen_crc, is_a);
         if (result) goto stop;
     }

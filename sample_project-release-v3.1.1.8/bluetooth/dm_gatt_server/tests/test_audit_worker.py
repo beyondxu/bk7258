@@ -54,5 +54,5 @@ int main(void) {
 '''.replace('DIAGNOSTICS',str(base/'printer_diagnostics.h')).replace('UTILS',str(base/'printer_audit_utils.h')).replace('BUFFERS',buffers).replace('WORKER',worker)
 with tempfile.TemporaryDirectory() as tmp:
  p=Path(tmp);(p/'test.c').write_text(harness)
- subprocess.run(['cc','-std=c99','-DPRINTER_BOUNDED_PRINT=0','-DPRINTER_FULL_PAGE=0','-DPRINTER_MAP_AUDIT=1','-DPRINTER_AUDIT_DUMP_MAX_BYTES=65536','-fsanitize=address,undefined',str(p/'test.c'),'-o',str(p/'test')],check=True)
+ subprocess.run(['cc','-std=c99','-DPRINTER_BOUNDED_PRINT=0','-DPRINTER_FULL_PAGE=0','-DPRINTER_IDLE_AB=0','-DPRINTER_MAP_AUDIT=1','-DPRINTER_AUDIT_DUMP_MAX_BYTES=65536','-fsanitize=address,undefined',str(p/'test.c'),'-o',str(p/'test')],check=True)
  subprocess.run([str(p/'test')],check=True,env={**os.environ,'ASAN_OPTIONS':'detect_leaks=0'})

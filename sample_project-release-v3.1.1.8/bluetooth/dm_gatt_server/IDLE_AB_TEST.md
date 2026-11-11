@@ -1,3 +1,5 @@
+> 本分支当前默认已改为“单次保电5分钟、6条线”，请按 [IDLE_HELD_5MIN_TEST.md](IDLE_HELD_5MIN_TEST.md) 操作。以下为历史60秒AB/BA说明；该模式保留在 codex/printer-idle-ab。
+
 # 自动停喷 A/B 测试 APP_IDLE_AB_V1
 
 目标：在当前 HC32 连续 CE 协议及实测 tFire≈1.8us 下，比较长时间停喷后，首次缺墨是否与重新上电有关。每次APP触发完成整轮，无需手动等待或切电。
