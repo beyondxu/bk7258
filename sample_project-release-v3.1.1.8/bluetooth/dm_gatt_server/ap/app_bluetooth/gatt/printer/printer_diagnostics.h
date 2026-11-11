@@ -1,8 +1,12 @@
 #ifndef PRINTER_DIAGNOSTICS_H
 #define PRINTER_DIAGNOSTICS_H
 
+#ifndef PRINTER_IDLE_AB
+#define PRINTER_IDLE_AB 1 /* frozen-line OFF/ON versus held-power idle comparison */
+#endif
+
 #ifndef PRINTER_DOMAIN_PAIR
-#define PRINTER_DOMAIN_PAIR 1 /* fixed-address S2 D1/D2/paired comparison */
+#define PRINTER_DOMAIN_PAIR 0 /* fixed-address S2 D1/D2/paired comparison */
 #endif
 
 #ifndef PRINTER_CYAN_INVENTORY
@@ -34,6 +38,9 @@
 
 #ifndef PRINTER_FULL_PAGE
 #define PRINTER_FULL_PAGE 1
+#endif
+#if PRINTER_IDLE_AB && (!PRINTER_FULL_PAGE || PRINTER_DOMAIN_PAIR || PRINTER_CYAN_INVENTORY || PRINTER_LINE_CONTROL || PRINTER_NOZZLE_CHECK || PRINTER_PAGE_REPEAT_SAME_POWER)
+#error Idle A/B requires full-page trigger and exclusive diagnostic mode
 #endif
 #ifndef PRINTER_PAGE_COLOR_MODE
 #define PRINTER_PAGE_COLOR_MODE 1 /* 1=CMY together; 2=C pass then M+Y pass */

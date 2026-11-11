@@ -9,6 +9,9 @@
 #include "motor_sdk_driver.h"
 #include "printer_protocol.h"
 #include "printer_diagnostics.h"
+#if PRINTER_IDLE_AB
+#include <driver/aon_rtc.h>
+#endif
 #include "printer_audit_utils.h"
 #include "printer_mapper.h"
 #include "printer_page.h"
@@ -681,6 +684,12 @@ void standalone_carriage_shuttle_test(uint32_t test_cycles) {
  */
 static uint32_t s_blank_spi_columns, s_blank_spi_steps[2];
 static bool s_blank_spi_failed;
+#if PRINTER_IDLE_AB
+/* Only the two precomputed active-column boundaries are timestamped.
+ * No pixel scanning or logging is inserted into the motor/SPI loop. */
+static uint32_t s_idle_ab_first_col, s_idle_ab_last_col;
+static uint64_t s_idle_ab_first_ack_us, s_idle_ab_last_ack_us;
+#endif
 static bool carriage_stream_move_ramped(uint8_t direction, uint32_t total_steps, const uint8_t *columns) {
     // 1. 设置物理方向
     if (direction) {
@@ -705,6 +714,12 @@ static bool carriage_stream_move_ramped(uint8_t direction, uint32_t total_steps,
                 s_blank_spi_failed = true;
                 return false; /* caller powers down; no blind full return */
             }
+#if PRINTER_IDLE_AB
+            if (columns && s_blank_spi_columns == s_idle_ab_first_col)
+                s_idle_ab_first_ack_us = bk_aon_rtc_get_us();
+            if (columns && s_blank_spi_columns == s_idle_ab_last_col)
+                s_idle_ab_last_ack_us = bk_aon_rtc_get_us();
+#endif
             ++s_blank_spi_columns;
         }
         // A. 加速段
@@ -863,6 +878,9 @@ stop:
 #endif
 #if PRINTER_CYAN_INVENTORY
 #include "printer_cyan_inventory_job.h"
+#endif
+#if PRINTER_IDLE_AB
+#include "printer_idle_ab_job.h"
 #endif
 #if PRINTER_DOMAIN_PAIR
 #include "printer_domain_pair_job.h"

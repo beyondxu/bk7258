@@ -1,3 +1,6 @@
+#ifndef PRINTER_IDLE_AB
+#define PRINTER_IDLE_AB 0
+#endif
 #ifndef PRINTER_DOMAIN_PAIR
 #define PRINTER_DOMAIN_PAIR 0
 #endif
@@ -21,6 +24,9 @@
 #endif
 /* Private hardware orchestrator. Included after verified shuttle helpers. */
 static int printer_run_full_page(const uint8_t *bin, uint32_t length) {
+#if PRINTER_IDLE_AB
+    return printer_run_idle_ab(bin, length);
+#endif
 #if PRINTER_DOMAIN_PAIR
     return printer_run_domain_pair(bin, length);
 #endif
