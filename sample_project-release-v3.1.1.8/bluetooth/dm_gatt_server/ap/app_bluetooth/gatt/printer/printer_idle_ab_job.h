@@ -9,10 +9,13 @@
 #ifndef PRINTER_IDLE_OFF_ONLY
 #define PRINTER_IDLE_OFF_ONLY 0
 #endif
-#if PRINTER_IDLE_OFF_ONLY && PRINTER_IDLE_HELD_ONLY
+#ifndef PRINTER_IDLE_REFERENCE_ONLY
+#define PRINTER_IDLE_REFERENCE_ONLY 0
+#endif
+#if (PRINTER_IDLE_OFF_ONLY + PRINTER_IDLE_HELD_ONLY + PRINTER_IDLE_REFERENCE_ONLY) > 1
 #error Select only one single-phase idle mode
 #endif
-#define PRINTER_IDLE_SINGLE_PHASE (PRINTER_IDLE_HELD_ONLY || PRINTER_IDLE_OFF_ONLY)
+#define PRINTER_IDLE_SINGLE_PHASE (PRINTER_IDLE_HELD_ONLY || PRINTER_IDLE_OFF_ONLY || PRINTER_IDLE_REFERENCE_ONLY)
 #ifndef PRINTER_IDLE_AB_GAP_MS
 #define PRINTER_IDLE_AB_GAP_MS 60000U
 #endif
@@ -93,17 +96,22 @@ static int printer_idle_ab_feed(uint32_t steps, const char *phase, unsigned line
 }
 
 static int printer_idle_ab_phase(const uint8_t *columns, uint32_t crc, unsigned power_off) {
-    const char *phase = power_off ? "A_OFF_RESTART" : "B_HELD_POWER";
+    const char *phase = PRINTER_IDLE_REFERENCE_ONLY ? "CMY_SHORT" : (power_off ? "A_OFF_RESTART" : "B_HELD_POWER");
     int result;
     uint64_t lead_us = 0;
-    os_printf("[IDLE_AB_PHASE] phase=%s reference=3 observe=3 same_bytes_same_nozzles\r\n", phase);
+    os_printf("[IDLE_AB_PHASE] phase=%s reference=3 observe=%u same_bytes_same_nozzles\r\n", phase, PRINTER_IDLE_REFERENCE_ONLY ? 0U : 3U);
     if (tph_mcu_set_head_power(1) != BK_OK) return -8;
     rtos_delay_milliseconds(PRINTER_PAGE_HEAD_SETTLE_MS);
     for (unsigned line = 1; line <= 3U; ++line) {
         result = printer_idle_ab_scan(columns, crc, phase, "REF", line, 0, &lead_us);
         if (result) return result;
-        result = printer_idle_ab_feed(PRINTER_IDLE_AB_LINE_FEED, phase, line);
+        result = printer_idle_ab_feed(PRINTER_IDLE_REFERENCE_ONLY && line == 3U ? PRINTER_IDLE_AB_GROUP_FEED : PRINTER_IDLE_AB_LINE_FEED, phase, line);
         if (result) return result;
+    }
+    if (PRINTER_IDLE_REFERENCE_ONLY) {
+        if (tph_mcu_set_head_power(0) != BK_OK) return -8;
+        os_printf("[IDLE_AB_PHASE_DONE] phase=%s scans=3/3 no_idle_no_priming ink_unverified\r\n", phase);
+        return 0;
     }
     /* Last acknowledged nonzero column in REF3, not end-of-return or end-of-feed.
      * Estimate the forward lead using REF3 so first active ACK lands at the configured interval.
@@ -189,9 +197,9 @@ static int printer_run_idle_ab(const uint8_t *bin, uint32_t length) {
         failure_locked = true; result = -11; goto done;
     }
     os_printf("[IDLE_AB_BEGIN] run=%lu order=%s cache=%s crc32=%08lX scans=%u first_active=%lu last_active=%lu target_gap_ms=%lu HC_CONT_CE_required\r\n",
-              (unsigned long)(completed + 1U), PRINTER_IDLE_OFF_ONLY ? "OFF_ONLY" : (PRINTER_IDLE_HELD_ONLY ? "HELD_ONLY" : ((completed & 1U) ? "BA" : "AB")), reuse ? "REUSED" : "CAPTURED",
-              (unsigned long)frozen_crc, PRINTER_IDLE_SINGLE_PHASE ? 6U : 12U,
-              (unsigned long)s_idle_ab_first_col, (unsigned long)s_idle_ab_last_col, (unsigned long)PRINTER_IDLE_AB_GAP_MS);
+              (unsigned long)(completed + 1U), PRINTER_IDLE_REFERENCE_ONLY ? "REFERENCE_ONLY" : (PRINTER_IDLE_OFF_ONLY ? "OFF_ONLY" : (PRINTER_IDLE_HELD_ONLY ? "HELD_ONLY" : ((completed & 1U) ? "BA" : "AB"))), reuse ? "REUSED" : "CAPTURED",
+              (unsigned long)frozen_crc, PRINTER_IDLE_REFERENCE_ONLY ? 3U : (PRINTER_IDLE_SINGLE_PHASE ? 6U : 12U),
+              (unsigned long)s_idle_ab_first_col, (unsigned long)s_idle_ab_last_col, (unsigned long)(PRINTER_IDLE_REFERENCE_ONLY ? 0U : PRINTER_IDLE_AB_GAP_MS));
     failure_locked = true;
     if (tph_mcu_set_head_power(0) != BK_OK) { result = -8; goto stop; }
     carriage_verified_power_up();

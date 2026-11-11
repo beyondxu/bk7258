@@ -1,3 +1,5 @@
+> 本分支当前默认已改为只打印3条、无长等待的短打印，见 [CMY_SHORT_RESEAT_TEST.md](CMY_SHORT_RESEAT_TEST.md)。以下为历史关电五分钟说明，对应 codex/printer-idle-off-5min。
+
 # 单次关电恢复对照 APP_IDLE_OFF_5MIN_V1
 
 保电五分钟task863的第4条仍可见，未复现整条不喷。本项只改变停喷期间的供电条件，查看重新建立喷头与公共升压后，首条是否明显恶化。

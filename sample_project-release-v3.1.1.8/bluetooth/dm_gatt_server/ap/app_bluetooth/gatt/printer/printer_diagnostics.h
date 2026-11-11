@@ -9,7 +9,10 @@
 #define PRINTER_IDLE_HELD_ONLY 0 /* previous held-power-only comparison */
 #endif
 #ifndef PRINTER_IDLE_OFF_ONLY
-#define PRINTER_IDLE_OFF_ONLY 1 /* one OFF/restart phase, six scans per APP trigger */
+#define PRINTER_IDLE_OFF_ONLY 0 /* previous five-minute OFF/restart comparison */
+#endif
+#ifndef PRINTER_IDLE_REFERENCE_ONLY
+#define PRINTER_IDLE_REFERENCE_ONLY 1 /* three CMY scans, no long idle or priming */
 #endif
 #ifndef PRINTER_IDLE_AB_GAP_MS
 #define PRINTER_IDLE_AB_GAP_MS 300000U /* five minutes between active-column ACKs */

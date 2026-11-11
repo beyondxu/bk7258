@@ -1,9 +1,7 @@
 """Single OFF/restart phase at five minutes; real render and motion harness."""
 from test_idle_ab import h,run_scenarios,D,P
-assert '#define PRINTER_IDLE_OFF_ONLY 1' in (D/'printer_diagnostics.h').read_text()
 assert '#define PRINTER_IDLE_HELD_ONLY 0' in (D/'printer_diagnostics.h').read_text()
 assert '#define PRINTER_IDLE_AB_GAP_MS 300000U' in (D/'printer_diagnostics.h').read_text()
-assert 'APP_IDLE_OFF_5MIN_V1' in (P/'ap/ap_main.c').read_text()
 s=h.replace('#define PRINTER_IDLE_AB 1','#define PRINTER_IDLE_AB 1\n#define PRINTER_IDLE_OFF_ONLY 1\n#define PRINTER_IDLE_AB_GAP_MS 300000U')
 s=s.replace('scenario==4&&commands==8','scenario==4&&commands==6')
 s=s.replace('scenario==2&&job_lines==10','scenario==2&&job_lines==4')

@@ -1,4 +1,4 @@
-> 此为上一版保电测试说明（codex/printer-idle-held-5min）。当前分支默认已改为单次关电恢复对照，请使用 [IDLE_OFF_5MIN_TEST.md](IDLE_OFF_5MIN_TEST.md)。
+> 当前分支默认只打3条、无长等待，见 [CMY_SHORT_RESEAT_TEST.md](CMY_SHORT_RESEAT_TEST.md)。以下为历史保电五分钟说明，对应 codex/printer-idle-held-5min。
 
 # 单次保电停喷5分钟测试 APP_IDLE_HELD_5MIN_V1
 
