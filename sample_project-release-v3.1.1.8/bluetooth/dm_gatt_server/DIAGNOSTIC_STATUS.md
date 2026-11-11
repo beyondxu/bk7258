@@ -34,3 +34,6 @@ CRC匹配的排除范围止于HC32接收缓冲区，不扩展到GPIO电平、喷
 
 
 最新task872出现无擦拭启动恢复：1/2/1首条无明显墨线、末条恢复普通剂量仍能出墨；4720列CRC和顺序吻合，见[STARTUP_RECOVERY_RUN_872.md](STARTUP_RECOVERY_RUN_872.md)。额外双发是否必要尚未确认。按用户目标优先验证最少启动喷射，不再展开拆装及整机通断路线；普通1/1/1控制见[STARTUP_NORMAL_CONTROL_TEST.md](STARTUP_NORMAL_CONTROL_TEST.md)。
+
+
+task873普通1/1/1三条均空白：3540列及独立组合CRC FDAAC56A吻合，排除本轮接收空数据/整列漏发作为差异来源。普通三条本轮未恢复；与872的加倍恢复尚非严格配对，不能确认双发稳定有效。详见[STARTUP_NORMAL_RUN_873.md](STARTUP_NORMAL_RUN_873.md)。先核实无墨时MOS后的喷头端VL/VP实际电压，不调压、不继续盲目加量，维持一路升压条件。
