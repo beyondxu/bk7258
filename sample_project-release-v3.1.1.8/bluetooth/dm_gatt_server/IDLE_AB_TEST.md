@@ -1,4 +1,4 @@
-> 本分支当前默认已改为“单次保电5分钟、6条线”，请按 [IDLE_HELD_5MIN_TEST.md](IDLE_HELD_5MIN_TEST.md) 操作。以下为历史60秒AB/BA说明；该模式保留在 codex/printer-idle-ab。
+> 当前分支默认单次关电五分钟、六条线，见 [IDLE_OFF_5MIN_TEST.md](IDLE_OFF_5MIN_TEST.md)。以下为历史60秒AB/BA说明，该模式保留在 codex/printer-idle-ab。
 
 # 自动停喷 A/B 测试 APP_IDLE_AB_V1
 

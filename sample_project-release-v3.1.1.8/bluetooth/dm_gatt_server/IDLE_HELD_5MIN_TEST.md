@@ -1,3 +1,5 @@
+> 此为上一版保电测试说明（codex/printer-idle-held-5min）。当前分支默认已改为单次关电恢复对照，请使用 [IDLE_OFF_5MIN_TEST.md](IDLE_OFF_5MIN_TEST.md)。
+
 # 单次保电停喷5分钟测试 APP_IDLE_HELD_5MIN_V1
 
 基于task853/854的AB+BA结果：60秒内24条均可见，首条仍可能偏弱/偏色。本项只延长停喷时间，尝试复现历史整条不喷；暂不重复A/B、改变电压/tFire或增加预喷。

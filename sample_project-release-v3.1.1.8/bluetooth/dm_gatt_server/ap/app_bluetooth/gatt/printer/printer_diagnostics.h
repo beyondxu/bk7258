@@ -6,7 +6,10 @@
 #endif
 
 #ifndef PRINTER_IDLE_HELD_ONLY
-#define PRINTER_IDLE_HELD_ONLY 1 /* one held-power phase, six scans per APP trigger */
+#define PRINTER_IDLE_HELD_ONLY 0 /* previous held-power-only comparison */
+#endif
+#ifndef PRINTER_IDLE_OFF_ONLY
+#define PRINTER_IDLE_OFF_ONLY 1 /* one OFF/restart phase, six scans per APP trigger */
 #endif
 #ifndef PRINTER_IDLE_AB_GAP_MS
 #define PRINTER_IDLE_AB_GAP_MS 300000U /* five minutes between active-column ACKs */

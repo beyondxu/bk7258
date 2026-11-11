@@ -6,6 +6,13 @@
 #ifndef PRINTER_IDLE_HELD_ONLY
 #define PRINTER_IDLE_HELD_ONLY 0 /* retained AB mode for older configurations */
 #endif
+#ifndef PRINTER_IDLE_OFF_ONLY
+#define PRINTER_IDLE_OFF_ONLY 0
+#endif
+#if PRINTER_IDLE_OFF_ONLY && PRINTER_IDLE_HELD_ONLY
+#error Select only one single-phase idle mode
+#endif
+#define PRINTER_IDLE_SINGLE_PHASE (PRINTER_IDLE_HELD_ONLY || PRINTER_IDLE_OFF_ONLY)
 #ifndef PRINTER_IDLE_AB_GAP_MS
 #define PRINTER_IDLE_AB_GAP_MS 60000U
 #endif
@@ -182,14 +189,14 @@ static int printer_run_idle_ab(const uint8_t *bin, uint32_t length) {
         failure_locked = true; result = -11; goto done;
     }
     os_printf("[IDLE_AB_BEGIN] run=%lu order=%s cache=%s crc32=%08lX scans=%u first_active=%lu last_active=%lu target_gap_ms=%lu HC_CONT_CE_required\r\n",
-              (unsigned long)(completed + 1U), PRINTER_IDLE_HELD_ONLY ? "HELD_ONLY" : ((completed & 1U) ? "BA" : "AB"), reuse ? "REUSED" : "CAPTURED",
-              (unsigned long)frozen_crc, PRINTER_IDLE_HELD_ONLY ? 6U : 12U,
+              (unsigned long)(completed + 1U), PRINTER_IDLE_OFF_ONLY ? "OFF_ONLY" : (PRINTER_IDLE_HELD_ONLY ? "HELD_ONLY" : ((completed & 1U) ? "BA" : "AB")), reuse ? "REUSED" : "CAPTURED",
+              (unsigned long)frozen_crc, PRINTER_IDLE_SINGLE_PHASE ? 6U : 12U,
               (unsigned long)s_idle_ab_first_col, (unsigned long)s_idle_ab_last_col, (unsigned long)PRINTER_IDLE_AB_GAP_MS);
     failure_locked = true;
     if (tph_mcu_set_head_power(0) != BK_OK) { result = -8; goto stop; }
     carriage_verified_power_up();
-    for (unsigned phase = 0; phase < (PRINTER_IDLE_HELD_ONLY ? 1U : 2U); ++phase) {
-        unsigned is_a = PRINTER_IDLE_HELD_ONLY ? 0U : ((phase ^ (completed & 1U)) == 0U);
+    for (unsigned phase = 0; phase < (PRINTER_IDLE_SINGLE_PHASE ? 1U : 2U); ++phase) {
+        unsigned is_a = PRINTER_IDLE_OFF_ONLY ? 1U : (PRINTER_IDLE_HELD_ONLY ? 0U : ((phase ^ (completed & 1U)) == 0U));
         result = printer_idle_ab_phase(frozen, frozen_crc, is_a);
         if (result) goto stop;
     }

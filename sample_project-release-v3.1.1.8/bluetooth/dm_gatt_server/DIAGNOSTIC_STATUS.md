@@ -2,7 +2,9 @@
 
 当前阶段：HC32连续CE版本用户实测tFire约1.8us。最新task853/854在复位、测试前擦拭后完成AB及BA，24条之间不擦拭；四次停喷间隔60016..60017ms，全部数据/列计数吻合，24条均可见。A重启后首条偏弱、B保电后首条也有局部颜色变化；不能把全部异常归于重新上电。详见[IDLE_AB_RUN_853_854.md](IDLE_AB_RUN_853_854.md)；测试程序说明见[IDLE_AB_TEST.md](IDLE_AB_TEST.md)。
 
-下一项已准备：单次保电停喷5分钟，只打印3条参考+3条观察，见[IDLE_HELD_5MIN_TEST.md](IDLE_HELD_5MIN_TEST.md)。尚无该模式实机结果，不新增原因排除。
+保电五分钟task863已完成：间隔300017ms、六帧CRC与HC32吻合，第4条仍明显可见，未复现整条不喷；第1条偏浅是初始上电参考线，不是五分钟后的观察线。见[IDLE_HELD_RUN_863.md](IDLE_HELD_RUN_863.md)。只覆盖当前固定长线所用喷嘴，不代表全部600喷嘴正常。
+
+下一项已准备：单次关电恢复五分钟，仍3条参考+3条观察，见[IDLE_OFF_5MIN_TEST.md](IDLE_OFF_5MIN_TEST.md)。尚无该模式实机结果。
 
 此前将CE高电平宽度直接视为tFire的解释已撤销；相邻地址对应S下降沿间隔才是当前核对的tFire。此前基于CE=1.97us计算的V²t不能作为实际加热能量证据。[SUPPORT_ENERGY_REVIEW.md](SUPPORT_ENERGY_REVIEW.md)仅保留为有此限制的历史讨论。下表既有D1/D2关联来自先前测试，不等于新模式已验证。
 
