@@ -684,6 +684,11 @@ void standalone_carriage_shuttle_test(uint32_t test_cycles) {
  */
 static uint32_t s_blank_spi_columns, s_blank_spi_steps[2];
 static bool s_blank_spi_failed;
+#if PRINTER_STARTUP_RECOVERY
+static unsigned s_recovery_repeats = 1;
+static uint32_t s_recovery_actual_columns;
+static uint32_t s_recovery_line_crc[2], s_recovery_job_crc;
+#endif
 #if PRINTER_IDLE_AB
 /* Only the two precomputed active-column boundaries are timestamped.
  * No pixel scanning or logging is inserted into the motor/SPI loop. */
@@ -710,9 +715,20 @@ static bool carriage_stream_move_ramped(uint8_t direction, uint32_t total_steps,
          */
         if (direction && i >= 200U && i < 7280U && (i - 200U) % 6U == 0U) {
             static const uint8_t blank[TPH_COLUMN_BYTES] = {0};
-            if (tph_fire_raw_column_bytes(columns ? columns + s_blank_spi_columns * TPH_COLUMN_BYTES : blank) != BK_OK) {
-                s_blank_spi_failed = true;
-                return false; /* caller powers down; no blind full return */
+#if PRINTER_STARTUP_RECOVERY
+            unsigned repeats = columns ? s_recovery_repeats : 1U;
+            if (repeats != 1U && repeats != 2U) return false;
+#else
+            const unsigned repeats = 1U;
+#endif
+            for (unsigned copy = 0; copy < repeats; ++copy) {
+                if (tph_fire_raw_column_bytes(columns ? columns + s_blank_spi_columns * TPH_COLUMN_BYTES : blank) != BK_OK) {
+                    s_blank_spi_failed = true;
+                    return false; /* caller powers down; no blind full return */
+                }
+#if PRINTER_STARTUP_RECOVERY
+                ++s_recovery_actual_columns;
+#endif
             }
 #if PRINTER_IDLE_AB
             if (columns && s_blank_spi_columns == s_idle_ab_first_col)

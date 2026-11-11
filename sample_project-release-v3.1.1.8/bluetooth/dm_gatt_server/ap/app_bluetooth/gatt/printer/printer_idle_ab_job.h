@@ -1,3 +1,19 @@
+#ifndef PRINTER_STARTUP_RECOVERY
+#define PRINTER_STARTUP_RECOVERY 0
+#endif
+#if PRINTER_STARTUP_RECOVERY
+/* Expected wire order is x0,x0,x1,x1,..., NOT two full-frame copies.
+ * Compute only while idle before the head is powered; never hash inside a pulse.
+ */
+static uint32_t printer_recovery_crc_update(uint32_t crc, const uint8_t *columns, unsigned repeats) {
+    for (unsigned x = 0; x < PRINTER_PAGE_COLUMNS; ++x) {
+        for (unsigned r = 0; r < repeats; ++r)
+            crc = printer_crc32_update(crc, columns + x * 100U, 100U);
+        if ((x & 63U) == 63U) printer_map_yield_cpu();
+    }
+    return crc;
+}
+#endif
 /* Private, APP-triggered OFF/restart vs powered-idle comparison.
  * Requires HC32 CONT_CE_v1: every column must STOP and RESET before returning.
  * No startup motion, no priming, no extra column SPI during return/feed/idle.
@@ -60,6 +76,13 @@ static int printer_idle_ab_scan(const uint8_t *columns, uint32_t crc,
     s_blank_spi_columns = 0;
     s_blank_spi_steps[0] = s_blank_spi_steps[1] = 0;
     s_blank_spi_failed = false;
+#if PRINTER_STARTUP_RECOVERY
+    s_recovery_actual_columns = 0;
+    if (s_recovery_repeats != 1U && s_recovery_repeats != 2U) return -4;
+    os_printf("[RECOVERY_EXPECT_LINE] stage=%s logical_columns=1180 fire_columns=%lu wire_crc32=%08lX repeats=%u\r\n",
+              kind, (unsigned long)(PRINTER_PAGE_COLUMNS * s_recovery_repeats),
+              (unsigned long)s_recovery_line_crc[s_recovery_repeats - 1U], s_recovery_repeats);
+#endif
     s_idle_ab_first_ack_us = s_idle_ab_last_ack_us = 0;
     os_printf("[IDLE_AB_LINE_BEGIN] phase=%s kind=%s line=%u/3 crc32=%08lX head=ON boost=ON\r\n",
               phase, kind, copy, (unsigned long)crc);
@@ -67,6 +90,11 @@ static int printer_idle_ab_scan(const uint8_t *columns, uint32_t crc,
     if (!carriage_stream_move_ramped(1, SHUTTLE_TOTAL_STEPS, columns)) return -9;
     if (s_blank_spi_columns != PRINTER_PAGE_COLUMNS || !s_idle_ab_first_ack_us ||
         s_idle_ab_last_ack_us < s_idle_ab_first_ack_us) return -9;
+#if PRINTER_STARTUP_RECOVERY
+    if (s_recovery_actual_columns != PRINTER_PAGE_COLUMNS * s_recovery_repeats) return -9;
+    os_printf("[RECOVERY_SENT_LINE] stage=%s logical_columns=%lu fire_columns=%lu repeats=%u ACK_only_ink_unverified\r\n",
+              kind, (unsigned long)s_blank_spi_columns, (unsigned long)s_recovery_actual_columns, s_recovery_repeats);
+#endif
     *lead_us = s_idle_ab_first_ack_us - begin;
     uint32_t gap_ms = idle_anchor ? (uint32_t)((s_idle_ab_first_ack_us - idle_anchor) / 1000U) : 0U;
     rtos_delay_milliseconds(200);
@@ -96,14 +124,20 @@ static int printer_idle_ab_feed(uint32_t steps, const char *phase, unsigned line
 }
 
 static int printer_idle_ab_phase(const uint8_t *columns, uint32_t crc, unsigned power_off) {
-    const char *phase = PRINTER_IDLE_REFERENCE_ONLY ? "CMY_SHORT" : (power_off ? "A_OFF_RESTART" : "B_HELD_POWER");
+    const char *phase = PRINTER_STARTUP_RECOVERY ? "STARTUP_RECOVERY" : (PRINTER_IDLE_REFERENCE_ONLY ? "CMY_SHORT" : (power_off ? "A_OFF_RESTART" : "B_HELD_POWER"));
     int result;
     uint64_t lead_us = 0;
     os_printf("[IDLE_AB_PHASE] phase=%s reference=3 observe=%u same_bytes_same_nozzles\r\n", phase, PRINTER_IDLE_REFERENCE_ONLY ? 0U : 3U);
     if (tph_mcu_set_head_power(1) != BK_OK) return -8;
     rtos_delay_milliseconds(PRINTER_PAGE_HEAD_SETTLE_MS);
     for (unsigned line = 1; line <= 3U; ++line) {
+#if PRINTER_STARTUP_RECOVERY
+        static const char *const stages[3] = {"BEFORE", "DOSE_X2", "AFTER"};
+        s_recovery_repeats = line == 2U ? 2U : 1U;
+        result = printer_idle_ab_scan(columns, crc, phase, stages[line - 1U], line, 0, &lead_us);
+#else
         result = printer_idle_ab_scan(columns, crc, phase, "REF", line, 0, &lead_us);
+#endif
         if (result) return result;
         result = printer_idle_ab_feed(PRINTER_IDLE_REFERENCE_ONLY && line == 3U ? PRINTER_IDLE_AB_GROUP_FEED : PRINTER_IDLE_AB_LINE_FEED, phase, line);
         if (result) return result;
@@ -196,6 +230,17 @@ static int printer_run_idle_ab(const uint8_t *bin, uint32_t length) {
     if (printer_crc32(frozen, PRINTER_IDLE_AB_BYTES) != frozen_crc) {
         failure_locked = true; result = -11; goto done;
     }
+#if PRINTER_STARTUP_RECOVERY
+    s_recovery_repeats = 1U;
+    s_recovery_line_crc[0] = frozen_crc;
+    s_recovery_line_crc[1] = printer_recovery_crc_update(0xFFFFFFFFU, frozen, 2U) ^ 0xFFFFFFFFU;
+    uint32_t job_crc = printer_recovery_crc_update(0xFFFFFFFFU, frozen, 1U);
+    job_crc = printer_recovery_crc_update(job_crc, frozen, 2U);
+    s_recovery_job_crc = printer_recovery_crc_update(job_crc, frozen, 1U) ^ 0xFFFFFFFFU;
+    os_printf("[RECOVERY_BEGIN] stages=BEFORE,DOSE_X2,AFTER scans=3 head_sessions=1 no_wipe_no_reseat same_waveform\r\n");
+    os_printf("[RECOVERY_RX_EXPECT] columns=4720 bytes=472000 crc32=%08lX repeat_limit=2 HC_CONT_CE_v1_60us_idle_guard_required\r\n",
+              (unsigned long)s_recovery_job_crc);
+#endif
     os_printf("[IDLE_AB_BEGIN] run=%lu order=%s cache=%s crc32=%08lX scans=%u first_active=%lu last_active=%lu target_gap_ms=%lu HC_CONT_CE_required\r\n",
               (unsigned long)(completed + 1U), PRINTER_IDLE_REFERENCE_ONLY ? "REFERENCE_ONLY" : (PRINTER_IDLE_OFF_ONLY ? "OFF_ONLY" : (PRINTER_IDLE_HELD_ONLY ? "HELD_ONLY" : ((completed & 1U) ? "BA" : "AB"))), reuse ? "REUSED" : "CAPTURED",
               (unsigned long)frozen_crc, PRINTER_IDLE_REFERENCE_ONLY ? 3U : (PRINTER_IDLE_SINGLE_PHASE ? 6U : 12U),
@@ -209,6 +254,9 @@ static int printer_run_idle_ab(const uint8_t *bin, uint32_t length) {
         if (result) goto stop;
     }
 stop:
+#if PRINTER_STARTUP_RECOVERY
+    s_recovery_repeats = 1U;
+#endif
     if (tph_mcu_set_head_power(0) != BK_OK && !result) result = -8;
     bk_motor_set_state(0, 0);
     carriage_verified_power_down();

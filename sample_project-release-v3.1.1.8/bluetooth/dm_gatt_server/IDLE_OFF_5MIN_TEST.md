@@ -1,3 +1,5 @@
+> 当前分支默认已改为三条1/2/1启动恢复对照，不要求拆装或擦拭，见 [STARTUP_RECOVERY_TEST.md](STARTUP_RECOVERY_TEST.md)。以下是历史方案，不能作为本分支当前操作说明。
+
 > 本分支当前默认已改为只打印3条、无长等待的短打印，见 [CMY_SHORT_RESEAT_TEST.md](CMY_SHORT_RESEAT_TEST.md)。以下为历史关电五分钟说明，对应 codex/printer-idle-off-5min。
 
 # 单次关电恢复对照 APP_IDLE_OFF_5MIN_V1

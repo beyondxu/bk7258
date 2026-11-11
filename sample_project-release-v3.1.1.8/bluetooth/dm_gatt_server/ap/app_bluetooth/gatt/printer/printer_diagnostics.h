@@ -5,6 +5,10 @@
 #define PRINTER_IDLE_AB 1 /* frozen-line OFF/ON versus held-power idle comparison */
 #endif
 
+#ifndef PRINTER_STARTUP_RECOVERY
+#define PRINTER_STARTUP_RECOVERY 1 /* one normal / per-column x2 / normal comparison */
+#endif
+
 #ifndef PRINTER_IDLE_HELD_ONLY
 #define PRINTER_IDLE_HELD_ONLY 0 /* previous held-power-only comparison */
 #endif
@@ -54,6 +58,9 @@
 #endif
 #if PRINTER_IDLE_AB && (!PRINTER_FULL_PAGE || PRINTER_DOMAIN_PAIR || PRINTER_CYAN_INVENTORY || PRINTER_LINE_CONTROL || PRINTER_NOZZLE_CHECK || PRINTER_PAGE_REPEAT_SAME_POWER)
 #error Idle A/B requires full-page trigger and exclusive diagnostic mode
+#endif
+#if PRINTER_STARTUP_RECOVERY && PRINTER_IDLE_AB && PRINTER_FULL_PAGE && !PRINTER_IDLE_REFERENCE_ONLY
+#error Startup recovery requires short reference-only mode
 #endif
 #ifndef PRINTER_PAGE_COLOR_MODE
 #define PRINTER_PAGE_COLOR_MODE 1 /* 1=CMY together; 2=C pass then M+Y pass */
