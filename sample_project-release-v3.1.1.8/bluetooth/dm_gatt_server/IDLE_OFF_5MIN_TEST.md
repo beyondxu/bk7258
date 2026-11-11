@@ -1,3 +1,5 @@
+> 当前分支用于普通1/1/1启动恢复控制，不要求拆装、擦拭或长等待，请按 [STARTUP_NORMAL_CONTROL_TEST.md](STARTUP_NORMAL_CONTROL_TEST.md) 操作。以下为历史说明。
+
 > 本分支当前默认已改为只打印3条、无长等待的短打印，见 [CMY_SHORT_RESEAT_TEST.md](CMY_SHORT_RESEAT_TEST.md)。以下为历史关电五分钟说明，对应 codex/printer-idle-off-5min。
 
 # 单次关电恢复对照 APP_IDLE_OFF_5MIN_V1

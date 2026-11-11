@@ -1,3 +1,5 @@
+> 当前分支用于普通1/1/1启动恢复控制，不要求拆装、擦拭或长等待，请按 [STARTUP_NORMAL_CONTROL_TEST.md](STARTUP_NORMAL_CONTROL_TEST.md) 操作。以下为历史说明。
+
 > 当前分支默认只打3条、无长等待，见 [CMY_SHORT_RESEAT_TEST.md](CMY_SHORT_RESEAT_TEST.md)。以下为历史保电五分钟说明，对应 codex/printer-idle-held-5min。
 
 # 单次保电停喷5分钟测试 APP_IDLE_HELD_5MIN_V1

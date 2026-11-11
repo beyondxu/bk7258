@@ -31,3 +31,6 @@ CRC匹配的排除范围止于HC32接收缓冲区，不扩展到GPIO电平、喷
 
 
 用户补充擦拭需要取下重装喷头，时序修改后多数时候未擦拭。因此历史擦拭恢复不能单独作为喷嘴面/堵塞证据，需拆开重新启动、重装接触与擦拭的影响；按用户判断暂不优先展开机械扰动。已准备仅三条、无长等待的短打印，见[CMY_SHORT_RESEAT_TEST.md](CMY_SHORT_RESEAT_TEST.md)。测试未完成前，不新增触点或供墨原因的排除。
+
+
+最新task872出现无擦拭启动恢复：1/2/1首条无明显墨线、末条恢复普通剂量仍能出墨；4720列CRC和顺序吻合，见[STARTUP_RECOVERY_RUN_872.md](STARTUP_RECOVERY_RUN_872.md)。额外双发是否必要尚未确认。按用户目标优先验证最少启动喷射，不再展开拆装及整机通断路线；普通1/1/1控制见[STARTUP_NORMAL_CONTROL_TEST.md](STARTUP_NORMAL_CONTROL_TEST.md)。

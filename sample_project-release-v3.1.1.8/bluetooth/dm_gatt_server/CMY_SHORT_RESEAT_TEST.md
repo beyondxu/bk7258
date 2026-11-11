@@ -1,3 +1,5 @@
+> 当前分支用于普通1/1/1启动恢复控制，不要求拆装、擦拭或长等待，请按 [STARTUP_NORMAL_CONTROL_TEST.md](STARTUP_NORMAL_CONTROL_TEST.md) 操作。以下为历史说明。
+
 # 短打印：区分重新启动、重装触点与擦拭
 
 当前默认 `APP_CMY_SHORT_V1`，一次只打印原始CMY长线3次，约30秒正常结束，无5分钟等待、预喷或启动自动运动。HC32保留当前连续CE及实测tFire约1.8us版本。

@@ -2,7 +2,7 @@
 from test_idle_ab import h,run_scenarios,D,P
 assert '#define PRINTER_IDLE_REFERENCE_ONLY 1' in (D/'printer_diagnostics.h').read_text()
 assert '#define PRINTER_IDLE_OFF_ONLY 0' in (D/'printer_diagnostics.h').read_text()
-assert 'APP_CMY_SHORT_V1' in (P/'ap/ap_main.c').read_text()
+assert 'APP_STARTUP_NORMAL_CTRL_V1' in (P/'ap/ap_main.c').read_text()
 s=h.replace('#define PRINTER_IDLE_AB 1','#define PRINTER_IDLE_AB 1\n#define PRINTER_IDLE_REFERENCE_ONLY 1')
 s=s.replace('scenario==4&&commands==8','scenario==4&&commands==4')
 s=s.replace('scenario==2&&job_lines==10','scenario==2&&job_lines==3')
