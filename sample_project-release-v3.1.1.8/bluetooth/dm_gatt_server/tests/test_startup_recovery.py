@@ -62,19 +62,23 @@ s=s.replace('check_run(12,true);assert(ons==6&&gpio_inits==4&&boost_ons==4&&boos
 s=s.replace('scenario==2)assert(scans==10&&legs==19&&feeds==9)','scenario==2)assert(scans==2&&legs==3&&feeds==1)')
 s=s.replace('scenario==4)assert(scans==12&&feeds==12)','scenario==4)assert(scans==3&&feeds==3)')
 s=s.replace('scenario==6)assert(scans==9&&feeds==9)','scenario==6)assert(scans==2&&feeds==2)')
-with tempfile.TemporaryDirectory() as tmp:
- t=Path(tmp)
- data=blob({(ch,x,y) for ch in range(3) for x in range(100,1000) for y in range(1225,1237)})
- (t/'input.bin').write_bytes(data);(t/'blank.bin').write_bytes(blob(set()))
- renderer=Renderer();rc,page=renderer.prepare(data);assert not rc;gold,_=renderer.render(page,4);renderer.close(page);(t/'gold.bin').write_bytes(gold)
- (t/'alt.bin').write_bytes(blob({(ch,x,y) for ch in range(3) for x in range(150,1050) for y in range(1340,1352)}))
- twice=b''.join(gold[i:i+100]*2 for i in range(0,len(gold),100))
- assert twice!=gold+gold
- code=s.replace('@X2@',hex(zlib.crc32(twice))+'U').replace('@JOB@',hex(zlib.crc32(gold+twice+gold))+'U')
- (t/'test.c').write_text(code)
- subprocess.run(['cc','-std=c99','-O1','-Wall','-Wextra','-Werror','-I'+str(D),str(t/'test.c'),str(D/'printer_page.c'),str(D/'printer_mapper.c'),'-o',str(t/'test')],check=True)
- arm=Path('/workspace/.setup/tools/usr/bin/arm-none-eabi-gcc')
- if arm.exists():subprocess.run([str(arm),'-std=gnu99','-mcpu=cortex-m33+nodsp','-mfpu=fpv5-sp-d16','-mfloat-abi=hard','-mcmse','-O2','-Wall','-Wextra','-Werror','-I'+str(D),'-c',str(t/'test.c'),'-o',str(t/'test.o')],check=True)
- for scenario in [0,1,2,3,4,5,6,8,12]:
-  subprocess.run([str(t/'test'),str(t/'input.bin'),str(t/'blank.bin'),str(t/'gold.bin'),str(t/'alt.bin'),str(scenario)],check=True)
-print('PASS: actual per-column 1/2/1 order and 4720 ACKs, independent zlib wire/aggregate CRCs, three scans/one ON, no idle/extra motion, failure cleanup, cache freeze and ARM compilation')
+def run_startup_scenarios():
+ with tempfile.TemporaryDirectory() as tmp:
+  t=Path(tmp)
+  data=blob({(ch,x,y) for ch in range(3) for x in range(100,1000) for y in range(1225,1237)})
+  (t/'input.bin').write_bytes(data);(t/'blank.bin').write_bytes(blob(set()))
+  renderer=Renderer();rc,page=renderer.prepare(data);assert not rc;gold,_=renderer.render(page,4);renderer.close(page);(t/'gold.bin').write_bytes(gold)
+  (t/'alt.bin').write_bytes(blob({(ch,x,y) for ch in range(3) for x in range(150,1050) for y in range(1340,1352)}))
+  twice=b''.join(gold[i:i+100]*2 for i in range(0,len(gold),100))
+  assert twice!=gold+gold
+  code=s.replace('@X2@',hex(zlib.crc32(twice))+'U').replace('@JOB@',hex(zlib.crc32(gold+twice+gold))+'U')
+  (t/'test.c').write_text(code)
+  subprocess.run(['cc','-std=c99','-O1','-Wall','-Wextra','-Werror','-I'+str(D),str(t/'test.c'),str(D/'printer_page.c'),str(D/'printer_mapper.c'),'-o',str(t/'test')],check=True)
+  arm=Path('/workspace/.setup/tools/usr/bin/arm-none-eabi-gcc')
+  if arm.exists():subprocess.run([str(arm),'-std=gnu99','-mcpu=cortex-m33+nodsp','-mfpu=fpv5-sp-d16','-mfloat-abi=hard','-mcmse','-O2','-Wall','-Wextra','-Werror','-I'+str(D),'-c',str(t/'test.c'),'-o',str(t/'test.o')],check=True)
+  for scenario in [0,1,2,3,4,5,6,8,12]:
+   subprocess.run([str(t/'test'),str(t/'input.bin'),str(t/'blank.bin'),str(t/'gold.bin'),str(t/'alt.bin'),str(scenario)],check=True)
+ print('PASS: actual per-column 1/2/1 order and 4720 ACKs, independent zlib wire/aggregate CRCs, three scans/one ON, no idle/extra motion, failure cleanup, cache freeze and ARM compilation')
+
+if __name__ == "__main__":
+ run_startup_scenarios()

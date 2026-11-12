@@ -5,8 +5,16 @@
 #define PRINTER_IDLE_AB 1 /* frozen-line OFF/ON versus held-power idle comparison */
 #endif
 
+#ifndef PRINTER_FIXED_S2_BASELINE
+#define PRINTER_FIXED_S2_BASELINE 1 /* deterministic S2 recipe; APP pixels do not select nozzles */
+#endif
+
 #ifndef PRINTER_STARTUP_RECOVERY
 #define PRINTER_STARTUP_RECOVERY 1 /* one normal / per-column x2 / normal comparison */
+#endif
+
+#if PRINTER_FIXED_S2_BASELINE && (!PRINTER_STARTUP_RECOVERY || !PRINTER_IDLE_AB)
+#error Fixed S2 baseline requires the startup-recovery diagnostic path
 #endif
 
 #ifndef PRINTER_IDLE_HELD_ONLY

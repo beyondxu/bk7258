@@ -1,3 +1,9 @@
+#ifndef PRINTER_FIXED_S2_BASELINE
+#define PRINTER_FIXED_S2_BASELINE 0
+#endif
+#if PRINTER_FIXED_S2_BASELINE
+#include "printer_fixed_s2.h"
+#endif
 #ifndef PRINTER_STARTUP_RECOVERY
 #define PRINTER_STARTUP_RECOVERY 0
 #endif
@@ -204,6 +210,11 @@ static int printer_run_idle_ab(const uint8_t *bin, uint32_t length) {
     uint8_t *candidate = NULL, *scratch = NULL;
     unsigned reuse = frozen != NULL;
     if (!frozen) {
+#if PRINTER_FIXED_S2_BASELINE
+        candidate = printer_map_psram_alloc(PRINTER_IDLE_AB_BYTES);
+        if (!candidate) { result = -2; goto done; }
+        if (printer_fixed_s2_build(candidate, PRINTER_IDLE_AB_BYTES)) { result = -4; goto done; }
+#else
         if (page.swaths <= 4U) { result = -4; goto done; }
         result = printer_page_transform(&page, PRINTER_PAGE_TRANSFORM, printer_map_yield_cpu);
         if (result) goto done;
@@ -214,13 +225,18 @@ static int printer_run_idle_ab(const uint8_t *bin, uint32_t length) {
         result = printer_page_render(&page, 4U, candidate, PRINTER_IDLE_AB_BYTES,
                                      scratch, page.width * 72U, dots, printer_map_yield_cpu);
         if (result) goto done;
+#endif
         unsigned first = PRINTER_PAGE_COLUMNS, last = 0, active = 0;
         for (unsigned x = 0; x < PRINTER_PAGE_COLUMNS; ++x) {
             unsigned nonzero = 0;
             for (unsigned slot = 0; slot < 100U; ++slot) nonzero |= candidate[x * 100U + slot];
             if (nonzero) { if (!active) first = x; last = x; ++active; }
         }
+#if PRINTER_FIXED_S2_BASELINE
+        if (active != PRINTER_FIXED_S2_ACTIVE_COLUMNS) { result = -4; goto done; }
+#else
         if (active < 256U || !dots[0] || !dots[1] || !dots[2]) { result = -4; goto done; }
+#endif
         s_idle_ab_first_col = first; s_idle_ab_last_col = last;
         frozen = candidate; candidate = NULL;
         frozen_crc = printer_crc32(frozen, PRINTER_IDLE_AB_BYTES);
@@ -245,6 +261,11 @@ static int printer_run_idle_ab(const uint8_t *bin, uint32_t length) {
               (unsigned long)(completed + 1U), PRINTER_IDLE_REFERENCE_ONLY ? "REFERENCE_ONLY" : (PRINTER_IDLE_OFF_ONLY ? "OFF_ONLY" : (PRINTER_IDLE_HELD_ONLY ? "HELD_ONLY" : ((completed & 1U) ? "BA" : "AB"))), reuse ? "REUSED" : "CAPTURED",
               (unsigned long)frozen_crc, PRINTER_IDLE_REFERENCE_ONLY ? 3U : (PRINTER_IDLE_SINGLE_PHASE ? 6U : 12U),
               (unsigned long)s_idle_ab_first_col, (unsigned long)s_idle_ab_last_col, (unsigned long)(PRINTER_IDLE_REFERENCE_ONLY ? 0U : PRINTER_IDLE_AB_GAP_MS));
+#if PRINTER_FIXED_S2_BASELINE
+    if (frozen_crc != PRINTER_FIXED_S2_CRC32) { failure_locked = true; result = -11; goto done; }
+    os_printf("[FIXED_S2] v1 A=004A2912 S=02 D=3F frame_crc32=%08lX active_columns=%u per_nozzle_per_frame=711 per_nozzle_per_job=2844 selected_nozzles=24 APP_pixels_ignored fixed_across_boots\r\n",
+              (unsigned long)frozen_crc, PRINTER_FIXED_S2_ACTIVE_COLUMNS);
+#endif
     failure_locked = true;
     if (tph_mcu_set_head_power(0) != BK_OK) { result = -8; goto stop; }
     carriage_verified_power_up();

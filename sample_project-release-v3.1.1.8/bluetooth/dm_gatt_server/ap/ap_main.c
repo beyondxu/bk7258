@@ -337,7 +337,11 @@ static void app_printer_task_entry(void *arg) {
 	
 	   // 打印完成之后，再进入 BLE 监听服务
 	// ★ 测试 1：打印青色 (Cyan, 0x03) 2 行 ★
+#if PRINTER_FIXED_S2_BASELINE
+        os_printf("[SYS] APP_FIXED_S2_BASELINE_V1 fixed_across_boots A=004A2912 S=02 D=3F scans=3 repeats=1,2,1 requires_HC_extra_idle_us_0\r\n");
+#else
 		os_printf("[SYS] APP_STARTUP_RECOVERY_V1 frozen_CMY scans=3 repeats=1,2,1 one_head_session no_wipe_no_reseat requires_HC_CONT_CE no_startup_motion\r\n");
+#endif
 	 // ★★★ 在这里调用测试！打印 600 列宽，连续打 4 行 ★★★
       // ★★★ 直接调这行即可：内部自动先霍尔寻原点，再打 6 行纯绿 ★★★
      // ★★★ 在此调用 7 色测试：色块宽度 600 列 ★★★
