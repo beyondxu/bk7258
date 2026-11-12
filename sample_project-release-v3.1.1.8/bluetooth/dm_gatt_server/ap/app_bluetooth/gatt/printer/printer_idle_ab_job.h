@@ -1,3 +1,6 @@
+#ifndef PRINTER_FIXED_S2_COLOR_CHECK
+#define PRINTER_FIXED_S2_COLOR_CHECK 0
+#endif
 #ifndef PRINTER_FIXED_S2_BASELINE
 #define PRINTER_FIXED_S2_BASELINE 0
 #endif
@@ -90,8 +93,8 @@ static int printer_idle_ab_scan(const uint8_t *columns, uint32_t crc,
               (unsigned long)s_recovery_line_crc[s_recovery_repeats - 1U], s_recovery_repeats);
 #endif
     s_idle_ab_first_ack_us = s_idle_ab_last_ack_us = 0;
-    os_printf("[IDLE_AB_LINE_BEGIN] phase=%s kind=%s line=%u/3 crc32=%08lX head=ON boost=ON\r\n",
-              phase, kind, copy, (unsigned long)crc);
+    os_printf("[IDLE_AB_LINE_BEGIN] phase=%s kind=%s line=%u/%u crc32=%08lX head=ON boost=ON\r\n",
+              phase, kind, copy, PRINTER_FIXED_S2_COLOR_CHECK ? 6U : 3U, (unsigned long)crc);
     uint64_t begin = bk_aon_rtc_get_us();
     if (!carriage_stream_move_ramped(1, SHUTTLE_TOTAL_STEPS, columns)) return -9;
     if (s_blank_spi_columns != PRINTER_PAGE_COLUMNS || !s_idle_ab_first_ack_us ||
@@ -109,8 +112,8 @@ static int printer_idle_ab_scan(const uint8_t *columns, uint32_t crc,
     if (printer_crc32(columns, PRINTER_IDLE_AB_BYTES) != crc) return -11;
     if (s_blank_spi_steps[0] != SHUTTLE_TOTAL_STEPS ||
         s_blank_spi_steps[1] != SHUTTLE_TOTAL_STEPS) return -9;
-    os_printf("[IDLE_AB_LINE_END] phase=%s kind=%s line=%u/3 columns=%lu/1180 lead_ms=%lu active_gap_ms=%lu crc32=%08lX ink_unverified\r\n",
-              phase, kind, copy, (unsigned long)s_blank_spi_columns,
+    os_printf("[IDLE_AB_LINE_END] phase=%s kind=%s line=%u/%u columns=%lu/1180 lead_ms=%lu active_gap_ms=%lu crc32=%08lX ink_unverified\r\n",
+              phase, kind, copy, PRINTER_FIXED_S2_COLOR_CHECK ? 6U : 3U, (unsigned long)s_blank_spi_columns,
               (unsigned long)(*lead_us / 1000U), (unsigned long)gap_ms, (unsigned long)crc);
     if (idle_anchor && (gap_ms < PRINTER_IDLE_AB_GAP_MS - 100U || gap_ms > PRINTER_IDLE_AB_GAP_MS + 100U)) {
         os_printf("[IDLE_AB_INVALID] phase=%s actual_gap_outside_target target_ms=%lu tolerance_ms=100\r\n", phase, (unsigned long)PRINTER_IDLE_AB_GAP_MS);
@@ -192,7 +195,14 @@ static int printer_idle_ab_phase(const uint8_t *columns, uint32_t crc, unsigned 
     return 0;
 }
 
+#if PRINTER_FIXED_S2_COLOR_CHECK
+#include "printer_fixed_s2_color_job.h"
+#endif
+
 static int printer_run_idle_ab(const uint8_t *bin, uint32_t length) {
+#if PRINTER_FIXED_S2_COLOR_CHECK
+    return printer_run_fixed_s2_color_check(bin, length);
+#endif
     static bool failure_locked = false;
     static uint8_t *frozen = NULL;
     static uint32_t frozen_crc, completed;

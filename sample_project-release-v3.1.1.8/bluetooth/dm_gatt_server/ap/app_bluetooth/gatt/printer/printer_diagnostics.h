@@ -5,6 +5,10 @@
 #define PRINTER_IDLE_AB 1 /* frozen-line OFF/ON versus held-power idle comparison */
 #endif
 
+#ifndef PRINTER_FIXED_S2_COLOR_CHECK
+#define PRINTER_FIXED_S2_COLOR_CHECK 1 /* C,M,Y,Y,M,C, equal ordinary dose per line */
+#endif
+
 #ifndef PRINTER_FIXED_S2_BASELINE
 #define PRINTER_FIXED_S2_BASELINE 1 /* deterministic S2 recipe; APP pixels do not select nozzles */
 #endif
@@ -15,6 +19,10 @@
 
 #if PRINTER_FIXED_S2_BASELINE && (!PRINTER_STARTUP_RECOVERY || !PRINTER_IDLE_AB)
 #error Fixed S2 baseline requires the startup-recovery diagnostic path
+#endif
+
+#if PRINTER_FIXED_S2_COLOR_CHECK && !PRINTER_FIXED_S2_BASELINE
+#error Fixed S2 color check requires the fixed S2 recipe
 #endif
 
 #ifndef PRINTER_IDLE_HELD_ONLY

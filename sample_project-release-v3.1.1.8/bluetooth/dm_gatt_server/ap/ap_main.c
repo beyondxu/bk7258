@@ -337,7 +337,9 @@ static void app_printer_task_entry(void *arg) {
 	
 	   // 打印完成之后，再进入 BLE 监听服务
 	// ★ 测试 1：打印青色 (Cyan, 0x03) 2 行 ★
-#if PRINTER_FIXED_S2_BASELINE
+#if PRINTER_FIXED_S2_COLOR_CHECK
+        os_printf("[SYS] APP_FIXED_S2_COLOR_CHECK_V1 order=C,M,Y,Y,M,C scans=6 ordinary_dose requires_HC_extra_idle_us_0\r\n");
+#elif PRINTER_FIXED_S2_BASELINE
         os_printf("[SYS] APP_FIXED_S2_BASELINE_V1 fixed_across_boots A=004A2912 S=02 D=3F scans=3 repeats=1,2,1 requires_HC_extra_idle_us_0\r\n");
 #else
 		os_printf("[SYS] APP_STARTUP_RECOVERY_V1 frozen_CMY scans=3 repeats=1,2,1 one_head_session no_wipe_no_reseat requires_HC_CONT_CE no_startup_motion\r\n");
