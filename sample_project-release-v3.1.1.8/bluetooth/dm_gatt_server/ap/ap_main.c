@@ -320,6 +320,8 @@ static void app_printer_task_entry(void *arg) {
     }
 	// 握手自检成功...
     s_printer_link_ready = link_ready;
+    os_printf("[PRINTER_LINK_STATE] ready=%u selftest_attempts=%d printing=%s\r\n",
+              (unsigned)link_ready, retry, link_ready ? "ALLOWED" : "BLOCKED");
     if (!link_ready) {
         os_printf("[SYS] Check HC32 link before printing.\r\n");
     }

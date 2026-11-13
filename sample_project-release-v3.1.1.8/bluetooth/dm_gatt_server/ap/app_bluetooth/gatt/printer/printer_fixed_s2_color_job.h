@@ -5,11 +5,23 @@
 static int printer_run_fixed_s2_check(const uint8_t *bin, uint32_t length) {
     static bool failure_locked = false;
     static uint32_t completed;
+    static int locked_code;
+    static const char *locked_stage = "NONE";
+    static unsigned locked_line;
     uint8_t *frames[PRINTER_S2_CHECK_PARTS] = {NULL};
     uint32_t first[PRINTER_S2_CHECK_PARTS], last[PRINTER_S2_CHECK_PARTS];
     uint32_t job_crc = 0xFFFFFFFFU;
     int result;
-    if (failure_locked || !printer_link_is_ready()) return -7;
+    const char *stage = "FRAME_PRECHECK";
+    unsigned active_line = 0;
+    bool link_ready = printer_link_is_ready();
+    if (failure_locked || !link_ready) {
+        os_printf("[" PRINTER_S2_CHECK_TAG "_BLOCKED] code=-7 reason=%s link_ready=%u failure_locked=%u first_failure_code=%d first_failure_stage=%s first_failure_line=%u completed_runs=%lu no_motion_no_fire\r\n",
+                  link_ready ? "PREVIOUS_FAILURE_LOCK" : "BOOT_LINK_UNAVAILABLE",
+                  (unsigned)link_ready, (unsigned)failure_locked, locked_code,
+                  locked_stage, locked_line, (unsigned long)completed);
+        return -7;
+    }
 
     /* Keep the existing native-F2 format validation, but ignore APP pixels.
      * Release parser memory before allocating the sealed inspection frames.
@@ -52,6 +64,7 @@ static int printer_run_fixed_s2_check(const uint8_t *bin, uint32_t length) {
             failure_locked = true; result = -11; goto done;
         }
     }
+    stage = "JOB_PRECHECK";
     for (unsigned line = 0; line < PRINTER_S2_CHECK_LINES; ++line)
         job_crc = printer_recovery_crc_update(job_crc, frames[s_s2_check_order[line]], 1U);
     job_crc ^= 0xFFFFFFFFU;
@@ -64,8 +77,10 @@ static int printer_run_fixed_s2_check(const uint8_t *bin, uint32_t length) {
 
     failure_locked = true;
     s_recovery_repeats = 1U;
+    stage = "INITIAL_HEAD_OFF";
     if (tph_mcu_set_head_power(0) != BK_OK) { result = -8; goto stop; }
     carriage_verified_power_up();
+    stage = "HEAD_ON";
     if (tph_mcu_set_head_power(1) != BK_OK) { result = -8; goto stop; }
     rtos_delay_milliseconds(PRINTER_PAGE_HEAD_SETTLE_MS);
     for (unsigned line = 0; line < PRINTER_S2_CHECK_LINES; ++line) {
@@ -78,9 +93,12 @@ static int printer_run_fixed_s2_check(const uint8_t *bin, uint32_t length) {
                   line + 1U, PRINTER_S2_CHECK_LINES, s_s2_check_names[part], (unsigned)s_s2_check_masks[part],
                   (unsigned long)s_s2_check_crc[part],
                   (unsigned long)first[part], (unsigned long)last[part], PRINTER_S2_CHECK_NOZZLES);
+        active_line = line + 1U;
+        stage = "SCAN";
         result = printer_idle_ab_scan(frames[part], s_s2_check_crc[part],
                     PRINTER_S2_CHECK_TAG, s_s2_check_names[part], line + 1U, 0, &lead_us);
         if (result) goto stop;
+        stage = "FEED";
         result = printer_idle_ab_feed(line + 1U == PRINTER_S2_CHECK_LINES ? PRINTER_IDLE_AB_GROUP_FEED : PRINTER_IDLE_AB_LINE_FEED,
                                      PRINTER_S2_CHECK_TAG, line + 1U);
         if (result) goto stop;
@@ -88,13 +106,20 @@ static int printer_run_fixed_s2_check(const uint8_t *bin, uint32_t length) {
     result = 0;
 stop:
     s_recovery_repeats = 1U;
-    if (tph_mcu_set_head_power(0) != BK_OK && !result) result = -8;
+    if (tph_mcu_set_head_power(0) != BK_OK && !result) {
+        result = -8; stage = "FINAL_HEAD_OFF";
+    }
     bk_motor_set_state(0, 0);
     carriage_verified_power_down();
     if (!result) { failure_locked = false; ++completed; }
     os_printf("[" PRINTER_S2_CHECK_TAG "_END] code=%d completed_runs=%lu failure_locked=%u planned_per_nozzle_job_commands=1422 head_OFF_requested boost_OFF ink_unverified\r\n",
               result, (unsigned long)completed, (unsigned)failure_locked);
 done:
+    if (result && failure_locked && locked_code == 0) {
+        locked_code = result; locked_stage = stage; locked_line = active_line;
+        os_printf("[" PRINTER_S2_CHECK_TAG "_LOCK] first_failure_code=%d stage=%s line=%u restart_required no_auto_retry\r\n",
+                  locked_code, locked_stage, locked_line);
+    }
     for (unsigned part = 0; part < PRINTER_S2_CHECK_PARTS; ++part)
         if (frames[part]) printer_map_psram_free(frames[part]);
     return result;

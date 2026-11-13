@@ -328,6 +328,15 @@ void printer_protocol_audit_complete(uint32_t saved_len, uint32_t saved_crc)
     s_job.state = JOB_STATE_IDLE;
 }
 
+/* Bit3 is a DATA/command fault in the DN20 status protocol, not a generic
+ * hardware failure. Preserve the failed finish result without inventing
+ * paper/motor faults for link failures that have no dedicated status bit.
+ */
+static uint8_t printer_execution_fault(int result, bool data_ok)
+{
+    return !data_ok || result == -1 || result == -4 || result == -11 ? 8U : 0U;
+}
+
 void printer_protocol_bounded_complete(uint32_t saved_len, uint32_t saved_crc, int test_result)
 {
     bool ok = test_result == 0 && saved_len == s_job.total_bin_len && saved_crc == s_job.expected_crc;
@@ -335,7 +344,7 @@ void printer_protocol_bounded_complete(uint32_t saved_len, uint32_t saved_crc, i
               s_job.task_id, test_result, ok ? "PASS" : "FAIL");
     audit_send_finish(s_job.task_id, ok ? 0 : 1);
     s_status.work = 0;
-    s_status.fault = ok ? 0 : 8;
+    s_status.fault = printer_execution_fault(test_result, saved_len == s_job.total_bin_len && saved_crc == s_job.expected_crc);
     s_job.state = JOB_STATE_IDLE;
 }
 
@@ -346,7 +355,11 @@ void printer_protocol_page_complete(uint32_t saved_len, uint32_t saved_crc, int 
               s_job.task_id, result, ok ? "PASS" : "FAIL");
     audit_send_finish(s_job.task_id, ok ? 0 : 1);
     s_status.work = 0;
-    s_status.fault = ok ? 0 : 8;
+    s_status.fault = printer_execution_fault(result, saved_len == s_job.total_bin_len && saved_crc == s_job.expected_crc);
+    if (!ok) os_printf("[PAGE_FAULT] task=%u code=%d input_integrity=%s status_fault=%u finish=FAIL\r\n",
+                       s_job.task_id, result,
+                       saved_len == s_job.total_bin_len && saved_crc == s_job.expected_crc ? "PASS" : "FAIL",
+                       (unsigned)s_status.fault);
     s_job.state = JOB_STATE_IDLE;
 }
 

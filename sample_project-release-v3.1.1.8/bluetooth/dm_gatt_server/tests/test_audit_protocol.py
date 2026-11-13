@@ -70,6 +70,30 @@ int main(void) {
  /* Failed storage writes do not advance receive count or launch a worker. */
  n=start(f,bin,sizeof(bin),crc);printer_process_data(f,n);fail_append=1;
  printer_process_data(bin,sizeof(bin));assert(starts==2 && s_job.state==JOB_STATE_IDLE);
+ /* Execution failures retain failed finish without claiming corrupt input. */
+ fail_append=0;
+ const int results[]={-7,-8,-9,-10,-12,-2,-11,-4,-1,0};
+ for(unsigned mode=0;mode<2;mode++)for(unsigned i=0;i<sizeof(results)/sizeof(results[0]);i++){
+  n=start(f,bin,sizeof(bin),crc);printer_process_data(f,n);
+  printer_process_data(bin,sizeof(bin));printer_process_data(finish,m);
+  assert(s_job.state==JOB_STATE_PRINTING);
+  saved=stored;hw_printer_clear_buffer();
+  int rc=results[i];
+  if(mode)printer_protocol_bounded_complete(saved,crc,rc);
+  else printer_protocol_page_complete(saved,crc,rc);
+  assert(s_job.state==JOB_STATE_IDLE&&!s_status.work);
+  assert(rsp[17]==(rc?1:0));
+  assert(s_status.fault==((rc==-11||rc==-4||rc==-1)?8:0));
+ }
+ for(unsigned mode=0;mode<2;mode++){
+  n=start(f,bin,sizeof(bin),crc);printer_process_data(f,n);
+  printer_process_data(bin,sizeof(bin));printer_process_data(finish,m);
+  saved=stored;hw_printer_clear_buffer();
+  if(mode)printer_protocol_bounded_complete(saved,crc^1,-7);
+  else printer_protocol_page_complete(saved,crc^1,-7);
+  assert(rsp[17]==1&&s_status.fault==8&&s_job.state==JOB_STATE_IDLE);
+ }
+ puts("PASS: execution errors preserve failed finish; real data faults retain bit3");
  puts("PASS: fragmented/coalesced frames, binary frame signatures, CRC, TLV bounds, storage failure, worker ownership");
 }
 '''.replace('SOURCE',str(source))

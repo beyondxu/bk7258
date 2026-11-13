@@ -23,7 +23,7 @@ assert len(hits)==24 and set(hits.values())=={1422}
 assert [sum(n for (slot,d),n in hits.items() if d==b) for b in range(6)]==[5688]*6
 code=s.replace('#define PRINTER_STARTUP_RECOVERY 1','#define PRINTER_STARTUP_RECOVERY 1\n#define PRINTER_FIXED_S2_BASELINE 1\n#define PRINTER_FIXED_S2_COLOR_CHECK 1')
 code=code.replace('gold[118000]','gold[3][118000]')
-code=code.replace('#define EXPECTED_X2 @X2@','#define EXPECTED_X2 0U').replace('#define EXPECTED_JOB @JOB@','#define EXPECTED_JOB 0x7764411CU\nstatic const unsigned color_plan[6]={0,1,2,2,1,0};\nstatic unsigned current_color,color_first[3],color_last[3];')
+code=code.replace('#define EXPECTED_X2 @X2@','#define EXPECTED_X2 0U').replace('#define EXPECTED_JOB @JOB@','#define EXPECTED_JOB 0x7764411CU\nstatic const unsigned color_plan[6]={0,1,2,2,1,0};\nstatic unsigned current_color,color_first[3],color_last[3];\nstatic unsigned boot_blocks,lock_blocks,lock_logs;static int first_code;static char first_stage[40];static unsigned first_line;')
 code=code.replace('static unsigned live,oom,','static unsigned frame_allocations;static unsigned live,oom,')
 code=code.replace('return NULL;void*p=malloc(n);','return NULL;if(n==118000&&scenario==9&&++frame_allocations==2)return NULL;void*p=malloc(n);')
 code=code.replace('scenario==4&&commands==4','scenario==4&&commands==3')
@@ -32,6 +32,20 @@ a=code.index('static void log_message(');b=code.index('#define os_printf log_mes
 code=code[:a]+r'''
 static void log_message(const char*format,...){
  char text[700];va_list ap;va_start(ap,format);vsnprintf(text,sizeof(text),format,ap);va_end(ap);
+ if(strstr(text,"[COLOR_CHECK_BLOCKED]")){
+  if(strstr(text,"reason=BOOT_LINK_UNAVAILABLE")){
+   assert(strstr(text,"link_ready=0 failure_locked=0 first_failure_code=0"));++boot_blocks;
+  }else{
+   int rc;unsigned row;char stage[40];
+   const char *p=strstr(text,"first_failure_code=");assert(p);
+   assert(sscanf(p,"first_failure_code=%d first_failure_stage=%39s first_failure_line=%u",&rc,stage,&row)==3);
+   assert(rc==first_code&&row==first_line&&!strcmp(stage,first_stage));++lock_blocks;
+  }
+ }
+ if(strstr(text,"[COLOR_CHECK_LOCK]")){
+  assert(sscanf(text,"[COLOR_CHECK_LOCK] first_failure_code=%d stage=%39s line=%u",&first_code,first_stage,&first_line)==3);
+  assert(first_code<0&&strcmp(first_stage,"NONE"));++lock_logs;
+ }
  if(strstr(text,"[COLOR_CHECK_BEGIN]"))job_wire_crc=0xffffffffU;
  if(strstr(text,"[COLOR_CHECK_RX_EXPECT]")){
   unsigned columns,bytes;unsigned long crc;
@@ -81,7 +95,7 @@ int main(int argc,char**argv){
  for(unsigned c=0;c<3;c++){color_first[c]=1180;for(unsigned x=0;x<1180;x++){unsigned any=0;for(unsigned i=0;i<100;i++)any|=gold[c][x*100+i];if(any){if(color_first[c]==1180)color_first[c]=x;color_last[c]=x;}}}
  assert(printer_run_idle_ab(b,n-1));assert(!scans&&!feeds&&!live&&!head&&!boost);
  oom=1;assert(printer_run_idle_ab(b,n));assert(!scans&&!feeds&&!live&&!head&&!boost);oom=0;frozen_ptr=NULL;
- link=0;assert(printer_run_idle_ab(b,n));assert(!scans&&!feeds&&!live&&!head&&!boost);link=1;
+ link=0;assert(printer_run_idle_ab(b,n));assert(!scans&&!feeds&&!live&&!head&&!boost);assert(boot_blocks==1&&!lock_logs);link=1;
  int rc=printer_run_idle_ab(b,n);assert(!live&&!head&&!boost&&!step);
  if(scenario==9){assert(rc==-2&&!scans&&!feeds);scenario=0;frozen_ptr=NULL;rc=printer_run_idle_ab(b,n);}
  if(!scenario){
@@ -89,7 +103,7 @@ int main(int argc,char**argv){
   job_lines=job_feeds=0;assert(!printer_run_idle_ab(alt,alt_n));
   assert(scans==12&&feeds==12&&sends==14160&&ons==2&&offs==4&&!live&&!head&&!boost);
  }else{
-  assert(rc);unsigned old=scans;assert(printer_run_idle_ab(b,n)==-7&&scans==old);
+  assert(rc);unsigned old=scans;assert(printer_run_idle_ab(b,n)==-7&&scans==old);assert(lock_logs==1&&lock_blocks==1&&first_code==rc);
   if(scenario==1)assert(scans==1&&legs==1&&!feeds);
   if(scenario==2)assert(scans==2&&legs==3&&feeds==1);
   if(scenario==3||scenario==8)assert(!scans&&!feeds);
