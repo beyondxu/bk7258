@@ -56,7 +56,7 @@ void pwr_early_hold_power(void) {
     };
     bk_gpio_set_config(PIN_POWER_HOLD, &cfg);
     GPIO_UP(PIN_POWER_HOLD);
-	 bk_motor_boost_power(PRINTER_DATA_AUDIT ? 0 : 1); /* audit never enables boost */
+	 bk_motor_boost_power((PRINTER_DATA_AUDIT || PRINTER_U5_BOOT_SCOPE) ? 0 : 1); /* audit never enables boost */
     os_printf("[PWR_MGR] Power Latch LOCKED (GPIO_14 = HIGH)\r\n");
 }
 
@@ -294,6 +294,14 @@ static void app_printer_task_entry(void *arg) {
 	   // ★ 直接运行安全往复测试 ★
 	 //  u4_carriage_motor_standalone_test();
 	//   return ;
+
+#if PRINTER_U5_BOOT_SCOPE
+    os_printf("[SYS] U5_BOOT_SCOPE_V1 starts_in_ms=3000 run_ms=60000 no_APP no_HC_link_check no_carriage no_fire\r\n");
+    rtos_delay_milliseconds(3000);
+    motor_u5_boot_scope_test();
+    /* This firmware stays idle after the one bounded session, no APP worker. */
+    while (1) rtos_delay_milliseconds(1000);
+#endif
 
 #if !PRINTER_DATA_AUDIT || PRINTER_BOUNDED_PRINT || PRINTER_CARRIAGE_TEST
     // 1. 初始化电机 GPIO

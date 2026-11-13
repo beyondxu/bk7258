@@ -5,6 +5,11 @@
 #define PRINTER_IDLE_AB 1 /* frozen-line OFF/ON versus held-power idle comparison */
 #endif
 
+/* Standalone boot scope session; no SPI self-test, APP or firing path. */
+#ifndef PRINTER_U5_BOOT_SCOPE
+#define PRINTER_U5_BOOT_SCOPE 1
+#endif
+
 /* Temporarily replace the inspection print with one U5-only feed, head OFF. */
 #ifndef PRINTER_U5_FEED_ONLY
 #define PRINTER_U5_FEED_ONLY 1

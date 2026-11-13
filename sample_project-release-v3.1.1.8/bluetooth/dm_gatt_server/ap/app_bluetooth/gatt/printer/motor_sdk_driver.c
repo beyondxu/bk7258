@@ -793,3 +793,48 @@ bk_err_t motor_page_feed(uint32_t steps, uint8_t direction, uint32_t *sent) {
 bk_err_t motor_page_feed_keep_power(uint32_t steps, uint8_t direction, uint32_t *sent) {
     return motor_page_feed_impl(steps, direction, sent, 0);
 }
+
+/* Independent boot-only scope session. GPIO/power setup follows the verified
+ * U5 test; UART messages and RTOS yields occur with STEP LOW only.
+ */
+void motor_u5_boot_scope_test(void) {
+    const uint64_t duration_us = 60000000ULL;
+    uint32_t pulses = 0;
+    bk_motor_gpio_config_init(); /* head-off boot diagnostic owns the boost */
+    paper_feed_trace("BOOT_BEFORE_RECLAIM", 0);
+    if (paper_feed_reclaim_gpio() != BK_OK) {
+        bk_motor_set_state(0, 0);
+        bk_motor_boost_power(0);
+        printf("[U5_BOOT_END] code=-1 pulses=0 config_failed boost_OFF_requested\r\n");
+        return;
+    }
+    bk_motor_boost_power(1);
+    rtos_delay_milliseconds(60);
+    SET_GPIO_HIGH(PAPER_MOT_MS1); SET_GPIO_HIGH(PAPER_MOT_MS2); SET_GPIO_HIGH(PAPER_MOT_MS3);
+    SET_GPIO_HIGH(PAPER_MOT_SLEEP); rtos_delay_milliseconds(5);
+    SET_GPIO_HIGH(PAPER_MOT_RES);
+    SET_GPIO_LOW(PAPER_MOT_DIR);
+    SET_GPIO_LOW(PAPER_MOT_EN); rtos_delay_milliseconds(10);
+    paper_feed_trace("BOOT_READY", 0);
+    printf("[U5_BOOT_BEGIN] run_ms=60000 high_us=4 low_us=1000 direction=0 EN_low RESET_high SLEEP_high software_only\r\n");
+    uint64_t start = bk_aon_rtc_get_us();
+    uint64_t next_log = 5000000ULL;
+    uint64_t elapsed = 0;
+    while ((elapsed = bk_aon_rtc_get_us() - start) < duration_us) {
+        SET_GPIO_HIGH(PAPER_MOT_STEP); bk_delay_us(4);
+        SET_GPIO_LOW(PAPER_MOT_STEP); bk_delay_us(1000);
+        ++pulses;
+        if ((pulses & 31U) == 0U) rtos_delay_milliseconds(1);
+        if (elapsed >= next_log) {
+            printf("[U5_BOOT_RUN] elapsed_ms=%lu pulses=%lu motion_unverified\r\n",
+                   (unsigned long)(elapsed / 1000U), (unsigned long)pulses);
+            next_log += 5000000ULL;
+        }
+    }
+    paper_feed_trace("BOOT_DONE", pulses);
+    SET_GPIO_LOW(PAPER_MOT_STEP);
+    bk_motor_set_state(0, 0);
+    bk_motor_boost_power(0);
+    printf("[U5_BOOT_END] code=0 elapsed_ms=%lu pulses=%lu boost_OFF_requested motion_unverified\r\n",
+           (unsigned long)(elapsed / 1000U), (unsigned long)pulses);
+}

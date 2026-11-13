@@ -2,7 +2,7 @@
 from pathlib import Path
 import subprocess,tempfile
 src=Path(__file__).resolve().parents[1]/'ap/app_bluetooth/gatt/printer/motor_sdk_driver.c'
-s=src.read_text();func=s[s.index('/* Read-only register evidence:'):]
+s=src.read_text();func=s[s.index('/* Read-only register evidence:'):s.index('/* Independent boot-only scope session.')]
 assert 'rtos_disable_int' not in func and '__disable_irq' not in func
 h=r'''
 #include <assert.h>
@@ -52,7 +52,11 @@ unsigned old=pulses;config_fail=1;sent=99;assert(motor_page_feed(780,0,&sent)==-
 boost=1;calls=boost_calls;unmap_fail=1;assert(motor_page_feed_keep_power(780,0,&sent)==-1);assert(!sent&&pulses==old&&boost&&boost_calls==calls);
 puts("PASS: actual U5 reconfiguration, wake/reset/enable before steps, preserved boost in keep-power path, exact pulses and config-failure cleanup");}
 '''.replace('\nFUNC\n','\n'+func+'\n')
-with tempfile.TemporaryDirectory() as tmp:
- p=Path(tmp);(p/'test.c').write_text(h)
- subprocess.run(['cc','-std=c99','-Wall','-Wextra','-Werror',str(p/'test.c'),'-o',str(p/'test')],check=True)
- subprocess.run([str(p/'test')],check=True)
+def run_feed_test():
+ with tempfile.TemporaryDirectory() as tmp:
+  p=Path(tmp);(p/'test.c').write_text(h)
+  subprocess.run(['cc','-std=c99','-Wall','-Wextra','-Werror',str(p/'test.c'),'-o',str(p/'test')],check=True)
+  subprocess.run([str(p/'test')],check=True)
+
+if __name__ == "__main__":
+ run_feed_test()
