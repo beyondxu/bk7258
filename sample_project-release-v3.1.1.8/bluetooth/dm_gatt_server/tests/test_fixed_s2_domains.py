@@ -4,16 +4,27 @@ from pathlib import Path
 import collections,tempfile,subprocess,zlib,os
 assert '#define PRINTER_FIXED_S2_DOMAIN_CHECK 1' in (D/'printer_diagnostics.h').read_text()
 assert 'APP_FIXED_S2_DOMAIN_CHECK_V1' in (P/'ap/ap_main.c').read_text()
+s1 = os.environ.get('PRINTER_TEST_S1') == '1'
+if s1:
+ # Independent golden oracle: move only section slots; X, address, D stay fixed.
+ original = full
+ full = bytearray(len(original))
+ for i,v in enumerate(original):
+  if v:
+   assert i % 4 == 1
+   full[i-1] = v
 frames=[bytes(v&(1<<d) for v in full) for d in range(6)]
 plan=list(range(6))+list(reversed(range(6)))
-assert [zlib.crc32(f) for f in frames]==[0xCAF90008,0x48E40DD2,0xC030ADC3,0x7558A543,0xD2195130,0x1E7396E0]
-assert zlib.crc32(b''.join(frames[d] for d in plan))==0xA13F47F7
+expected_frames = ([0x7C6D30B0,0x1AE91677,0x70D1E225,0x9DDC090D,0x5477687F,0xD268D06C] if s1 else
+                   [0xCAF90008,0x48E40DD2,0xC030ADC3,0x7558A543,0xD2195130,0x1E7396E0])
+assert [zlib.crc32(f) for f in frames]==expected_frames
+assert zlib.crc32(b''.join(frames[d] for d in plan))==(0xFE431638 if s1 else 0xA13F47F7)
 hits=collections.Counter()
 for d in plan:
  for x in range(1180):
   for slot,v in enumerate(frames[d][x*100:(x+1)*100]):
    if v:
-    assert v==(1<<d) and slot%4==1
+    assert v==(1<<d) and slot%4==(0 if s1 else 1)
     hits[slot,d]+=1
 assert len(hits)==24 and set(hits.values())=={1422}
 assert [sum(n for (slot,bit),n in hits.items() if bit==d) for d in range(6)]==[5688]*6
@@ -33,6 +44,9 @@ code=code.replace('e==1416000','e==708000')
 code=code.replace('scans==12','scans==24').replace('scans==6','scans==12')
 code=code.replace('feeds==12','feeds==24').replace('feeds==6','feeds==12')
 code=code.replace('if(scenario==6)assert(scans==2&&feeds==2);','if(scenario==6)assert(scans==5&&feeds==5);')
+if s1:
+ code = '#define PRINTER_FIXED_S1_COMPARE 1\n' + code.replace('0xA13F47F7', '0xFE431638')
+code = code.replace('assert(columns==14160', 'assert(strstr(text," S=' + ('01' if s1 else '02') + ' D=3F"));assert(columns==14160')
 with tempfile.TemporaryDirectory() as tmp:
  t=Path(tmp);(t/'input.bin').write_bytes(blob(set()));(t/'blank.bin').write_bytes(blob(set()))
  (t/'alt.bin').write_bytes(blob({(ch,x,y) for ch in range(3) for x in range(150,1050) for y in range(1340,1352)}))
@@ -42,4 +56,4 @@ with tempfile.TemporaryDirectory() as tmp:
  if arm.exists():subprocess.run([str(arm),'-std=gnu99','-mcpu=cortex-m33+nodsp','-mfpu=fpv5-sp-d16','-mfloat-abi=hard','-mcmse','-O2','-Wall','-Wextra','-Werror','-I'+str(D),'-c',str(t/'test.c'),'-o',str(t/'test.o')],check=True)
  for scenario in [0,0,1,2,3,4,5,6,8,9,12]:
   subprocess.run([str(t/'test'),str(t/'input.bin'),str(t/'blank.bin'),str(t/'gold.bin'),str(t/'alt.bin'),str(scenario)],check=True,env={**os.environ,'ASAN_OPTIONS':'detect_leaks=0'})
-print('PASS: actual 12-line single-D order, 14160 exact columns, independent six frame/job CRCs, 1422 commands per selected nozzle, one ON, unchanged/blank/fresh triggers, error cleanup and partial allocation recovery; ASan/UBSan and ARM compilation')
+print(('S1' if s1 else 'S2') + ': PASS: actual 12-line single-D order, 14160 exact columns, independent six frame/job CRCs, 1422 commands per selected nozzle, one ON, unchanged/blank/fresh triggers, error cleanup and partial allocation recovery; ASan/UBSan and ARM compilation')

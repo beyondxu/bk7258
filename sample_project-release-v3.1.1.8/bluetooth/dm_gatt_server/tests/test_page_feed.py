@@ -1,6 +1,6 @@
 """Actual U5 feed pulse generator: no U4 enable or masked interrupts."""
 from pathlib import Path
-import subprocess,tempfile,re
+import subprocess,tempfile
 src=Path(__file__).resolve().parents[1]/'ap/app_bluetooth/gatt/printer/motor_sdk_driver.c'
 s=src.read_text();func=s[s.index('static bk_err_t motor_page_feed_impl'):]
 assert 'rtos_disable_int' not in func and '__disable_irq' not in func
@@ -33,9 +33,6 @@ static void bk_motor_set_state(unsigned motor,unsigned state){assert(motor<=1&&s
 FUNC
 int main(void){uint32_t sent;assert(!motor_page_feed(3170,0,&sent));assert(sent==3170&&pulses==3170&&!boost&&!high&&dir==0);assert(motor_page_feed(5001,0,&sent)==-1);boost=1;unsigned calls=boost_calls;assert(!motor_page_feed_keep_power(3170,0,&sent));assert(sent==3170&&pulses==6340&&boost&&boost_calls==calls&&inits==1);assert(motor_page_feed_keep_power(0,0,&sent)==-1);assert(boost_calls==calls);assert(!motor_page_feed(780,0,&sent));assert(sent==780&&pulses==7120&&!boost&&!high);assert(!motor_page_feed(1560,0,&sent));assert(sent==1560&&pulses==8680&&!boost&&!high);}
 '''.replace('FUNC',func)
-# Exercise the actual MS3 pin selected by the production header.
-ms3=int(re.search(r'#define PAPER_MOT_MS3\s+GPIO_(\d+)', src.with_suffix('.h').read_text()).group(1))
-h=h.replace('#define PAPER_MOT_MS3 17',f'#define PAPER_MOT_MS3 {ms3}').replace('pin==17',f'pin=={ms3}')
 with tempfile.TemporaryDirectory() as tmp:
  p=Path(tmp);(p/'test.c').write_text(h)
  subprocess.run(['cc','-std=c99','-Wall','-Wextra','-Werror',str(p/'test.c'),'-o',str(p/'test')],check=True)

@@ -37,7 +37,7 @@
 #define PAPER_MOT_DIR          GPIO_55
 #define PAPER_MOT_MS1          GPIO_46
 #define PAPER_MOT_MS2          GPIO_47
-#define PAPER_MOT_MS3          GPIO_16 /* temporary user-requested pin comparison */
+#define PAPER_MOT_MS3          GPIO_17
 #define PAPER_MOT_RES          GPIO_53
 #define PAPER_MOT_SLEEP        GPIO_54
 #define PAPER_MOT_nFA          GPIO_45
