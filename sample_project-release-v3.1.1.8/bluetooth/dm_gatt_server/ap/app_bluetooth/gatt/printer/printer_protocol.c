@@ -337,6 +337,18 @@ static uint8_t printer_execution_fault(int result, bool data_ok)
     return !data_ok || result == -1 || result == -4 || result == -11 ? 8U : 0U;
 }
 
+void printer_protocol_payload_complete(uint32_t saved_len, uint32_t saved_crc, int result)
+{
+    bool integrity = saved_len == s_job.total_bin_len && saved_crc == s_job.expected_crc;
+    bool ok = integrity && result == 0;
+    os_printf("[APP_PAYLOAD_RESULT] task=%u code=%d input_integrity=%s decode=%s NO_PHYSICAL_PRINT\r\n",
+              s_job.task_id, result, integrity ? "PASS" : "FAIL", result == 0 ? "PASS" : "FAIL");
+    s_status.work = 0;
+    s_status.fault = printer_execution_fault(result, integrity && result != -3);
+    s_job.state = JOB_STATE_IDLE;
+    audit_send_finish(s_job.task_id, ok ? 0 : 1);
+}
+
 void printer_protocol_bounded_complete(uint32_t saved_len, uint32_t saved_crc, int test_result)
 {
     bool ok = test_result == 0 && saved_len == s_job.total_bin_len && saved_crc == s_job.expected_crc;

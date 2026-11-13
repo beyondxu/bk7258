@@ -56,7 +56,7 @@ void pwr_early_hold_power(void) {
     };
     bk_gpio_set_config(PIN_POWER_HOLD, &cfg);
     GPIO_UP(PIN_POWER_HOLD);
-	 bk_motor_boost_power(PRINTER_DATA_AUDIT ? 0 : 1); /* audit never enables boost */
+	 bk_motor_boost_power((PRINTER_DATA_AUDIT || PRINTER_APP_PAYLOAD_AUDIT) ? 0 : 1); /* audit never enables boost */
     os_printf("[PWR_MGR] Power Latch LOCKED (GPIO_14 = HIGH)\r\n");
 }
 
@@ -295,7 +295,7 @@ static void app_printer_task_entry(void *arg) {
 	 //  u4_carriage_motor_standalone_test();
 	//   return ;
 
-#if !PRINTER_DATA_AUDIT || PRINTER_BOUNDED_PRINT || PRINTER_CARRIAGE_TEST
+#if !PRINTER_APP_PAYLOAD_AUDIT && (!PRINTER_DATA_AUDIT || PRINTER_BOUNDED_PRINT || PRINTER_CARRIAGE_TEST)
     // 1. 初始化电机 GPIO
     bk_motor_gpio_config_init();
 
@@ -359,6 +359,7 @@ static void app_printer_task_entry(void *arg) {
 		rtos_delay_milliseconds(1500);
 
 #else
+    os_printf("[SYS] APP_PAYLOAD_AUDIT_V1 actual_BIN raw_hex channel_counts nozzle_routes no_motion_no_ink\r\n");
     os_printf("[AUDIT] receive-only; HC32 link test, motor and ink diagnostics disabled\r\n");
 #endif
 

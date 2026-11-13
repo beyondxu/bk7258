@@ -5,6 +5,11 @@
 #define PRINTER_IDLE_AB 1 /* frozen-line OFF/ON versus held-power idle comparison */
 #endif
 
+/* Inspect the actual APP BIN; no fixed recipe, head, motion or HC32 link. */
+#ifndef PRINTER_APP_PAYLOAD_AUDIT
+#define PRINTER_APP_PAYLOAD_AUDIT 1
+#endif
+
 /* S1 control: same addresses, data masks, motion and dose as fixed S2. */
 #ifndef PRINTER_FIXED_S1_COMPARE
 #define PRINTER_FIXED_S1_COMPARE 1

@@ -451,9 +451,22 @@ done:
     return result;
 }
 
+#if PRINTER_APP_PAYLOAD_AUDIT
+#include "printer_app_payload_audit.h"
+#endif
+
 static void printer_worker_thread(void *arg) {
     while (1) {
         rtos_get_semaphore(&s_print_sem, BEKEN_WAIT_FOREVER);
+#if PRINTER_APP_PAYLOAD_AUDIT
+        uint32_t audit_length = s_buffer_len;
+        uint32_t audit_crc = printer_crc32(s_print_buffer, audit_length);
+        int audit_result = printer_protocol_job_buffer_valid(audit_length, audit_crc)
+            ? printer_run_app_payload_audit(s_print_buffer, audit_length) : -11;
+        hw_printer_clear_buffer();
+        printer_protocol_payload_complete(audit_length, audit_crc, audit_result);
+        continue;
+#endif
 #if PRINTER_FULL_PAGE
         uint32_t length = s_buffer_len;
         uint32_t crc = printer_crc32(s_print_buffer, length);

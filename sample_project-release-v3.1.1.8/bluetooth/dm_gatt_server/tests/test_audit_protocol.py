@@ -93,6 +93,19 @@ int main(void) {
   else printer_protocol_page_complete(saved,crc^1,-7);
   assert(rsp[17]==1&&s_status.fault==8&&s_job.state==JOB_STATE_IDLE);
  }
+ const int audit_codes[]={0,-2,-3,-4,-11};
+ for(unsigned i=0;i<sizeof(audit_codes)/sizeof(audit_codes[0]);i++){
+  n=start(f,bin,sizeof(bin),crc);printer_process_data(f,n);
+  printer_process_data(bin,sizeof(bin));printer_process_data(finish,m);
+  saved=stored;hw_printer_clear_buffer();int rc=audit_codes[i];
+  printer_protocol_payload_complete(saved,crc,rc);
+  assert(s_job.state==JOB_STATE_IDLE&&!s_status.work&&rsp[17]==(rc?1:0));
+  assert(s_status.fault==((rc&&rc!=-2)?8:0));
+ }
+ n=start(f,bin,sizeof(bin),crc);printer_process_data(f,n);
+ printer_process_data(bin,sizeof(bin));printer_process_data(finish,m);
+ saved=stored;hw_printer_clear_buffer();printer_protocol_payload_complete(saved,crc^1,0);
+ assert(s_status.fault==8&&rsp[17]==1&&s_job.state==JOB_STATE_IDLE);
  puts("PASS: execution errors preserve failed finish; real data faults retain bit3");
  puts("PASS: fragmented/coalesced frames, binary frame signatures, CRC, TLV bounds, storage failure, worker ownership");
 }
