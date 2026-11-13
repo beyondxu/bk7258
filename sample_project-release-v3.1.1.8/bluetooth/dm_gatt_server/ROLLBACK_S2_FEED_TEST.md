@@ -36,3 +36,16 @@ Transport completion is not actual motion or ink feedback.
 Verification: project production/test files match 2de4c9e exactly; actual
 controller, receive/fault protocol and feed tests plus BK SDK source-object
 compilation are rerun. Physical feed behavior requires this target-side trial.
+
+## Temporary MS3 pin comparison after rollback
+
+At the user's explicit request, the follow-up branch changes only the production
+PAPER_MOT_MS3 definition from GPIO17 to GPIO16, matching the working motor test
+project's header. The schematic was reported as GPIO17, so GPIO16 is a temporary
+comparison rather than a confirmed permanent pin correction. All motor timing,
+microstep levels, S2 print plan, head timing, power sequencing and link guards
+remain as in 4787580. This is APP-triggered printing, not the boot scope mode.
+The existing host feed test reads the production MS3 definition to verify the
+selected pin is used. Rebuild/flash BK and start the whole machine normally;
+observe one line-feed operation and save logs. A different displacement would
+require checking microstep mode/calibration before accepting print geometry.
