@@ -876,7 +876,11 @@ static int printer_execute_cyan_line(const uint8_t *columns) {
     rtos_delay_milliseconds(PRINTER_PAGE_HEAD_SETTLE_MS);
     os_printf("[PAGE_HEAD_SETTLE_DONE] begin_forward_image_scan\r\n");
 #endif
+#if PRINTER_APP_YELLOW_ONLY
+    os_printf("[APP_YELLOW_SCAN_BEGIN] columns=1180 steps=7480 D5_D6 actual_APP_mapping\r\n");
+#else
     os_printf("[CYAN_LINE_BEGIN] motion_base=29a973b start=3000 cruise=260 columns=1180 steps=7480 feed=0\r\n");
+#endif
     if (!carriage_stream_move_ramped(1, SHUTTLE_TOTAL_STEPS, columns)) { result = -9; goto stop; }
     if (tph_mcu_set_head_power(0) != BK_OK) { result = -8; goto stop; }
     rtos_delay_milliseconds(200);
@@ -889,7 +893,11 @@ stop:
         os_printf("[LINE_STOP] code=%d no_blind_return_after_failure\r\n", result);
     }
     carriage_verified_power_down();
+#if PRINTER_APP_YELLOW_ONLY
+    os_printf("[APP_YELLOW_SCAN_END] result=%d columns=%lu/1180 forward=%lu reverse=%lu ink_unverified\r\n",
+#else
     os_printf("[CYAN_LINE_END] result=%d columns=%lu/1180 forward=%lu reverse=%lu ink_unverified\r\n",
+#endif
               result, (unsigned long)s_blank_spi_columns,
               (unsigned long)s_blank_spi_steps[1], (unsigned long)s_blank_spi_steps[0]);
     return result;

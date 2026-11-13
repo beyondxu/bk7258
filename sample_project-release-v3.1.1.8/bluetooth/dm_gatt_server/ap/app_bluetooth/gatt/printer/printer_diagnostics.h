@@ -5,9 +5,14 @@
 #define PRINTER_IDLE_AB 1 /* frozen-line OFF/ON versus held-power idle comparison */
 #endif
 
+/* Print only actual APP yellow pixels, preserving page/nozzle geometry. */
+#ifndef PRINTER_APP_YELLOW_ONLY
+#define PRINTER_APP_YELLOW_ONLY 1
+#endif
+
 /* Inspect the actual APP BIN; no fixed recipe, head, motion or HC32 link. */
 #ifndef PRINTER_APP_PAYLOAD_AUDIT
-#define PRINTER_APP_PAYLOAD_AUDIT 1
+#define PRINTER_APP_PAYLOAD_AUDIT 0
 #endif
 
 /* S1 control: same addresses, data masks, motion and dose as fixed S2. */

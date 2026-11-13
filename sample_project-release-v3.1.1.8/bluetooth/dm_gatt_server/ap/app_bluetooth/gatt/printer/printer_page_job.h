@@ -1,3 +1,12 @@
+#ifndef PRINTER_APP_YELLOW_ONLY
+#define PRINTER_APP_YELLOW_ONLY 0
+#endif
+#if PRINTER_APP_YELLOW_ONLY
+#include "printer_audit_utils.h"
+#if PRINTER_PAGE_COLOR_MODE != 1 || PRINTER_PAGE_TRANSFORM != 0
+#error APP yellow-only requires combined-pass layout without image transforms
+#endif
+#endif
 #ifndef PRINTER_IDLE_AB
 #define PRINTER_IDLE_AB 0
 #endif
@@ -24,19 +33,19 @@
 #endif
 /* Private hardware orchestrator. Included after verified shuttle helpers. */
 static int printer_run_full_page(const uint8_t *bin, uint32_t length) {
-#if PRINTER_IDLE_AB
+#if PRINTER_IDLE_AB && !PRINTER_APP_YELLOW_ONLY
     return printer_run_idle_ab(bin, length);
 #endif
-#if PRINTER_DOMAIN_PAIR
+#if PRINTER_DOMAIN_PAIR && !PRINTER_APP_YELLOW_ONLY
     return printer_run_domain_pair(bin, length);
 #endif
-#if PRINTER_CYAN_INVENTORY
+#if PRINTER_CYAN_INVENTORY && !PRINTER_APP_YELLOW_ONLY
     return printer_run_cyan_inventory(bin, length);
 #endif
-#if PRINTER_LINE_CONTROL
+#if PRINTER_LINE_CONTROL && !PRINTER_APP_YELLOW_ONLY
     return printer_run_line_control(bin, length);
 #endif
-#if PRINTER_NOZZLE_CHECK
+#if PRINTER_NOZZLE_CHECK && !PRINTER_APP_YELLOW_ONLY
     return printer_run_nozzle_check(bin, length);
 #endif
     static bool failure_locked = false;
@@ -57,6 +66,13 @@ static int printer_run_full_page(const uint8_t *bin, uint32_t length) {
         os_printf("[PAGE_REJECT] code=%d no_motion\r\n", result);
         return result;
     }
+#if PRINTER_APP_YELLOW_ONLY
+    if (page.output_dots[2] == 0U) {
+        os_printf("[APP_YELLOW_EMPTY] no_yellow_pixels no_motion\r\n");
+        printer_page_release(&page, printer_map_psram_free);
+        return -6;
+    }
+#endif
     if (PRINTER_PAGE_ONLY_SWATH >= 0 && (uint32_t)PRINTER_PAGE_ONLY_SWATH >= page.swaths) {
         printer_page_release(&page, printer_map_psram_free); return -4;
     }
@@ -73,6 +89,10 @@ static int printer_run_full_page(const uint8_t *bin, uint32_t length) {
     os_printf("[PAGE_DOTS] source_CMY=%lu,%lu,%lu resized_CMY=%lu,%lu,%lu\r\n",
               (unsigned long)page.source_dots[0], (unsigned long)page.source_dots[1], (unsigned long)page.source_dots[2],
               (unsigned long)page.output_dots[0], (unsigned long)page.output_dots[1], (unsigned long)page.output_dots[2]);
+#if PRINTER_APP_YELLOW_ONLY
+    os_printf("[APP_YELLOW_PLAN] source_Y=%lu resized_Y=%lu D_mask=30 all_original_A_S no_fixed_recipe no_extra_fires\r\n",
+              (unsigned long)page.source_dots[2], (unsigned long)page.output_dots[2]);
+#endif
     if (PRINTER_PAGE_ONLY_SWATH >= 0)
         os_printf("[PAGE_ISOLATE] original_swath=%u first_physical_scan=1 no_feed_before_first original_nozzle_rows_and_columns\r\n", (unsigned)PRINTER_PAGE_ONLY_SWATH + 1U);
     for (uint32_t strip = 0; strip < page.swaths; ++strip) {
@@ -81,6 +101,13 @@ static int printer_run_full_page(const uint8_t *bin, uint32_t length) {
         result = printer_page_render(&page, strip, columns, PRINTER_PAGE_COLUMNS * 100U,
                                     scratch, page.width * 72U, dots, printer_map_yield_cpu);
         if (result) goto done;
+#if PRINTER_APP_YELLOW_ONLY
+        for (uint32_t i = 0; i < PRINTER_PAGE_COLUMNS * 100U; ++i) columns[i] &= 0x30U;
+        dots[0] = dots[1] = 0;
+        os_printf("[APP_YELLOW_SWATH] index=%lu dots_Y=%lu bytes=118000 crc32=%08lX D_mask=30\r\n",
+                  (unsigned long)(strip + 1U), (unsigned long)dots[2],
+                  (unsigned long)printer_crc32(columns, PRINTER_PAGE_COLUMNS * 100U));
+#endif
         os_printf("[PAGE_SWATH] index=%lu/%lu y=%lu dots_CMY=%lu,%lu,%lu\r\n",
                   (unsigned long)(strip + 1U), (unsigned long)page.swaths, (unsigned long)(strip * 192U),
                   (unsigned long)dots[0], (unsigned long)dots[1], (unsigned long)dots[2]);
@@ -89,7 +116,7 @@ static int printer_run_full_page(const uint8_t *bin, uint32_t length) {
         }
         unsigned groups = PRINTER_PAGE_COLOR_MODE == 2 ? 2U : 1U;
         for (unsigned group = 0; group < groups; ++group) {
-            unsigned mask = groups == 1 ? 7U : group == 0 ? 1U : 6U;
+            unsigned mask = PRINTER_APP_YELLOW_ONLY ? 4U : groups == 1 ? 7U : group == 0 ? 1U : 6U;
             uint32_t pass_dots = 0;
             for (unsigned ch = 0; ch < 3; ++ch) if (mask & (1U << ch)) pass_dots += dots[ch];
             if (!pass_dots) continue;
