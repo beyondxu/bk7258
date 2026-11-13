@@ -1,3 +1,5 @@
+> 当前分支为单D位12条检查，首次测试不先擦拭。请先读 [FIXED_S2_DOMAIN_CHECK_TEST.md](FIXED_S2_DOMAIN_CHECK_TEST.md)；以下为六条分色历史记录。
+
 # 固定S2分色检查：青、品红、黄、黄、品红、青
 
 ## 这轮要回答的问题

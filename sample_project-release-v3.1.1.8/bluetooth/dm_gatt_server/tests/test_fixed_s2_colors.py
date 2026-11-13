@@ -105,13 +105,17 @@ code=code.replace('static char phase[24],kind[24];','')
 code=code.replace('static unsigned job_lines,job_feeds,run_number;','static unsigned job_lines,job_feeds;')
 code=code.replace('line_index,planned_repeats,line_sends','line_index,line_sends')
 code=code.replace('current_phase,current_kind','current_phase')
-with tempfile.TemporaryDirectory() as tmp:
- t=Path(tmp);(t/'input.bin').write_bytes(blob(set()));(t/'blank.bin').write_bytes(blob(set()))
- (t/'alt.bin').write_bytes(blob({(ch,x,y) for ch in range(3) for x in range(150,1050) for y in range(1340,1352)}))
- (t/'gold.bin').write_bytes(b''.join(frames));(t/'test.c').write_text(code)
- subprocess.run(['cc','-std=c99','-O1','-fsanitize=address,undefined','-fno-omit-frame-pointer','-Wall','-Wextra','-Werror','-I'+str(D),str(t/'test.c'),str(D/'printer_page.c'),str(D/'printer_mapper.c'),'-o',str(t/'test')],check=True)
- arm=Path('/workspace/.setup/tools/usr/bin/arm-none-eabi-gcc')
- if arm.exists():subprocess.run([str(arm),'-std=gnu99','-mcpu=cortex-m33+nodsp','-mfpu=fpv5-sp-d16','-mfloat-abi=hard','-mcmse','-O2','-Wall','-Wextra','-Werror','-I'+str(D),'-c',str(t/'test.c'),'-o',str(t/'test.o')],check=True)
- for scenario in [0,0,1,2,3,4,5,6,8,9,12]:
-  subprocess.run([str(t/'test'),str(t/'input.bin'),str(t/'blank.bin'),str(t/'gold.bin'),str(t/'alt.bin'),str(scenario)],check=True,env={**os.environ,'ASAN_OPTIONS':'detect_leaks=0'})
-print('PASS: actual C/M/Y/Y/M/C order, 7080 exact columns, golden color/job CRCs, 1422 commands per nozzle, fresh/changed APP triggers, one head session, cleanup on CRC/SPI/power/feed/OOM/link faults; ARM compiled')
+def run_color_scenarios():
+ with tempfile.TemporaryDirectory() as tmp:
+  t=Path(tmp);(t/'input.bin').write_bytes(blob(set()));(t/'blank.bin').write_bytes(blob(set()))
+  (t/'alt.bin').write_bytes(blob({(ch,x,y) for ch in range(3) for x in range(150,1050) for y in range(1340,1352)}))
+  (t/'gold.bin').write_bytes(b''.join(frames));(t/'test.c').write_text(code)
+  subprocess.run(['cc','-std=c99','-O1','-fsanitize=address,undefined','-fno-omit-frame-pointer','-Wall','-Wextra','-Werror','-I'+str(D),str(t/'test.c'),str(D/'printer_page.c'),str(D/'printer_mapper.c'),'-o',str(t/'test')],check=True)
+  arm=Path('/workspace/.setup/tools/usr/bin/arm-none-eabi-gcc')
+  if arm.exists():subprocess.run([str(arm),'-std=gnu99','-mcpu=cortex-m33+nodsp','-mfpu=fpv5-sp-d16','-mfloat-abi=hard','-mcmse','-O2','-Wall','-Wextra','-Werror','-I'+str(D),'-c',str(t/'test.c'),'-o',str(t/'test.o')],check=True)
+  for scenario in [0,0,1,2,3,4,5,6,8,9,12]:
+   subprocess.run([str(t/'test'),str(t/'input.bin'),str(t/'blank.bin'),str(t/'gold.bin'),str(t/'alt.bin'),str(scenario)],check=True,env={**os.environ,'ASAN_OPTIONS':'detect_leaks=0'})
+ print('PASS: actual C/M/Y/Y/M/C order, 7080 exact columns, golden color/job CRCs, 1422 commands per nozzle, fresh/changed APP triggers, one head session, cleanup on CRC/SPI/power/feed/OOM/link faults; ARM compiled')
+
+if __name__ == "__main__":
+ run_color_scenarios()

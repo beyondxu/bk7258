@@ -5,6 +5,10 @@
 #define PRINTER_IDLE_AB 1 /* frozen-line OFF/ON versus held-power idle comparison */
 #endif
 
+#ifndef PRINTER_FIXED_S2_DOMAIN_CHECK
+#define PRINTER_FIXED_S2_DOMAIN_CHECK 1 /* D1..D6 then D6..D1, one D bit per line */
+#endif
+
 #ifndef PRINTER_FIXED_S2_COLOR_CHECK
 #define PRINTER_FIXED_S2_COLOR_CHECK 1 /* C,M,Y,Y,M,C, equal ordinary dose per line */
 #endif
@@ -23,6 +27,10 @@
 
 #if PRINTER_FIXED_S2_COLOR_CHECK && !PRINTER_FIXED_S2_BASELINE
 #error Fixed S2 color check requires the fixed S2 recipe
+#endif
+
+#if PRINTER_FIXED_S2_DOMAIN_CHECK && !PRINTER_FIXED_S2_COLOR_CHECK
+#error Individual D check requires the fixed S2 check engine
 #endif
 
 #ifndef PRINTER_IDLE_HELD_ONLY
