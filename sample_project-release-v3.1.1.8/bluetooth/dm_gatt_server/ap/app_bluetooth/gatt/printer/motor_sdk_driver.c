@@ -721,6 +721,13 @@ static void paper_feed_trace(const char *stage, uint32_t steps) {
            (unsigned long)*(volatile uint32_t *)(SOC_AON_GPIO_REG_BASE + (PAPER_MOT_DIR << 2)),
            (unsigned long)*(volatile uint32_t *)(SOC_AON_GPIO_REG_BASE + (PIN_VDD15V_EN << 2)),
            (unsigned)bk_gpio_get_input(PAPER_MOT_nFA));
+    printf("[U5_MS_GPIO] stage=%s MS1_gpio=%u MS2_gpio=%u MS3_gpio=%u reg46=%08lX reg47=%08lX reg16=%08lX reg17=%08lX\r\n",
+           stage, (unsigned)PAPER_MOT_MS1, (unsigned)PAPER_MOT_MS2, (unsigned)PAPER_MOT_MS3,
+           (unsigned long)*(volatile uint32_t *)(SOC_AON_GPIO_REG_BASE + (46U << 2)),
+           (unsigned long)*(volatile uint32_t *)(SOC_AON_GPIO_REG_BASE + (47U << 2)),
+           (unsigned long)*(volatile uint32_t *)(SOC_AON_GPIO_REG_BASE + (16U << 2)),
+           (unsigned long)*(volatile uint32_t *)(SOC_AON_GPIO_REG_BASE + (17U << 2)));
+
 }
 
 /* Reclaim only U5 pins. Never call the global GPIO initializer in a live
@@ -810,19 +817,19 @@ void motor_u5_boot_scope_test(void) {
     }
     bk_motor_boost_power(1);
     rtos_delay_milliseconds(60);
-    SET_GPIO_HIGH(PAPER_MOT_MS1); SET_GPIO_HIGH(PAPER_MOT_MS2); SET_GPIO_HIGH(PAPER_MOT_MS3);
+    bk_motor_set_microstep(0, MODE_HALF_STEP); /* match run_dual_motor_test: 1,0,0 */
     SET_GPIO_HIGH(PAPER_MOT_SLEEP); rtos_delay_milliseconds(5);
     SET_GPIO_HIGH(PAPER_MOT_RES);
     SET_GPIO_LOW(PAPER_MOT_DIR);
     SET_GPIO_LOW(PAPER_MOT_EN); rtos_delay_milliseconds(10);
     paper_feed_trace("BOOT_READY", 0);
-    printf("[U5_BOOT_BEGIN] run_ms=60000 high_us=4 low_us=1000 direction=0 EN_low RESET_high SLEEP_high software_only\r\n");
+    printf("[U5_BOOT_BEGIN] run_ms=60000 profile=RUN_DUAL_HALF_STEP ms=1,0,0 high_us=10 low_us=3000 direction=0 EN_low RESET_high SLEEP_high software_only\r\n");
     uint64_t start = bk_aon_rtc_get_us();
     uint64_t next_log = 5000000ULL;
     uint64_t elapsed = 0;
     while ((elapsed = bk_aon_rtc_get_us() - start) < duration_us) {
-        SET_GPIO_HIGH(PAPER_MOT_STEP); bk_delay_us(4);
-        SET_GPIO_LOW(PAPER_MOT_STEP); bk_delay_us(1000);
+        SET_GPIO_HIGH(PAPER_MOT_STEP); bk_delay_us(10);
+        SET_GPIO_LOW(PAPER_MOT_STEP); bk_delay_us(3000);
         ++pulses;
         if ((pulses & 31U) == 0U) rtos_delay_milliseconds(1);
         if (elapsed >= next_log) {
