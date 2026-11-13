@@ -4,6 +4,16 @@ import argparse,re,zlib
 from pathlib import Path
 
 def extract_last_bin(text):
+    # Serial monitor timestamps can split a hex field between two nibbles.
+    # Join only this recognized UI wrapper; offsets/size/CRC still verify bytes.
+    wrapped=re.compile(r'(\[APP_BIN_HEX\] offset=[0-9A-Fa-f]{8} data=)([0-9A-Fa-f]{1,127})\r?\n\[\d{2}:\d{2}:\d{2}\.\d{3}\]收←◆([0-9A-Fa-f]+)(?=\r?\n|$)')
+    def join(m):
+        data=m[2]+m[3]
+        return m[1]+data if len(data)<=128 and len(data)%2==0 else m[0]
+    while True:
+        clean=wrapped.sub(join,text)
+        if clean==text:break
+        text=clean
     current=None; result=None
     for line in text.splitlines():
         begin=re.search(r'\[APP_BIN_BEGIN\] bytes=(\d+) exported=(\d+) crc32=([0-9A-Fa-f]{8}) complete=([01])',line)

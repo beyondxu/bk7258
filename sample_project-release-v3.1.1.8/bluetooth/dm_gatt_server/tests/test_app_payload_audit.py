@@ -43,6 +43,9 @@ with tempfile.TemporaryDirectory() as tmp:
         (p/'input.bin').write_bytes(raw)
         out=subprocess.check_output([str(p/'test'),str(p/'input.bin'),'0','0'],env={**os.environ,'ASAN_OPTIONS':'detect_leaks=0'},text=True)
         assert extract_last_bin(out)==raw
+        wrapped=re.sub(r'(\[APP_BIN_HEX\] offset=[0-9A-F]{8} data=)([0-9A-F]{47})([0-9A-F]+)',
+                       lambda m:m[1]+m[2]+'\n[17:13:47.360]收←◆'+m[3],out,count=1)
+        assert extract_last_bin(wrapped)==raw
         source={int(c):int(n) for c,n in re.findall(r'\[APP_CHANNEL\] id=(\d+) decoder_label=\w source_dots=(\d+)',out)}
         assert source=={ch+1:sum(c==ch for c,x,y in case) for ch in range(3)}
         routes=[tuple(map(int,v)) for v in re.findall(r'\[APP_ROUTE\] D=(\d+) S=(\d+) dots=(\d+)',out)]

@@ -61,3 +61,41 @@ by extraction while full analysis succeeds. Tests reject corrupted/missing UART
 chunks. Protocol tests preserve true data faults and failed completion. SDK
 compiles worker, protocol, motor and startup. Full target build/flash and the
 user's actual image capture remain to be done; no APP-origin conclusion yet.
+
+## Task 1059: captured six-line CMYYMC image
+
+45246 received/exported bytes, CRC32 20C67068 matches APP declaration and complete
+reconstruction. One serial monitor timestamp split the hex field at offset
+0x6FC0 after 47 nibbles. Joining only the UI timestamp continuation recovered
+the full byte count and exact CRC. The extraction tool now supports this case
+and still rejects missing/corrupt/truncated data. No firmware update is needed
+for this offline extraction fix.
+
+Independent Python native decoding agrees with firmware C source counts:
+C=35891, M=36001, Y=34951. Main bands in raw source Y coordinates:
+C 217..238 and 1140..1162; M 401..423 and 955..977;
+Y 585..607 and 771..792. Raw source is 1180x1536 with known padded rows.
+There are also 22 isolated Y pixels at rows 289..300 and edge halftoning/scaling
+relative to the supplied clean target. These differences do not remove the two
+yellow bands. Source color order is CMYYMC, with no evident channel swap.
+The firmware resize gives 1119x992 and counts C=23099,M=23373,Y=22724.
+
+Under the current candidate nozzle mapping, rendered APP bits by section:
+
+| Color | S1 | S2 | S3 | S4 |
+|---|---:|---:|---:|---:|
+| C | 10010 | 0 | 3849 | 9240 |
+| M | 0 | 23373 | 0 | 0 |
+| Y | 11543 | 0 | 11181 | 0 |
+
+On the four-per-D fixed S1 inspection subset, actual APP counts are
+D1=3080,D2=3080,D3=0,D4=0,D5=1545,D6=1520. Thus an APP-derived S1-only crop
+really would omit magenta here, but would not have empty yellow data. The earlier
+fixed S1 print generated 5688 bits per D independently and did not use this APP
+selection. Do not explain earlier fixed-pattern yellow failure using a blank
+APP payload, and do not equate fixed test lines to the original six image bars.
+
+This result checks the APP data/content/decoder interpretation. It does not
+validate the physical nozzle table, head drive or real ink output. The next
+physical comparison should preserve the actual APP image's per-swath routing,
+not silently replace it with a fixed region recipe.
