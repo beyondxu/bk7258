@@ -5,6 +5,11 @@
 #define PRINTER_IDLE_AB 1 /* frozen-line OFF/ON versus held-power idle comparison */
 #endif
 
+/* Temporarily replace the inspection print with one U5-only feed, head OFF. */
+#ifndef PRINTER_U5_FEED_ONLY
+#define PRINTER_U5_FEED_ONLY 1
+#endif
+
 /* S1 control: same addresses, data masks, motion and dose as fixed S2. */
 #ifndef PRINTER_FIXED_S1_COMPARE
 #define PRINTER_FIXED_S1_COMPARE 1

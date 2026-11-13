@@ -38,6 +38,24 @@ static int printer_run_fixed_s2_check(const uint8_t *bin, uint32_t length) {
     if (result) return result;
     printer_page_release(&page, printer_map_psram_free);
 
+#if PRINTER_U5_FEED_ONLY
+    /* Validate APP input as usual, then move only U5 with the head OFF. */
+    failure_locked = true;
+    stage = "U5_ONLY_HEAD_OFF";
+    result = tph_mcu_set_head_power(0);
+    if (result != BK_OK) { result = -8; goto done; }
+    stage = "U5_ONLY_FEED";
+    uint32_t feed_sent = 0;
+    os_printf("[U5_ONLY_BEGIN] steps=780 direction=%u head_OFF no_carriage_no_firing\r\n",
+              (unsigned)PRINTER_PAGE_FEED_DIRECTION);
+    result = motor_page_feed(780U, PRINTER_PAGE_FEED_DIRECTION, &feed_sent);
+    result = result == BK_OK && feed_sent == 780U ? 0 : -10;
+    if (!result) { failure_locked = false; ++completed; }
+    os_printf("[U5_ONLY_END] code=%d pulses=%lu/780 motion_unverified boost_OFF_requested\r\n",
+              result, (unsigned long)feed_sent);
+    goto done;
+#endif
+
     for (unsigned part = 0; part < PRINTER_S2_CHECK_PARTS; ++part) {
         frames[part] = printer_map_psram_alloc(PRINTER_IDLE_AB_BYTES);
         if (!frames[part]) { result = -2; goto done; }

@@ -710,12 +710,55 @@ bk_err_t motor_carriage_test_leg(uint8_t direction, uint32_t steps, uint32_t *se
  * original motor_feed_paper(..., 1) LOW setting; physical distance is calibrated
  * by PRINTER_PAGE_FEED_STEPS, not claimed from pulse counts.
  */
+/* Read-only register evidence: GPIO output latches/config are not motor feedback. */
+static void paper_feed_trace(const char *stage, uint32_t steps) {
+    printf("[U5_GPIO] stage=%s steps=%lu reg18=%08lX reg44=%08lX reg53=%08lX reg54=%08lX reg55=%08lX reg13=%08lX nFAULT=%u motion_unverified\r\n",
+           stage, (unsigned long)steps,
+           (unsigned long)*(volatile uint32_t *)(SOC_AON_GPIO_REG_BASE + (PAPER_MOT_STEP << 2)),
+           (unsigned long)*(volatile uint32_t *)(SOC_AON_GPIO_REG_BASE + (PAPER_MOT_EN << 2)),
+           (unsigned long)*(volatile uint32_t *)(SOC_AON_GPIO_REG_BASE + (PAPER_MOT_RES << 2)),
+           (unsigned long)*(volatile uint32_t *)(SOC_AON_GPIO_REG_BASE + (PAPER_MOT_SLEEP << 2)),
+           (unsigned long)*(volatile uint32_t *)(SOC_AON_GPIO_REG_BASE + (PAPER_MOT_DIR << 2)),
+           (unsigned long)*(volatile uint32_t *)(SOC_AON_GPIO_REG_BASE + (PIN_VDD15V_EN << 2)),
+           (unsigned)bk_gpio_get_input(PAPER_MOT_nFA));
+}
+
+/* Reclaim only U5 pins. Never call the global GPIO initializer in a live
+ * head/boost session; it drives the shared 15V enable LOW.
+ */
+static bk_err_t paper_feed_reclaim_gpio(void) {
+    static const gpio_id_t pins[] = {PAPER_MOT_EN, PAPER_MOT_STEP, PAPER_MOT_DIR,
+        PAPER_MOT_MS1, PAPER_MOT_MS2, PAPER_MOT_MS3, PAPER_MOT_SLEEP, PAPER_MOT_RES};
+    const gpio_config_t cfg = {.io_mode = GPIO_OUTPUT_ENABLE,
+        .pull_mode = GPIO_PULL_DISABLE, .func_mode = GPIO_SECOND_FUNC_DISABLE};
+    SET_GPIO_HIGH(PAPER_MOT_EN);
+    for (unsigned i = 0; i < sizeof(pins) / sizeof(pins[0]); ++i) {
+        bk_err_t result = gpio_dev_unmap(pins[i]);
+        if (result == BK_OK) result = bk_gpio_set_config(pins[i], &cfg);
+        if (result != BK_OK) {
+            printf("[U5_GPIO_ERROR] pin=%u code=%d no_pulses\r\n", (unsigned)pins[i], result);
+            return result;
+        }
+    }
+    SET_GPIO_HIGH(PAPER_MOT_EN);
+    SET_GPIO_LOW(PAPER_MOT_STEP);
+    SET_GPIO_LOW(PAPER_MOT_RES);
+    SET_GPIO_LOW(PAPER_MOT_SLEEP);
+    return BK_OK;
+}
+
 static bk_err_t motor_page_feed_impl(uint32_t steps, uint8_t direction, uint32_t *sent, uint8_t own_boost) {
     if (!sent || !steps || steps > 5000U) return BK_FAIL;
     *sent = 0;
     /* GPIO init forces boost LOW: never call it in an owned power session. */
     if (own_boost) bk_motor_gpio_config_init();
     else bk_motor_set_state(1, 0); /* park already-configured U4 */
+    paper_feed_trace("BEFORE_RECLAIM", steps);
+    if (paper_feed_reclaim_gpio() != BK_OK) {
+        bk_motor_set_state(0, 0);
+        if (own_boost) bk_motor_boost_power(0);
+        return BK_FAIL;
+    }
     if (own_boost) { bk_motor_boost_power(1); rtos_delay_milliseconds(60); }
     SET_GPIO_HIGH(PAPER_MOT_MS1); SET_GPIO_HIGH(PAPER_MOT_MS2); SET_GPIO_HIGH(PAPER_MOT_MS3);
     SET_GPIO_HIGH(PAPER_MOT_SLEEP); rtos_delay_milliseconds(5);
@@ -723,14 +766,21 @@ static bk_err_t motor_page_feed_impl(uint32_t steps, uint8_t direction, uint32_t
     rtos_delay_milliseconds(10);
     SET_GPIO_LEVEL(PAPER_MOT_DIR, direction != 0);
     bk_delay_us(50);
+    paper_feed_trace("READY", steps);
+    uint32_t first_step_high = 0;
     for (uint32_t i = 0; i < steps; ++i) {
         uint32_t edge = i < steps - 1U - i ? i : steps - 1U - i;
         uint32_t low_us = edge < 250U ? 3000U - 2000U * edge / 250U : 1000U;
-        SET_GPIO_HIGH(PAPER_MOT_STEP); bk_delay_us(4);
+        SET_GPIO_HIGH(PAPER_MOT_STEP);
+        if (i == 0U) first_step_high = *(volatile uint32_t *)(SOC_AON_GPIO_REG_BASE + (PAPER_MOT_STEP << 2));
+        bk_delay_us(4);
         SET_GPIO_LOW(PAPER_MOT_STEP); bk_delay_us(low_us);
         ++*sent;
         if ((i & 31U) == 31U) rtos_delay_milliseconds(1);
     }
+    printf("[U5_STEP_LATCH] first_high_reg18=%08lX pulses=%lu software_only\r\n",
+           (unsigned long)first_step_high, (unsigned long)*sent);
+    paper_feed_trace("PULSES_DONE", steps);
     bk_motor_set_state(0, 0);
     if (own_boost) bk_motor_boost_power(0);
     return BK_OK;
