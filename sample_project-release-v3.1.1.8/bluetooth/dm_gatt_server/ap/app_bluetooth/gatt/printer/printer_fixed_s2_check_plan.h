@@ -8,37 +8,21 @@
 #define PRINTER_S2_CHECK_NOZZLES 4U
 #define PRINTER_S2_CHECK_TAG "DOMAIN_CHECK"
 #define PRINTER_S2_CHECK_ORDER_TEXT "D1,D2,D3,D4,D5,D6,D6,D5,D4,D3,D2,D1"
-#if PRINTER_FIXED_S1_COMPARE
-#define PRINTER_S2_CHECK_JOB_CRC 0xFE431638U
-#else
 #define PRINTER_S2_CHECK_JOB_CRC 0xA13F47F7U
-#endif
 static const char *const s_s2_check_names[6] = {"D1_CYAN","D2_CYAN","D3_MAGENTA","D4_MAGENTA","D5_YELLOW","D6_YELLOW"};
 static const uint8_t s_s2_check_masks[6] = {1,2,4,8,16,32};
 static const uint8_t s_s2_check_order[12] = {0,1,2,3,4,5,5,4,3,2,1,0};
-#if PRINTER_FIXED_S1_COMPARE
-static const uint32_t s_s2_check_crc[6] = {0x7C6D30B0U,0x1AE91677U,0x70D1E225U,0x9DDC090DU,0x5477687FU,0xD268D06CU};
-#else
 static const uint32_t s_s2_check_crc[6] = {0xCAF90008U,0x48E40DD2U,0xC030ADC3U,0x7558A543U,0xD2195130U,0x1E7396E0U};
-#endif
 #else
 #define PRINTER_S2_CHECK_PARTS 3U
 #define PRINTER_S2_CHECK_LINES 6U
 #define PRINTER_S2_CHECK_NOZZLES 8U
 #define PRINTER_S2_CHECK_TAG "COLOR_CHECK"
 #define PRINTER_S2_CHECK_ORDER_TEXT "C,M,Y,Y,M,C"
-#if PRINTER_FIXED_S1_COMPARE
-#define PRINTER_S2_CHECK_JOB_CRC 0x8D435930U
-#else
 #define PRINTER_S2_CHECK_JOB_CRC 0x7764411CU
-#endif
 static const char *const s_s2_check_names[3] = {"CYAN","MAGENTA","YELLOW"};
 static const uint8_t s_s2_check_masks[3] = {3,12,48};
 static const uint8_t s_s2_check_order[6] = {0,1,2,2,1,0};
-#if PRINTER_FIXED_S1_COMPARE
-static const uint32_t s_s2_check_crc[3] = {0x77EF60DAU,0xFC66AD35U,0x9774FE0EU};
-#else
 static const uint32_t s_s2_check_crc[3] = {0x93764BC7U,0xA4034E9DU,0xDD0181CDU};
-#endif
 #endif
 #endif

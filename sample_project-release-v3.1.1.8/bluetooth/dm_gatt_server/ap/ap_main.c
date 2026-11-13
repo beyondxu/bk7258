@@ -56,7 +56,7 @@ void pwr_early_hold_power(void) {
     };
     bk_gpio_set_config(PIN_POWER_HOLD, &cfg);
     GPIO_UP(PIN_POWER_HOLD);
-	 bk_motor_boost_power((PRINTER_DATA_AUDIT || PRINTER_U5_BOOT_SCOPE) ? 0 : 1); /* audit never enables boost */
+	 bk_motor_boost_power(PRINTER_DATA_AUDIT ? 0 : 1); /* audit never enables boost */
     os_printf("[PWR_MGR] Power Latch LOCKED (GPIO_14 = HIGH)\r\n");
 }
 
@@ -295,14 +295,6 @@ static void app_printer_task_entry(void *arg) {
 	 //  u4_carriage_motor_standalone_test();
 	//   return ;
 
-#if PRINTER_U5_BOOT_SCOPE
-    os_printf("[SYS] U5_BOOT_SCOPE_V1 starts_in_ms=3000 run_ms=60000 no_APP no_HC_link_check no_carriage no_fire\r\n");
-    rtos_delay_milliseconds(3000);
-    motor_u5_boot_scope_test();
-    /* This firmware stays idle after the one bounded session, no APP worker. */
-    while (1) rtos_delay_milliseconds(1000);
-#endif
-
 #if !PRINTER_DATA_AUDIT || PRINTER_BOUNDED_PRINT || PRINTER_CARRIAGE_TEST
     // 1. 初始化电机 GPIO
     bk_motor_gpio_config_init();
@@ -348,13 +340,7 @@ static void app_printer_task_entry(void *arg) {
 	   // 打印完成之后，再进入 BLE 监听服务
 	// ★ 测试 1：打印青色 (Cyan, 0x03) 2 行 ★
 #if PRINTER_FIXED_S2_DOMAIN_CHECK
-#if PRINTER_U5_FEED_ONLY
-        os_printf("[SYS] APP_U5_FEED_ONLY_V1 steps=780 head_OFF no_carriage_no_firing one_feed_per_APP_job\r\n");
-#elif PRINTER_FIXED_S1_COMPARE
-        os_printf("[SYS] APP_FIXED_S1_COMPARE_V1 section=S1 A=004A2912 S=01 scans=12 ordinary_dose same_addresses_as_S2 requires_HC_extra_idle_us_0\r\n");
-#else
         os_printf("[SYS] APP_FIXED_S2_DOMAIN_CHECK_V1 order=D1,D2,D3,D4,D5,D6,D6,D5,D4,D3,D2,D1 scans=12 requires_HC_extra_idle_us_0\r\n");
-#endif
 #elif PRINTER_FIXED_S2_COLOR_CHECK
         os_printf("[SYS] APP_FIXED_S2_COLOR_CHECK_V1 order=C,M,Y,Y,M,C scans=6 ordinary_dose requires_HC_extra_idle_us_0\r\n");
 #elif PRINTER_FIXED_S2_BASELINE

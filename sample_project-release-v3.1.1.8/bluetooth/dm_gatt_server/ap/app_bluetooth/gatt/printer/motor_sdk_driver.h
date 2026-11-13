@@ -89,7 +89,5 @@ void motor_carriage_return_home(uint32_t steps);
 void motor_all_power_down(void);
 
 
-void motor_u5_boot_scope_test(void);
-
 #endif // MOTOR_SDK_DRIVER_H
 

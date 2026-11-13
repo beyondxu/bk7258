@@ -5,21 +5,6 @@
 #define PRINTER_IDLE_AB 1 /* frozen-line OFF/ON versus held-power idle comparison */
 #endif
 
-/* Standalone boot scope session; no SPI self-test, APP or firing path. */
-#ifndef PRINTER_U5_BOOT_SCOPE
-#define PRINTER_U5_BOOT_SCOPE 1
-#endif
-
-/* Temporarily replace the inspection print with one U5-only feed, head OFF. */
-#ifndef PRINTER_U5_FEED_ONLY
-#define PRINTER_U5_FEED_ONLY 1
-#endif
-
-/* S1 control: same addresses, data masks, motion and dose as fixed S2. */
-#ifndef PRINTER_FIXED_S1_COMPARE
-#define PRINTER_FIXED_S1_COMPARE 1
-#endif
-
 #ifndef PRINTER_FIXED_S2_DOMAIN_CHECK
 #define PRINTER_FIXED_S2_DOMAIN_CHECK 1 /* D1..D6 then D6..D1, one D bit per line */
 #endif
