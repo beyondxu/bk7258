@@ -2,10 +2,10 @@
 #define PRINTER_DIAGNOSTICS_H
 
 #ifndef PRINTER_IDLE_AB
-#define PRINTER_IDLE_AB 1 /* frozen-line OFF/ON versus held-power idle comparison */
+#define PRINTER_IDLE_AB 0 /* frozen-line OFF/ON versus held-power idle comparison */
 #endif
 
-/* Verify 8mm service travel on each side, head OFF and no printing. */
+/* Actual APP CMY printing with 8.5mm-per-side non-firing service travel. */
 #ifndef PRINTER_SERVICE_TRAVEL_TEST
 #define PRINTER_SERVICE_TRAVEL_TEST 0
 #endif
@@ -18,17 +18,17 @@
 
 /* One CMY black line before the unchanged yellow page, no automatic repeats. */
 #ifndef PRINTER_BLACK_PREFIX
-#define PRINTER_BLACK_PREFIX 1
+#define PRINTER_BLACK_PREFIX 0
 #endif
 
 /* Move only the known upper yellow band's S1 rows within the same section. */
 #ifndef PRINTER_YELLOW_S1_REMAP
-#define PRINTER_YELLOW_S1_REMAP 1
+#define PRINTER_YELLOW_S1_REMAP 0
 #endif
 
 /* Print only actual APP yellow pixels, preserving page/nozzle geometry. */
 #ifndef PRINTER_APP_YELLOW_ONLY
-#define PRINTER_APP_YELLOW_ONLY 1
+#define PRINTER_APP_YELLOW_ONLY 0
 #endif
 
 /* Inspect the actual APP BIN; no fixed recipe, head, motion or HC32 link. */
@@ -38,23 +38,23 @@
 
 /* S1 control: same addresses, data masks, motion and dose as fixed S2. */
 #ifndef PRINTER_FIXED_S1_COMPARE
-#define PRINTER_FIXED_S1_COMPARE 1
+#define PRINTER_FIXED_S1_COMPARE 0
 #endif
 
 #ifndef PRINTER_FIXED_S2_DOMAIN_CHECK
-#define PRINTER_FIXED_S2_DOMAIN_CHECK 1 /* D1..D6 then D6..D1, one D bit per line */
+#define PRINTER_FIXED_S2_DOMAIN_CHECK 0 /* D1..D6 then D6..D1, one D bit per line */
 #endif
 
 #ifndef PRINTER_FIXED_S2_COLOR_CHECK
-#define PRINTER_FIXED_S2_COLOR_CHECK 1 /* C,M,Y,Y,M,C, equal ordinary dose per line */
+#define PRINTER_FIXED_S2_COLOR_CHECK 0 /* C,M,Y,Y,M,C, equal ordinary dose per line */
 #endif
 
 #ifndef PRINTER_FIXED_S2_BASELINE
-#define PRINTER_FIXED_S2_BASELINE 1 /* deterministic S2 recipe; APP pixels do not select nozzles */
+#define PRINTER_FIXED_S2_BASELINE 0 /* deterministic S2 recipe; APP pixels do not select nozzles */
 #endif
 
 #ifndef PRINTER_STARTUP_RECOVERY
-#define PRINTER_STARTUP_RECOVERY 1 /* one normal / per-column x2 / normal comparison */
+#define PRINTER_STARTUP_RECOVERY 0 /* one normal / per-column x2 / normal comparison */
 #endif
 
 #if PRINTER_FIXED_S2_BASELINE && (!PRINTER_STARTUP_RECOVERY || !PRINTER_IDLE_AB)
@@ -76,7 +76,7 @@
 #define PRINTER_IDLE_OFF_ONLY 0 /* previous five-minute OFF/restart comparison */
 #endif
 #ifndef PRINTER_IDLE_REFERENCE_ONLY
-#define PRINTER_IDLE_REFERENCE_ONLY 1 /* three CMY scans, no long idle or priming */
+#define PRINTER_IDLE_REFERENCE_ONLY 0 /* three CMY scans, no long idle or priming */
 #endif
 #ifndef PRINTER_IDLE_AB_GAP_MS
 #define PRINTER_IDLE_AB_GAP_MS 300000U /* five minutes between active-column ACKs */

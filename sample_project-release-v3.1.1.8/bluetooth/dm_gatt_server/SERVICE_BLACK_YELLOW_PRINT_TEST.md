@@ -1,3 +1,6 @@
+> Historical black/yellow diagnostic. Current firmware uses actual APP CMY.
+> See SERVICE_CMY_PRINT_TEST.md for the active test.
+
 # Resume black + yellow printing through the confirmed maintenance travel
 
 Mechanical 8mm-per-side rightward travel and its faster600us cruise were reported
