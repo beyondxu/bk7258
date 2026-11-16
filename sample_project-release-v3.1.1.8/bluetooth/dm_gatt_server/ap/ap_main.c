@@ -339,7 +339,9 @@ static void app_printer_task_entry(void *arg) {
 	
 	   // 打印完成之后，再进入 BLE 监听服务
 	// ★ 测试 1：打印青色 (Cyan, 0x03) 2 行 ★
-#if PRINTER_APP_YELLOW_ONLY
+#if PRINTER_YELLOW_S1_REMAP
+        os_printf("[SYS] APP_YELLOW_S1_REMAP_V1 swath=3 rows=9..23_to_29..43 S1_only S3_unchanged\r\n");
+#elif PRINTER_APP_YELLOW_ONLY
         os_printf("[SYS] APP_YELLOW_ONLY_V1 actual_APP_pixels D5_D6 all_original_A_S no_fixed_recipe\r\n");
 #elif PRINTER_FIXED_S2_DOMAIN_CHECK
 #if PRINTER_FIXED_S1_COMPARE

@@ -5,6 +5,11 @@
 #define PRINTER_IDLE_AB 1 /* frozen-line OFF/ON versus held-power idle comparison */
 #endif
 
+/* Move only the known upper yellow band's S1 rows within the same section. */
+#ifndef PRINTER_YELLOW_S1_REMAP
+#define PRINTER_YELLOW_S1_REMAP 1
+#endif
+
 /* Print only actual APP yellow pixels, preserving page/nozzle geometry. */
 #ifndef PRINTER_APP_YELLOW_ONLY
 #define PRINTER_APP_YELLOW_ONLY 1

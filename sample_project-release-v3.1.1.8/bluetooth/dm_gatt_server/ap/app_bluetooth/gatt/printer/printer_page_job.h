@@ -1,3 +1,9 @@
+#ifndef PRINTER_YELLOW_S1_REMAP
+#define PRINTER_YELLOW_S1_REMAP 0
+#endif
+#if PRINTER_YELLOW_S1_REMAP
+#include "printer_yellow_s1_remap.h"
+#endif
 #ifndef PRINTER_APP_YELLOW_ONLY
 #define PRINTER_APP_YELLOW_ONLY 0
 #endif
@@ -78,6 +84,10 @@ static int printer_run_full_page(const uint8_t *bin, uint32_t length) {
     }
     result = printer_page_transform(&page, PRINTER_PAGE_TRANSFORM, printer_map_yield_cpu);
     if (result) { printer_page_release(&page, printer_map_psram_free); return result; }
+#if PRINTER_YELLOW_S1_REMAP
+    result = printer_yellow_s1_remap(&page);
+    if (result) { printer_page_release(&page, printer_map_psram_free); return result; }
+#endif
     uint8_t *columns = printer_map_psram_alloc(PRINTER_PAGE_COLUMNS * 100U);
     uint8_t *scratch = printer_map_psram_alloc(page.width * 72U);
     uint8_t *pass_columns = PRINTER_PAGE_COLOR_MODE == 2 ? printer_map_psram_alloc(PRINTER_PAGE_COLUMNS * 100U) : NULL;
@@ -90,7 +100,11 @@ static int printer_run_full_page(const uint8_t *bin, uint32_t length) {
               (unsigned long)page.source_dots[0], (unsigned long)page.source_dots[1], (unsigned long)page.source_dots[2],
               (unsigned long)page.output_dots[0], (unsigned long)page.output_dots[1], (unsigned long)page.output_dots[2]);
 #if PRINTER_APP_YELLOW_ONLY
+#if PRINTER_YELLOW_S1_REMAP
+    os_printf("[APP_YELLOW_PLAN] source_Y=%lu resized_Y=%lu D_mask=30 S1_rows_remapped S3_original no_extra_fires\r\n",
+#else
     os_printf("[APP_YELLOW_PLAN] source_Y=%lu resized_Y=%lu D_mask=30 all_original_A_S no_fixed_recipe no_extra_fires\r\n",
+#endif
               (unsigned long)page.source_dots[2], (unsigned long)page.output_dots[2]);
 #endif
     if (PRINTER_PAGE_ONLY_SWATH >= 0)

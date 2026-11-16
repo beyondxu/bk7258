@@ -48,18 +48,37 @@ int main(int argc,char**argv){assert(argc==7);size_t n,g;uint8_t*b=readfile(argv
  else assert(!scans&&!feeds&&!off_calls);
  free(gold);free(b);puts("PASS yellow controller scenario");}
 '''
+remap = os.environ.get("PRINTER_TEST_S1_REMAP") == "1"
 r=Renderer()
-inputs=[blob({(0,300,100),(1,400,400),(2,500,600),(2,600,800)})]
+inputs=[blob({(0,300,100),(1,400,400),(2,500,600),(2,600,780)})]
 if len(sys.argv)>1:inputs.append(Path(sys.argv[1]).read_bytes())
 with tempfile.TemporaryDirectory() as tmp:
  p=Path(tmp);(p/'test.c').write_text(h)
- subprocess.run(['cc','-std=c99','-O1','-Wall','-Wextra','-Werror','-fsanitize=address,undefined','-I'+str(D),str(p/'test.c'),str(D/'printer_page.c'),str(D/'printer_mapper.c'),'-o',str(p/'test')],check=True)
+ subprocess.run(['cc','-std=c99','-O1','-Wall','-Wextra','-Werror','-fsanitize=address,undefined','-DPRINTER_YELLOW_S1_REMAP='+str(int(remap)),'-I'+str(D),str(p/'test.c'),str(D/'printer_page.c'),str(D/'printer_mapper.c'),'-o',str(p/'test')],check=True)
  for raw in inputs:
   code,page=r.prepare(raw);assert code==0
+  original=[]
+  for sw in range(page.swaths):
+   raw_columns,_=r.render(page,sw);original.append(bytes(v&0x30 for v in raw_columns))
+  if remap:
+   for x in range(page.width):
+    start=2*page.width*page.stride+x*page.stride
+    for y in range(393,408):
+     if page.planes[start+y//8] & (0x80>>(y%8)):
+      assert not (page.planes[start+(y+20)//8] & (0x80>>((y+20)%8)))
+      page.planes[start+y//8] &= 255^(0x80>>(y%8))
+      page.planes[start+(y+20)//8] |= 0x80>>((y+20)%8)
   frames=[]
   for sw in range(page.swaths):
    columns,dots=r.render(page,sw);frames.append(bytes(v&0x30 for v in columns))
   assert len(frames)==6
+  if remap:
+   for sw in range(6):
+    assert sum(v.bit_count() for v in frames[sw])==sum(v.bit_count() for v in original[sw])
+    if sw!=2:assert frames[sw]==original[sw]
+    for i,(a,b) in enumerate(zip(original[sw],frames[sw])):
+     if i%4!=0:assert a==b # S2/S3/S4 byte-for-byte unchanged
+   assert frames[2]!=original[2]
   active=sum(any(f) for f in frames);assert active
   print('gold active_swaths',[(i+1,f'{zlib.crc32(f):08X}',sum(v.bit_count() for v in f)) for i,f in enumerate(frames) if any(f)],flush=True)
   r.close(page);(p/'input.bin').write_bytes(raw);(p/'gold.bin').write_bytes(b''.join(frames))
