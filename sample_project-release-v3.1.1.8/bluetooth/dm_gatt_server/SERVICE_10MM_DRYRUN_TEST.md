@@ -1,63 +1,55 @@
-# First service-station travel trial: approximately 10mm each side, no ink
+# V2: manual left-service origin, one rightward non-firing stroke
 
-The user observed physical wiper/absorber-like parts outside the current travel
-and confirmed the current carriage never reaches them. They estimate 7480 steps
-as about 40mm and explicitly requested trying 10mm each side first. Component
-functions and whether any parking pad actually seals the head are not proven
-from the photo. Automatic maintenance may be missing; causality remains unproven.
-Public maintenance-document searches were blocked by environment network policy.
+The user changed the requested origin after the initial four-leg trial. V2
+replaces that itinerary: start at the LEFT service position, move RIGHT11220
+steps once, stop on the RIGHT, disable U4/boost. No initial left move, no reverse,
+no automatic return. The previous old-origin/four-leg instructions are obsolete.
 
-## Geometry and motion
+## Geometry
 
-1870 steps = 7480 * 10/40; endpoint-to-endpoint span = 11220 steps (~60mm).
-The OLD known scan start is relative coordinate zero; this is not auto-homing.
-Start from that same physical position as before. Do NOT manually shift the
-start 10mm, which would apply the offset twice. One APP job executes:
+User calibration: old7480 steps is approximately40mm. Extra10mm each side is
+1870 steps, so endpoint span is11220 steps (~60mm). New coordinate0 is the LEFT
+maintenance position, not the original print start. The legacy7480-step segment
+would be between coordinates1870 and9350. These are approximate counted offsets,
+not calibrated paper edges or measured carriage positions.
 
-1. Left1870 to relative -1870 (left maintenance zone).
-2. Right11220 to relative +9350 (old right endpoint7480 plus1870).
-3. Left11220 to relative -1870.
-4. Right1870 to relative 0, restoring the old start.
-
-Total26180 pulses; a slow 1000us cruise low time and 3000us ramp ends, 4us HIGH,
-RTOS yields and pauses give roughly30 seconds. This first trial is slower than
-normal printing to inspect travel/contact. Approximate40mm calibration does
-not establish exact10mm extension, physical endpoints or absence of lost steps.
-There is no limit-switch/encoder stop. Observe the motion; stop power if it
-approaches a hard stop, binds, or makes an abnormal sound. A bad origin or lost
-steps requires physically restoring the old origin before any later test.
-
-## No printing and no automatic repetition
-
-PRINTER_SERVICE_TRAVEL_TEST=1 takes priority over black/yellow printing in the
-worker. Receive length/CRC remain validated. The head-OFF command must be
-acknowledged before boost/motion. There are no head-ON commands, no firing
-columns, no paper feed, and no startup auto-motion. All travel, including the
-paper area, is non-firing in this trial. The mechanical wiper can be observed
-without coupling a first stroke test to printing. HC32 firmware is unchanged.
-
-U4 and boost turn OFF after success or a reported partial-leg failure. No blind
-full return is attempted after a partial/error result. A one-shot latch blocks
-another APP-triggered cycle until restart. Hardware motor protection remains;
-software counters do not detect an actual collision or stalled carriage.
+No home switch/encoder procedure exists in this path. Power OFF first and place
+the carriage at the known left maintenance position, leaving normal mechanical
+clearance. Do not drive into a hard stop to establish zero. A further trial
+requires returning to that position with power off before retriggering. Watch
+for binding or a hard stop and stop power if necessary. Source pulse counts
+cannot detect actual lost steps, collision or correct mechanical contact.
 
 ## One target action
 
-Update/flash BK, start the whole machine normally with the carriage at its old
-known scan start, confirm CARRIAGE_SERVICE_DRYRUN_V1 and link ready=1. Send the
-usual APP image once. No paper or wiping is needed. Watch whether it reaches
-both maintenance parts without a hard stop and returns to its old start. Save
-SERVICE_BEGIN, SERVICE_LEG, SERVICE_POSITION, SERVICE_END and the HC head logs.
-First confirm motion/contact only; actual print-window integration follows
-that observation. The old black/yellow feature remains in source but inactive
-under this dry-run override. Do not interpret a blank page as print failure.
+Flash BK; leave HC32 unchanged. After placement and whole-machine startup,
+confirm CARRIAGE_SERVICE_LEFT_START_V2 and link ready=1. Send the usual APP image
+once. This triggers only one rightward stroke (~12seconds at the test speed).
+No paper feed, head-ON or firing-column calls occur anywhere. The head-OFF
+command must be acknowledged before boost/motion. A one-shot latch blocks an
+additional attempt until restart, including after a partial/error result.
+
+Capture SERVICE_BEGIN/LEG/POSITION/END. Observe whether both maintenance parts
+are crossed and where the carriage stops. No automatic return is made on either
+success or error. This is still the mechanical verification mode, not printing.
+
+## Meaning of "printing on both sides"
+
+Bidirectional printing means image firing during both left-to-right and
+right-to-left scans over the paper; it needs direction-dependent image/nozzle
+registration. Maintenance spitting means controlled firing into a confirmed
+waste-ink receiver outside the paper. Wiping/capping is a separate mechanical
+operation and does not itself establish that either service end should fire.
+The user was asked which observation they meant. Until clarified, no reverse
+printing or out-of-paper maintenance firing is enabled. Public webpages were
+blocked by environment network policy; no model-specific two-end behavior was
+verified. The normal print code remains in history and inactive in this dry run.
 
 ## Verification
 
-Actual service motor loop and controller run under ASan/UBSan with a fake clock.
-Tests verify four exact legs, endpoints -1870/+9350, net-zero pulses, slow timing,
-head OFF before any steps, no firing/feed path, bounded arguments, link/OFF
-failure blocking, no blind return on partial/error results and the one-shot lock.
-Existing black/yellow/full-page/feed tests pass. BK SDK source objects compile.
-Physical distance, actual contact, safe endpoints and recovery of ink output
-remain target-side verification.
+ASan/UBSan tests run the actual service loop/controller with a fake clock:
+exact11220 pulses, direction always1, monotonically0..11220, about12seconds,
+head OFF before any motor edge, no feed/firing, bounded arguments, link/OFF
+failure blocking, partial/error stop without return, one-shot behavior. BK SDK
+source objects compile. Target-side distance, endpoints and mechanism operation
+remain to be confirmed before integrating any image or maintenance firing.

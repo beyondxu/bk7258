@@ -1,4 +1,4 @@
-"""Actual bounded service pulse loop/controller: no head ON, firing, feed or drift."""
+"""Actual bounded service pulse loop/controller: left start, right-only motion, no head ON, firing, feed or automatic return."""
 from pathlib import Path
 import os,subprocess,tempfile
 D=Path(__file__).resolve().parents[1]/'ap/app_bluetooth/gatt/printer'
@@ -23,15 +23,15 @@ static int32_t position,minimum,maximum;
 static bool head=true,link=true;
 static uint64_t bk_aon_rtc_get_us(void){return us;}
 static void set_level(unsigned pin,unsigned value){assert(pin==50&&!high);dir=value;}
-static void up(unsigned pin){assert(pin==19&&!head&&boost&&active&&!high);high=1;++pulses;position+=dir?1:-1;if(position<minimum)minimum=position;if(position>maximum)maximum=position;assert(position>=-1870&&position<=9350);}
+static void up(unsigned pin){assert(pin==19&&!head&&boost&&active&&!high);high=1;++pulses;position+=dir?1:-1;if(position<minimum)minimum=position;if(position>maximum)maximum=position;assert(position>=0&&position<=11220);}
 static void down(unsigned pin){assert(pin==19&&high);high=0;}
 #define SET_GPIO_LEVEL(p,v) set_level(p,v)
 #define SET_GPIO_HIGH(p) up(p)
 #define SET_GPIO_LOW(p) down(p)
 static void delay_us(unsigned n){if(high)assert(n==4);else assert(n==50||(n>=1000&&n<=3000));us+=n;}
-static void rtos_delay_milliseconds(unsigned n){assert(!high&&(n==1||n==300));us+=(uint64_t)n*1000;}
+static void rtos_delay_milliseconds(unsigned n){assert(!high&&n==1);us+=(uint64_t)n*1000;}
 LEG
-static bk_err_t motor_carriage_service_leg(uint8_t d,uint32_t n,uint32_t*sent){++calls;if((scenario==3||scenario==4)&&calls==2){int rc=real_service_leg(d,n/2,sent);return scenario==4?-1:rc;}return real_service_leg(d,n,sent);}
+static bk_err_t motor_carriage_service_leg(uint8_t d,uint32_t n,uint32_t*sent){assert(d==1);++calls;if((scenario==3||scenario==4)&&calls==1){int rc=real_service_leg(d,n/2,sent);return scenario==4?-1:rc;}return real_service_leg(d,n,sent);}
 static bool printer_link_is_ready(void){return link;}
 static int tph_mcu_set_head_power(uint8_t on){assert(!on);++off_calls;if(scenario==2)return -1;head=false;return 0;}
 static void motor_carriage_test_power_up(void){assert(!head&&!boost&&!active);boost=active=1;}
@@ -43,9 +43,9 @@ uint32_t sent=99;assert(real_service_leg(1,11221,&sent)==-1&&!sent);assert(real_
 if(scenario==5){link=false;assert(printer_run_service_travel_test()==-7&&!off_calls&&!pulses);link=true;}
 int rc=printer_run_service_travel_test();assert(!boost&&!active&&!high);
 if(scenario==2){assert(rc==-8&&!pulses&&!calls);}
-else if(scenario==3||scenario==4){assert(rc==-9&&calls==2&&position==3740&&pulses==7480);}
-else{assert(!rc&&calls==4&&pulses==26180&&position==0&&minimum==-1870&&maximum==9350);assert(us>28000000&&us<33000000);}
-unsigned old=pulses;assert(printer_run_service_travel_test()==-7&&pulses==old);puts("PASS: relative endpoints, exact four legs, 30s slow bound, head OFF, one-shot, no blind return, argument/link/OFF/partial-failure guards");}
+else if(scenario==3||scenario==4){assert(rc==-9&&calls==1&&position==5610&&pulses==5610);}
+else{assert(!rc&&calls==1&&pulses==11220&&position==11220&&minimum==0&&maximum==11220);assert(us>11000000&&us<14000000);}
+unsigned old=pulses;assert(printer_run_service_travel_test()==-7&&pulses==old);puts("PASS: left-origin/right-only trajectory, exact one leg, 12s slow bound, head OFF, one-shot, no blind return, argument/link/OFF/partial-failure guards");}
 '''.replace('\nLEG\n','\n'+leg+'\n')
 with tempfile.TemporaryDirectory() as tmp:
  p=Path(tmp);(p/'test.c').write_text(h)

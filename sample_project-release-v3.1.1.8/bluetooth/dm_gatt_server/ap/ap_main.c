@@ -340,7 +340,7 @@ static void app_printer_task_entry(void *arg) {
 	   // 打印完成之后，再进入 BLE 监听服务
 	// ★ 测试 1：打印青色 (Cyan, 0x03) 2 行 ★
 #if PRINTER_SERVICE_TRAVEL_TEST
-        os_printf("[SYS] CARRIAGE_SERVICE_DRYRUN_V1 old_span=7480 margin_each=1870 extended_span=11220 one_cycle head_OFF no_fire no_feed\r\n");
+        os_printf("[SYS] CARRIAGE_SERVICE_LEFT_START_V2 origin=LEFT_SERVICE steps_right=11220 no_left_move no_return head_OFF no_fire no_feed\r\n");
 #elif PRINTER_BLACK_PREFIX
         os_printf("[SYS] APP_BLACK_THEN_YELLOW_V1 one_CMY_black_then_actual_yellow no_repeat\r\n");
 #elif PRINTER_YELLOW_S1_REMAP
