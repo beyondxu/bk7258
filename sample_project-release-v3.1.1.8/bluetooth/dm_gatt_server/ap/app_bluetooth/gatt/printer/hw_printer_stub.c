@@ -876,7 +876,9 @@ static int printer_execute_cyan_line(const uint8_t *columns) {
     rtos_delay_milliseconds(PRINTER_PAGE_HEAD_SETTLE_MS);
     os_printf("[PAGE_HEAD_SETTLE_DONE] begin_forward_image_scan\r\n");
 #endif
-#if PRINTER_APP_YELLOW_ONLY
+#if PRINTER_BLACK_PREFIX
+    os_printf("[PAGE_COLOR_SCAN_BEGIN] columns=1180 steps=7480 see_BLACK_PREFIX_or_PAGE_PASS\r\n");
+#elif PRINTER_APP_YELLOW_ONLY
     os_printf("[APP_YELLOW_SCAN_BEGIN] columns=1180 steps=7480 D5_D6 actual_APP_mapping\r\n");
 #else
     os_printf("[CYAN_LINE_BEGIN] motion_base=29a973b start=3000 cruise=260 columns=1180 steps=7480 feed=0\r\n");
@@ -893,7 +895,9 @@ stop:
         os_printf("[LINE_STOP] code=%d no_blind_return_after_failure\r\n", result);
     }
     carriage_verified_power_down();
-#if PRINTER_APP_YELLOW_ONLY
+#if PRINTER_BLACK_PREFIX
+    os_printf("[PAGE_COLOR_SCAN_END] result=%d columns=%lu/1180 forward=%lu reverse=%lu ink_unverified\r\n",
+#elif PRINTER_APP_YELLOW_ONLY
     os_printf("[APP_YELLOW_SCAN_END] result=%d columns=%lu/1180 forward=%lu reverse=%lu ink_unverified\r\n",
 #else
     os_printf("[CYAN_LINE_END] result=%d columns=%lu/1180 forward=%lu reverse=%lu ink_unverified\r\n",

@@ -2,6 +2,8 @@
 from pathlib import Path
 import os,subprocess,tempfile,sys,re,zlib
 from test_full_page import blob,Renderer
+from page_preview import Page
+import ctypes as C
 R=Path(__file__).resolve().parents[1];D=R/'ap/app_bluetooth/gatt/printer'
 h=r'''
 #include <assert.h>
@@ -49,12 +51,15 @@ int main(int argc,char**argv){assert(argc==7);size_t n,g;uint8_t*b=readfile(argv
  free(gold);free(b);puts("PASS yellow controller scenario");}
 '''
 remap = os.environ.get("PRINTER_TEST_S1_REMAP") == "1"
+black_prefix = os.environ.get("PRINTER_TEST_BLACK_PREFIX") == "1"
+if black_prefix:
+ h=h.replace('assert(current>=1&&current<=6);', 'if(current==0){assert(!feeds&&!scans);assert(!memcmp(p,gold+6*118000,118000));++scans;return mode==1?-9:0;}assert(current>=1&&current<=6);')
 r=Renderer()
 inputs=[blob({(0,300,100),(1,400,400),(2,500,600),(2,600,780)})]
 if len(sys.argv)>1:inputs.append(Path(sys.argv[1]).read_bytes())
 with tempfile.TemporaryDirectory() as tmp:
  p=Path(tmp);(p/'test.c').write_text(h)
- subprocess.run(['cc','-std=c99','-O1','-Wall','-Wextra','-Werror','-fsanitize=address,undefined','-DPRINTER_YELLOW_S1_REMAP='+str(int(remap)),'-I'+str(D),str(p/'test.c'),str(D/'printer_page.c'),str(D/'printer_mapper.c'),'-o',str(p/'test')],check=True)
+ subprocess.run(['cc','-std=c99','-O1','-Wall','-Wextra','-Werror','-fsanitize=address,undefined','-DPRINTER_BLACK_PREFIX='+str(int(black_prefix)),'-DPRINTER_YELLOW_S1_REMAP='+str(int(remap)),'-I'+str(D),str(p/'test.c'),str(D/'printer_page.c'),str(D/'printer_mapper.c'),'-o',str(p/'test')],check=True)
  for raw in inputs:
   code,page=r.prepare(raw);assert code==0
   original=[]
@@ -81,10 +86,22 @@ with tempfile.TemporaryDirectory() as tmp:
    assert frames[2]!=original[2]
   active=sum(any(f) for f in frames);assert active
   print('gold active_swaths',[(i+1,f'{zlib.crc32(f):08X}',sum(v.bit_count() for v in f)) for i,f in enumerate(frames) if any(f)],flush=True)
+  if black_prefix:
+   black=Page();black.width=page.width;black.height=192;black.stride=24;black.swaths=1;black.cfg=page.cfg
+   buf=(C.c_uint8*(page.width*72))();black.planes=C.cast(buf,C.POINTER(C.c_uint8))
+   for x in range(page.width):
+    for row in range(29 if remap else 9,44 if remap else 24):
+     y=384+row
+     if page.planes[2*page.width*page.stride+x*page.stride+y//8]&(0x80>>(y%8)):
+      for ch in range(3):buf[ch*page.width*24+x*24+row//8]|=0x80>>(row%8)
+   black_bytes,black_dots=r.render(black,0);assert black_dots[0]==black_dots[1]==black_dots[2]>0
+   assert bytes(v&0x30 for v in black_bytes)==bytes(v if i%4==0 else 0 for i,v in enumerate(frames[2]))
+   print('gold_black',f'{zlib.crc32(black_bytes):08X}',black_dots,flush=True)
+   frames.append(black_bytes);active+=1
   r.close(page);(p/'input.bin').write_bytes(raw);(p/'gold.bin').write_bytes(b''.join(frames))
   for mode,expected in [(0,0),(1,-9),(2,-10),(3,-8),(4,-7)]:
    subprocess.run([str(p/'test'),str(p/'input.bin'),str(p/'gold.bin'),str(mode),'0',str(expected),str(active)],check=True,env={**os.environ,'ASAN_OPTIONS':'detect_leaks=0'})
-  for fail in range(1,7):
+  for fail in range(1,9 if black_prefix else 7):
    subprocess.run([str(p/'test'),str(p/'input.bin'),str(p/'gold.bin'),'0',str(fail),'-2',str(active)],check=True,env={**os.environ,'ASAN_OPTIONS':'detect_leaks=0'})
  (p/'input.bin').write_bytes(blob({(0,300,100),(1,400,400)}))
  subprocess.run([str(p/'test'),str(p/'input.bin'),str(p/'gold.bin'),'0','0','-6','0'],check=True,env={**os.environ,'ASAN_OPTIONS':'detect_leaks=0'})

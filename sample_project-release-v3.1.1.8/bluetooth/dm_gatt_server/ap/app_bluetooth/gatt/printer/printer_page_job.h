@@ -1,3 +1,9 @@
+#ifndef PRINTER_BLACK_PREFIX
+#define PRINTER_BLACK_PREFIX 0
+#endif
+#if PRINTER_BLACK_PREFIX
+#include "printer_black_prefix.h"
+#endif
 #ifndef PRINTER_YELLOW_S1_REMAP
 #define PRINTER_YELLOW_S1_REMAP 0
 #endif
@@ -91,7 +97,16 @@ static int printer_run_full_page(const uint8_t *bin, uint32_t length) {
     uint8_t *columns = printer_map_psram_alloc(PRINTER_PAGE_COLUMNS * 100U);
     uint8_t *scratch = printer_map_psram_alloc(page.width * 72U);
     uint8_t *pass_columns = PRINTER_PAGE_COLOR_MODE == 2 ? printer_map_psram_alloc(PRINTER_PAGE_COLUMNS * 100U) : NULL;
+#if PRINTER_BLACK_PREFIX
+    uint8_t *black_columns = NULL;
+#endif
     if (!columns || !scratch || (PRINTER_PAGE_COLOR_MODE == 2 && !pass_columns)) { result = -2; goto done; }
+#if PRINTER_BLACK_PREFIX
+    black_columns = printer_map_psram_alloc(PRINTER_PAGE_COLUMNS * 100U);
+    if (!black_columns) { result = -2; goto done; }
+    result = printer_build_black_prefix(&page, black_columns, scratch);
+    if (result) goto done;
+#endif
     os_printf("[PAGE_PLAN] source=1180x1476 output=%lux%lu swaths=%lu columns=1180 max_delay=%lu pitch=%lu y_pitch=4233 direction=%ld feed_steps=%u transform=%u color_mode=%u CANDIDATE_FEED aspect_fit\r\n",
               (unsigned long)page.width, (unsigned long)page.height, (unsigned long)page.swaths,
               (unsigned long)page.max_delay, (unsigned long)cfg.x_pitch_centi_um,
@@ -109,6 +124,13 @@ static int printer_run_full_page(const uint8_t *bin, uint32_t length) {
 #endif
     if (PRINTER_PAGE_ONLY_SWATH >= 0)
         os_printf("[PAGE_ISOLATE] original_swath=%u first_physical_scan=1 no_feed_before_first original_nozzle_rows_and_columns\r\n", (unsigned)PRINTER_PAGE_ONLY_SWATH + 1U);
+#if PRINTER_BLACK_PREFIX
+    os_printf("[BLACK_PREFIX_BEGIN] scans=1 CMY_overlay D=3F before_yellow_page\r\n");
+    failure_locked = true;
+    result = printer_execute_cyan_line(black_columns);
+    os_printf("[BLACK_PREFIX_END] code=%d ink_unverified\r\n", result);
+    if (result) goto done;
+#endif
     for (uint32_t strip = 0; strip < page.swaths; ++strip) {
         if (PRINTER_PAGE_ONLY_SWATH >= 0 && strip != (uint32_t)PRINTER_PAGE_ONLY_SWATH) continue;
         uint32_t dots[3];
@@ -169,6 +191,9 @@ static int printer_run_full_page(const uint8_t *bin, uint32_t length) {
     else os_printf("[PAGE_DONE] swaths=%lu no_auto_eject feed_distance_and_ink_unverified\r\n", (unsigned long)page.swaths);
 #endif
 done:
+#if PRINTER_BLACK_PREFIX
+    if (black_columns) printer_map_psram_free(black_columns);
+#endif
     if (columns) printer_map_psram_free(columns);
     if (scratch) printer_map_psram_free(scratch);
     if (pass_columns) printer_map_psram_free(pass_columns);

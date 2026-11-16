@@ -5,6 +5,11 @@
 #define PRINTER_IDLE_AB 1 /* frozen-line OFF/ON versus held-power idle comparison */
 #endif
 
+/* One CMY black line before the unchanged yellow page, no automatic repeats. */
+#ifndef PRINTER_BLACK_PREFIX
+#define PRINTER_BLACK_PREFIX 1
+#endif
+
 /* Move only the known upper yellow band's S1 rows within the same section. */
 #ifndef PRINTER_YELLOW_S1_REMAP
 #define PRINTER_YELLOW_S1_REMAP 1
