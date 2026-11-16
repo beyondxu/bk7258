@@ -1,3 +1,7 @@
+> Historical dry-run mode is inactive. Current shared geometry adds94 steps
+> per end:1590-step margins (~8.5mm),10660-step span (~57mm).
+> Use SERVICE_BLACK_YELLOW_PRINT_TEST.md for the current printing procedure.
+
 # V4: manual left-service origin, one rightward non-firing stroke
 
 The user changed the requested origin after the initial four-leg trial. V4

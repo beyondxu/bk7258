@@ -6,23 +6,28 @@ PRINTER_SERVICE_TRAVEL_TEST=0, PRINTER_SERVICE_PRINT=1 restores the existing act
 APP black-prefix + yellow-page job and routes each active image scan through the
 service-print helper. Maintenance spitting remains explicitly deferred.
 
+The current revision extends each end by another approximately0.5mm (94 steps).
+Margins are1590 steps (~8.5mm), total10660 steps (~57mm). To keep the image
+position on the paper, establish the left origin0.5mm farther left than the
+previous8mm mark. Pulse counts and millimeters remain approximate.
+
 ## Coordinates and one scan
 
-Manually establish the same known LEFT8mm service start with power off before
+Manually establish the same known LEFT8.5mm service start with power off before
 startup. There is no automatic homing or encoder. In counted relative steps:
 
-- 0..1496: leave left maintenance area, head OFF, no column SPI.
-- 1496..8976: original7480-step print segment. Enable head here, retain the
+- 0..1590: leave left maintenance area, head OFF, no column SPI.
+- 1590..9070: original7480-step print segment. Enable head here, retain the
   original2000ms settle,1180 columns/6steps and3000-to260us image ramp.
-- At8976: acknowledge head OFF before any more movement.
-- 8976..10472: enter right maintenance area, head OFF, no column SPI.
-- 10472..0: return left, head OFF, no column SPI, then disable boost/motor.
+- At9070: acknowledge head OFF before any more movement.
+- 9070..10660: enter right maintenance area, head OFF, no column SPI.
+- 10660..0: return left, head OFF, no column SPI, then disable boost/motor.
 
 Service segments/return use the mechanically tested600us cruise with3000us
 ramp endpoints. New non-paper travel is never ink-enabled. The legacy print
 window and its200-step blank lead/tail are unchanged; actual paper boundaries
-still require physical alignment. One successful pass has10472 forward and
-10472 reverse pulses and1180 transmitted columns. On handshake/SPI/partial-motion
+still require physical alignment. One successful pass has10660 forward and
+10660 reverse pulses and1180 transmitted columns. On handshake/SPI/partial-motion
 failure stop and request head OFF, with no blind return. The page failure latch
 then blocks further automatic scans/feeds until a deliberate restart/origin reset.
 
@@ -54,8 +59,8 @@ relative pulse position. Net zero means counted return, not measured homing.
 
 An ASan/UBSan harness runs the ACTUAL original image-stream function, ACTUAL
 service pulse engine and new service-print helper. It checks every SPI column
-against the exact original data and absolute1496+200+6*n position, only forward
-image firing, head OFF on all service/return edges,10472 forward/reverse counts
+against the exact original data and absolute1590+200+6*n position, only forward
+image firing, head OFF on all service/return edges,10660 forward/reverse counts
 and return to zero. Head OFF/ON errors, SPI failure, right extension and partial
 return errors stop without blind movement. Existing black/yellow exact-frame,
 service-travel, legacy motion and receive protocol regressions pass. BK SDK

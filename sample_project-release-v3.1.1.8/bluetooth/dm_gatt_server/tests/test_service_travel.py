@@ -24,7 +24,7 @@ static unsigned leg_index,leg_steps;
 static bool head=true,link=true;
 static uint64_t bk_aon_rtc_get_us(void){return us;}
 static void set_level(unsigned pin,unsigned value){assert(pin==50&&!high);dir=value;leg_index=0;}
-static void up(unsigned pin){assert(pin==19&&!head&&boost&&active&&!high);high=1;++pulses;position+=dir?1:-1;if(position<minimum)minimum=position;if(position>maximum)maximum=position;assert(position>=0&&position<=10472);}
+static void up(unsigned pin){assert(pin==19&&!head&&boost&&active&&!high);high=1;++pulses;position+=dir?1:-1;if(position<minimum)minimum=position;if(position>maximum)maximum=position;assert(position>=0&&position<=10660);}
 static void down(unsigned pin){assert(pin==19&&high);high=0;}
 #define SET_GPIO_LEVEL(p,v) set_level(p,v)
 #define SET_GPIO_HIGH(p) up(p)
@@ -45,13 +45,13 @@ static void bk_motor_set_state(unsigned m,unsigned on){assert(m==1&&!on&&!high);
 static void motor_all_power_down(void){assert(!high);boost=active=0;}
 #include "printer_service_travel_test.h"
 int main(int argc,char**argv){assert(argc==2);scenario=atoi(argv[1]);
-uint32_t sent=99;assert(real_service_leg(1,10473,&sent)==-1&&!sent);assert(real_service_leg(2,10,&sent)==-1);assert(real_service_leg(1,0,&sent)==-1);assert(real_service_leg(1,10,NULL)==-1);assert(!pulses);
+uint32_t sent=99;assert(real_service_leg(1,10661,&sent)==-1&&!sent);assert(real_service_leg(2,10,&sent)==-1);assert(real_service_leg(1,0,&sent)==-1);assert(real_service_leg(1,10,NULL)==-1);assert(!pulses);
 if(scenario==5){link=false;assert(printer_run_service_travel_test()==-7&&!off_calls&&!pulses);link=true;}
 int rc=printer_run_service_travel_test();assert(!boost&&!active&&!high);
 if(scenario==2){assert(rc==-8&&!pulses&&!calls);}
-else if(scenario==3||scenario==4){assert(rc==-9&&calls==1&&position==5236&&pulses==5236);}
-else{assert(!rc&&calls==1&&pulses==10472&&position==10472&&minimum==0&&maximum==10472);assert(us>7000000&&us<8500000);}
-unsigned old=pulses;assert(printer_run_service_travel_test()==-7&&pulses==old);puts("PASS: left-origin/right-only trajectory, exact one leg, 7.3s speed profile with exact symmetric ramp, head OFF, one-shot, no blind return, argument/link/OFF/partial-failure guards");}
+else if(scenario==3||scenario==4){assert(rc==-9&&calls==1&&position==5330&&pulses==5330);}
+else{assert(!rc&&calls==1&&pulses==10660&&position==10660&&minimum==0&&maximum==10660);assert(us>7000000&&us<8500000);}
+unsigned old=pulses;assert(printer_run_service_travel_test()==-7&&pulses==old);puts("PASS: left-origin/right-only trajectory, exact one leg, 7.4s speed profile with exact symmetric ramp, head OFF, one-shot, no blind return, argument/link/OFF/partial-failure guards");}
 '''.replace('\nLEG\n','\n'+leg+'\n')
 with tempfile.TemporaryDirectory() as tmp:
  p=Path(tmp);(p/'test.c').write_text(h)
