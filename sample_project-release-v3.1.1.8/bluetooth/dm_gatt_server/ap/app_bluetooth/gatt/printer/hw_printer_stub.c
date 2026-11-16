@@ -863,7 +863,13 @@ void standalone_carriage_blank_spi_test(void) {
 /* APP capture is fully validated before this function is entered. Same step
  * loop/power sequence as blank-SPI test, with selected cyan data and head ON.
  */
+#if PRINTER_SERVICE_PRINT
+#include "printer_service_print.h"
+#endif
 static int printer_execute_cyan_line(const uint8_t *columns) {
+#if PRINTER_SERVICE_PRINT
+    return printer_execute_service_line(columns);
+#endif
     int result = 0;
     s_blank_spi_columns = 0;
     s_blank_spi_steps[0] = s_blank_spi_steps[1] = 0;

@@ -7,9 +7,12 @@
 
 /* Verify 8mm service travel on each side, head OFF and no printing. */
 #ifndef PRINTER_SERVICE_TRAVEL_TEST
-#define PRINTER_SERVICE_TRAVEL_TEST 1
+#define PRINTER_SERVICE_TRAVEL_TEST 0
 #endif
-#if PRINTER_SERVICE_TRAVEL_TEST
+#ifndef PRINTER_SERVICE_PRINT
+#define PRINTER_SERVICE_PRINT 1
+#endif
+#if PRINTER_SERVICE_TRAVEL_TEST || PRINTER_SERVICE_PRINT
 #include "printer_service_geometry.h"
 #endif
 

@@ -342,6 +342,8 @@ static void app_printer_task_entry(void *arg) {
 #if PRINTER_SERVICE_TRAVEL_TEST
         os_printf("[SYS] CARRIAGE_SERVICE_LEFT_START_V4 origin=LEFT_SERVICE steps_right=%lu margin_each=%lu cruise_low_us=600 no_left_move no_return head_OFF no_fire no_feed\r\n",
                   (unsigned long)PRINTER_SERVICE_SPAN_STEPS,(unsigned long)PRINTER_SERVICE_MARGIN_STEPS);
+#elif PRINTER_SERVICE_PRINT
+        os_printf("[SYS] APP_SERVICE_BLACK_YELLOW_V1 margin_each=1496 print_steps=7480 span=10472 service_head_OFF black_then_yellow\r\n");
 #elif PRINTER_BLACK_PREFIX
         os_printf("[SYS] APP_BLACK_THEN_YELLOW_V1 one_CMY_black_then_actual_yellow no_repeat\r\n");
 #elif PRINTER_YELLOW_S1_REMAP
