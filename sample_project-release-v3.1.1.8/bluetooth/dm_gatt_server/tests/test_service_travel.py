@@ -1,0 +1,56 @@
+"""Actual bounded service pulse loop/controller: no head ON, firing, feed or drift."""
+from pathlib import Path
+import os,subprocess,tempfile
+D=Path(__file__).resolve().parents[1]/'ap/app_bluetooth/gatt/printer'
+s=(D/'motor_sdk_driver.c').read_text();leg=s[s.index('bk_err_t motor_carriage_service_leg('):]
+leg=leg.replace('bk_err_t motor_carriage_service_leg(','static bk_err_t real_service_leg(',1)
+h=r'''
+#include <assert.h>
+#include <stdbool.h>
+#include <stdint.h>
+#include <stdio.h>
+#include <stdlib.h>
+#define BK_OK 0
+#define BK_FAIL -1
+#define TPH_MOT_STEP 19
+#define TPH_MOT_DIR 50
+#define os_printf printf
+typedef int bk_err_t;
+#include "printer_service_geometry.h"
+static uint64_t us;
+static unsigned dir,high,boost,active,calls,pulses,off_calls,scenario;
+static int32_t position,minimum,maximum;
+static bool head=true,link=true;
+static uint64_t bk_aon_rtc_get_us(void){return us;}
+static void set_level(unsigned pin,unsigned value){assert(pin==50&&!high);dir=value;}
+static void up(unsigned pin){assert(pin==19&&!head&&boost&&active&&!high);high=1;++pulses;position+=dir?1:-1;if(position<minimum)minimum=position;if(position>maximum)maximum=position;assert(position>=-1870&&position<=9350);}
+static void down(unsigned pin){assert(pin==19&&high);high=0;}
+#define SET_GPIO_LEVEL(p,v) set_level(p,v)
+#define SET_GPIO_HIGH(p) up(p)
+#define SET_GPIO_LOW(p) down(p)
+static void delay_us(unsigned n){if(high)assert(n==4);else assert(n==50||(n>=1000&&n<=3000));us+=n;}
+static void rtos_delay_milliseconds(unsigned n){assert(!high&&(n==1||n==300));us+=(uint64_t)n*1000;}
+LEG
+static bk_err_t motor_carriage_service_leg(uint8_t d,uint32_t n,uint32_t*sent){++calls;if((scenario==3||scenario==4)&&calls==2){int rc=real_service_leg(d,n/2,sent);return scenario==4?-1:rc;}return real_service_leg(d,n,sent);}
+static bool printer_link_is_ready(void){return link;}
+static int tph_mcu_set_head_power(uint8_t on){assert(!on);++off_calls;if(scenario==2)return -1;head=false;return 0;}
+static void motor_carriage_test_power_up(void){assert(!head&&!boost&&!active);boost=active=1;}
+static void bk_motor_set_state(unsigned m,unsigned on){assert(m==1&&!on&&!high);active=0;}
+static void motor_all_power_down(void){assert(!high);boost=active=0;}
+#include "printer_service_travel_test.h"
+int main(int argc,char**argv){assert(argc==2);scenario=atoi(argv[1]);
+uint32_t sent=99;assert(real_service_leg(1,11221,&sent)==-1&&!sent);assert(real_service_leg(2,10,&sent)==-1);assert(real_service_leg(1,0,&sent)==-1);assert(real_service_leg(1,10,NULL)==-1);assert(!pulses);
+if(scenario==5){link=false;assert(printer_run_service_travel_test()==-7&&!off_calls&&!pulses);link=true;}
+int rc=printer_run_service_travel_test();assert(!boost&&!active&&!high);
+if(scenario==2){assert(rc==-8&&!pulses&&!calls);}
+else if(scenario==3||scenario==4){assert(rc==-9&&calls==2&&position==3740&&pulses==7480);}
+else{assert(!rc&&calls==4&&pulses==26180&&position==0&&minimum==-1870&&maximum==9350);assert(us>28000000&&us<33000000);}
+unsigned old=pulses;assert(printer_run_service_travel_test()==-7&&pulses==old);puts("PASS: relative endpoints, exact four legs, 30s slow bound, head OFF, one-shot, no blind return, argument/link/OFF/partial-failure guards");}
+'''.replace('\nLEG\n','\n'+leg+'\n')
+with tempfile.TemporaryDirectory() as tmp:
+ p=Path(tmp);(p/'test.c').write_text(h)
+ subprocess.run(['cc','-std=c99','-Wall','-Wextra','-Werror','-fsanitize=address,undefined','-I'+str(D),str(p/'test.c'),'-o',str(p/'test')],check=True)
+ for scenario in [0,2,3,4,5]:subprocess.run([str(p/'test'),str(scenario)],check=True,env={**os.environ,'ASAN_OPTIONS':'detect_leaks=0'})
+page=(D/'printer_page_job.h').read_text();entry=page[page.index('static int printer_run_full_page'):]
+assert entry.index('return printer_run_service_travel_test();')<entry.index('return printer_run_idle_ab')
+assert 'tph_fire' not in (D/'printer_service_travel_test.h').read_text()

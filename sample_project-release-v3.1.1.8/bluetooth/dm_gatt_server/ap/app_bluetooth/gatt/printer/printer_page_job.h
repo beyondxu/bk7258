@@ -1,3 +1,9 @@
+#ifndef PRINTER_SERVICE_TRAVEL_TEST
+#define PRINTER_SERVICE_TRAVEL_TEST 0
+#endif
+#if PRINTER_SERVICE_TRAVEL_TEST
+#include "printer_service_travel_test.h"
+#endif
 #ifndef PRINTER_BLACK_PREFIX
 #define PRINTER_BLACK_PREFIX 0
 #endif
@@ -45,6 +51,10 @@
 #endif
 /* Private hardware orchestrator. Included after verified shuttle helpers. */
 static int printer_run_full_page(const uint8_t *bin, uint32_t length) {
+#if PRINTER_SERVICE_TRAVEL_TEST
+    (void)bin; (void)length;
+    return printer_run_service_travel_test();
+#endif
 #if PRINTER_IDLE_AB && !PRINTER_APP_YELLOW_ONLY
     return printer_run_idle_ab(bin, length);
 #endif

@@ -2,7 +2,7 @@
 from pathlib import Path
 import subprocess,tempfile
 src=Path(__file__).resolve().parents[1]/'ap/app_bluetooth/gatt/printer/motor_sdk_driver.c'
-s=src.read_text();func=s[s.index('static bk_err_t motor_page_feed_impl'):]
+s=src.read_text();func=s[s.index('static bk_err_t motor_page_feed_impl'):s.index('/* Head-OFF service-travel diagnostic.')]
 assert 'rtos_disable_int' not in func and '__disable_irq' not in func
 h=r'''
 #include <assert.h>

@@ -89,5 +89,7 @@ void motor_carriage_return_home(uint32_t steps);
 void motor_all_power_down(void);
 
 
+bk_err_t motor_carriage_service_leg(uint8_t direction, uint32_t steps, uint32_t *sent);
+
 #endif // MOTOR_SDK_DRIVER_H
 

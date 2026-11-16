@@ -743,3 +743,26 @@ bk_err_t motor_page_feed(uint32_t steps, uint8_t direction, uint32_t *sent) {
 bk_err_t motor_page_feed_keep_power(uint32_t steps, uint8_t direction, uint32_t *sent) {
     return motor_page_feed_impl(steps, direction, sent, 0);
 }
+
+/* Head-OFF service-travel diagnostic. Explicit bounded geometry, no SPI. */
+#include "printer_service_geometry.h"
+bk_err_t motor_carriage_service_leg(uint8_t direction, uint32_t steps, uint32_t *sent) {
+    if (!sent) return BK_FAIL;
+    *sent=0;
+    if (direction>1U || !steps || steps>PRINTER_SERVICE_SPAN_STEPS) return BK_FAIL;
+    uint64_t started=bk_aon_rtc_get_us();
+    SET_GPIO_LEVEL(TPH_MOT_DIR,direction!=0);
+    delay_us(50);
+    for (uint32_t i=0;i<steps;++i) {
+        uint32_t edge=i<steps-1U-i ? i : steps-1U-i;
+        uint32_t low_us=edge<250U ? 3000U-2000U*edge/250U : 1000U;
+        SET_GPIO_HIGH(TPH_MOT_STEP);delay_us(4);
+        SET_GPIO_LOW(TPH_MOT_STEP);delay_us(low_us);
+        ++*sent;
+        if ((i&31U)==31U) rtos_delay_milliseconds(1);
+    }
+    printf("[SERVICE_LEG] dir=%u pulses=%lu/%lu elapsed_us=%lu physical_motion_unverified\r\n",
+           direction,(unsigned long)*sent,(unsigned long)steps,
+           (unsigned long)(bk_aon_rtc_get_us()-started));
+    return BK_OK;
+}
