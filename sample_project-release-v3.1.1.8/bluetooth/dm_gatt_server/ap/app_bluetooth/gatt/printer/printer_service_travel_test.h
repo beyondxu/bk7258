@@ -15,7 +15,10 @@ static int printer_run_service_travel_test(void) {
     }
     uint32_t sent=0;
     motor_carriage_test_power_up();
-    os_printf("[SERVICE_BEGIN] origin=LEFT_SERVICE zero=0 right=11220 legacy_start=1870 legacy_end=9350 head_OFF right_only=1 feed=0 no_homing\r\n");
+    os_printf("[SERVICE_BEGIN] origin=LEFT_SERVICE zero=0 right=%lu legacy_start=%lu legacy_end=%lu head_OFF right_only=1 feed=0 no_homing\r\n",
+              (unsigned long)PRINTER_SERVICE_SPAN_STEPS,
+              (unsigned long)PRINTER_SERVICE_MARGIN_STEPS,
+              (unsigned long)(PRINTER_SERVICE_MARGIN_STEPS+PRINTER_SERVICE_BASE_STEPS));
     int code=motor_carriage_service_leg(1U,PRINTER_SERVICE_SPAN_STEPS,&sent);
     int result=code==BK_OK && sent==PRINTER_SERVICE_SPAN_STEPS ? 0 : -9;
     os_printf("[SERVICE_POSITION] leg=1/1 relative_pulses=%lu result=%d measured_position_unverified\r\n",

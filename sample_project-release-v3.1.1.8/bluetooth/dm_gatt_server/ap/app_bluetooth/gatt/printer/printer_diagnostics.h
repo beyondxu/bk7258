@@ -5,9 +5,12 @@
 #define PRINTER_IDLE_AB 1 /* frozen-line OFF/ON versus held-power idle comparison */
 #endif
 
-/* Verify 10mm service travel on each side, head OFF and no printing. */
+/* Verify 8mm service travel on each side, head OFF and no printing. */
 #ifndef PRINTER_SERVICE_TRAVEL_TEST
 #define PRINTER_SERVICE_TRAVEL_TEST 1
+#endif
+#if PRINTER_SERVICE_TRAVEL_TEST
+#include "printer_service_geometry.h"
 #endif
 
 /* One CMY black line before the unchanged yellow page, no automatic repeats. */

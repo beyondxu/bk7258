@@ -1,16 +1,16 @@
-# V2: manual left-service origin, one rightward non-firing stroke
+# V3: manual left-service origin, one rightward non-firing stroke
 
-The user changed the requested origin after the initial four-leg trial. V2
-replaces that itinerary: start at the LEFT service position, move RIGHT11220
+The user changed the requested origin after the initial four-leg trial. V3
+replaces that itinerary: start at the LEFT service position, move RIGHT10472
 steps once, stop on the RIGHT, disable U4/boost. No initial left move, no reverse,
 no automatic return. The previous old-origin/four-leg instructions are obsolete.
 
 ## Geometry
 
-User calibration: old7480 steps is approximately40mm. Extra10mm each side is
-1870 steps, so endpoint span is11220 steps (~60mm). New coordinate0 is the LEFT
+User calibration: old7480 steps is approximately40mm. Extra8mm each side is
+1496 steps, so endpoint span is10472 steps (~56mm). New coordinate0 is the LEFT
 maintenance position, not the original print start. The legacy7480-step segment
-would be between coordinates1870 and9350. These are approximate counted offsets,
+would be between coordinates1496 and8976. These are approximate counted offsets,
 not calibrated paper edges or measured carriage positions.
 
 No home switch/encoder procedure exists in this path. Power OFF first and place
@@ -23,8 +23,8 @@ cannot detect actual lost steps, collision or correct mechanical contact.
 ## One target action
 
 Flash BK; leave HC32 unchanged. After placement and whole-machine startup,
-confirm CARRIAGE_SERVICE_LEFT_START_V2 and link ready=1. Send the usual APP image
-once. This triggers only one rightward stroke (~12seconds at the test speed).
+confirm CARRIAGE_SERVICE_LEFT_START_V3 and link ready=1. Send the usual APP image
+once. This triggers only one rightward stroke (~11seconds at the test speed).
 No paper feed, head-ON or firing-column calls occur anywhere. The head-OFF
 command must be acknowledged before boost/motion. A one-shot latch blocks an
 additional attempt until restart, including after a partial/error result.
@@ -48,8 +48,15 @@ verified. The normal print code remains in history and inactive in this dry run.
 ## Verification
 
 ASan/UBSan tests run the actual service loop/controller with a fake clock:
-exact11220 pulses, direction always1, monotonically0..11220, about12seconds,
+exact10472 pulses, direction always1, monotonically0..10472, about11seconds,
 head OFF before any motor edge, no feed/firing, bounded arguments, link/OFF
 failure blocking, partial/error stop without return, one-shot behavior. BK SDK
 source objects compile. Target-side distance, endpoints and mechanism operation
 remain to be confirmed before integrating any image or maintenance firing.
+
+V3 shrinks each extension by2mm at the user's request. Non-paper-end firing is
+explicitly deferred; this firmware remains head-OFF throughout. Source filename
+retains the original10mm trial name, while current constants/banner specify8mm.
+Place the start at the new8mm left-maintenance mark, about2mm to the right of the
+old10mm mark. With that origin, the far endpoint is also2mm inward. Merely keeping
+the old origin and shortening the stroke would not shrink both physical ends.
