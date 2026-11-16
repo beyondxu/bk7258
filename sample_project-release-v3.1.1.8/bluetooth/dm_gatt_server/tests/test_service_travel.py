@@ -20,18 +20,24 @@ typedef int bk_err_t;
 static uint64_t us;
 static unsigned dir,high,boost,active,calls,pulses,off_calls,scenario;
 static int32_t position,minimum,maximum;
+static unsigned leg_index,leg_steps;
 static bool head=true,link=true;
 static uint64_t bk_aon_rtc_get_us(void){return us;}
-static void set_level(unsigned pin,unsigned value){assert(pin==50&&!high);dir=value;}
+static void set_level(unsigned pin,unsigned value){assert(pin==50&&!high);dir=value;leg_index=0;}
 static void up(unsigned pin){assert(pin==19&&!head&&boost&&active&&!high);high=1;++pulses;position+=dir?1:-1;if(position<minimum)minimum=position;if(position>maximum)maximum=position;assert(position>=0&&position<=10472);}
 static void down(unsigned pin){assert(pin==19&&high);high=0;}
 #define SET_GPIO_LEVEL(p,v) set_level(p,v)
 #define SET_GPIO_HIGH(p) up(p)
 #define SET_GPIO_LOW(p) down(p)
-static void delay_us(unsigned n){if(high)assert(n==4);else assert(n==50||(n>=1000&&n<=3000));us+=n;}
+static void delay_us(unsigned n){
+ if(high)assert(n==4);
+ else if(n==50)assert(leg_index==0);
+ else{assert(leg_index<leg_steps);unsigned edge=leg_index<leg_steps-1-leg_index?leg_index:leg_steps-1-leg_index;unsigned expected=edge<250?3000-2400*edge/250:600;assert(n==expected);++leg_index;}
+ us+=n;
+}
 static void rtos_delay_milliseconds(unsigned n){assert(!high&&n==1);us+=(uint64_t)n*1000;}
 LEG
-static bk_err_t motor_carriage_service_leg(uint8_t d,uint32_t n,uint32_t*sent){assert(d==1);++calls;if((scenario==3||scenario==4)&&calls==1){int rc=real_service_leg(d,n/2,sent);return scenario==4?-1:rc;}return real_service_leg(d,n,sent);}
+static bk_err_t motor_carriage_service_leg(uint8_t d,uint32_t n,uint32_t*sent){assert(d==1);leg_steps=n;++calls;if((scenario==3||scenario==4)&&calls==1){leg_steps=n/2;int rc=real_service_leg(d,n/2,sent);return scenario==4?-1:rc;}return real_service_leg(d,n,sent);}
 static bool printer_link_is_ready(void){return link;}
 static int tph_mcu_set_head_power(uint8_t on){assert(!on);++off_calls;if(scenario==2)return -1;head=false;return 0;}
 static void motor_carriage_test_power_up(void){assert(!head&&!boost&&!active);boost=active=1;}
@@ -44,8 +50,8 @@ if(scenario==5){link=false;assert(printer_run_service_travel_test()==-7&&!off_ca
 int rc=printer_run_service_travel_test();assert(!boost&&!active&&!high);
 if(scenario==2){assert(rc==-8&&!pulses&&!calls);}
 else if(scenario==3||scenario==4){assert(rc==-9&&calls==1&&position==5236&&pulses==5236);}
-else{assert(!rc&&calls==1&&pulses==10472&&position==10472&&minimum==0&&maximum==10472);assert(us>10000000&&us<13000000);}
-unsigned old=pulses;assert(printer_run_service_travel_test()==-7&&pulses==old);puts("PASS: left-origin/right-only trajectory, exact one leg, 11s slow bound, head OFF, one-shot, no blind return, argument/link/OFF/partial-failure guards");}
+else{assert(!rc&&calls==1&&pulses==10472&&position==10472&&minimum==0&&maximum==10472);assert(us>7000000&&us<8500000);}
+unsigned old=pulses;assert(printer_run_service_travel_test()==-7&&pulses==old);puts("PASS: left-origin/right-only trajectory, exact one leg, 7.3s speed profile with exact symmetric ramp, head OFF, one-shot, no blind return, argument/link/OFF/partial-failure guards");}
 '''.replace('\nLEG\n','\n'+leg+'\n')
 with tempfile.TemporaryDirectory() as tmp:
  p=Path(tmp);(p/'test.c').write_text(h)

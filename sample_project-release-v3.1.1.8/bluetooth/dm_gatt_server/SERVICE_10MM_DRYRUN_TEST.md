@@ -1,6 +1,6 @@
-# V3: manual left-service origin, one rightward non-firing stroke
+# V4: manual left-service origin, one rightward non-firing stroke
 
-The user changed the requested origin after the initial four-leg trial. V3
+The user changed the requested origin after the initial four-leg trial. V4
 replaces that itinerary: start at the LEFT service position, move RIGHT10472
 steps once, stop on the RIGHT, disable U4/boost. No initial left move, no reverse,
 no automatic return. The previous old-origin/four-leg instructions are obsolete.
@@ -23,8 +23,8 @@ cannot detect actual lost steps, collision or correct mechanical contact.
 ## One target action
 
 Flash BK; leave HC32 unchanged. After placement and whole-machine startup,
-confirm CARRIAGE_SERVICE_LEFT_START_V3 and link ready=1. Send the usual APP image
-once. This triggers only one rightward stroke (~11seconds at the test speed).
+confirm CARRIAGE_SERVICE_LEFT_START_V4 and link ready=1. Send the usual APP image
+once. This triggers only one rightward stroke (~7.3seconds at the test speed).
 No paper feed, head-ON or firing-column calls occur anywhere. The head-OFF
 command must be acknowledged before boost/motion. A one-shot latch blocks an
 additional attempt until restart, including after a partial/error result.
@@ -48,7 +48,7 @@ verified. The normal print code remains in history and inactive in this dry run.
 ## Verification
 
 ASan/UBSan tests run the actual service loop/controller with a fake clock:
-exact10472 pulses, direction always1, monotonically0..10472, about11seconds,
+exact10472 pulses, direction always1, monotonically0..10472, about7.3seconds,
 head OFF before any motor edge, no feed/firing, bounded arguments, link/OFF
 failure blocking, partial/error stop without return, one-shot behavior. BK SDK
 source objects compile. Target-side distance, endpoints and mechanism operation
@@ -60,3 +60,11 @@ retains the original10mm trial name, while current constants/banner specify8mm.
 Place the start at the new8mm left-maintenance mark, about2mm to the right of the
 old10mm mark. With that origin, the far endpoint is also2mm inward. Merely keeping
 the old origin and shortening the stroke would not shrink both physical ends.
+
+V4 raises only the service-test cruise speed: STEP LOW1000us becomes600us.
+The initial/final LOW3000us and250-step symmetric ramps, HIGH4us,10472-step
+stroke and left-origin/right-only/one-shot behavior are unchanged. RTC-model
+runtime drops from11.34seconds to7.25seconds including task yields; hardware
+elapsed time remains a target-side measurement. Normal printing timing and
+head drive are unaffected. Stop and report binding/step loss before increasing
+speed further; physical arrival is still unverified by the pulse counter.

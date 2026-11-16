@@ -755,14 +755,16 @@ bk_err_t motor_carriage_service_leg(uint8_t direction, uint32_t steps, uint32_t 
     delay_us(50);
     for (uint32_t i=0;i<steps;++i) {
         uint32_t edge=i<steps-1U-i ? i : steps-1U-i;
-        uint32_t low_us=edge<250U ? 3000U-2000U*edge/250U : 1000U;
+        uint32_t low_us=edge<PRINTER_SERVICE_RAMP_STEPS
+            ? PRINTER_SERVICE_START_LOW_US-(PRINTER_SERVICE_START_LOW_US-PRINTER_SERVICE_CRUISE_LOW_US)*edge/PRINTER_SERVICE_RAMP_STEPS
+            : PRINTER_SERVICE_CRUISE_LOW_US;
         SET_GPIO_HIGH(TPH_MOT_STEP);delay_us(4);
         SET_GPIO_LOW(TPH_MOT_STEP);delay_us(low_us);
         ++*sent;
         if ((i&31U)==31U) rtos_delay_milliseconds(1);
     }
-    printf("[SERVICE_LEG] dir=%u pulses=%lu/%lu elapsed_us=%lu physical_motion_unverified\r\n",
+    printf("[SERVICE_LEG] dir=%u pulses=%lu/%lu elapsed_us=%lu cruise_low_us=%lu physical_motion_unverified\r\n",
            direction,(unsigned long)*sent,(unsigned long)steps,
-           (unsigned long)(bk_aon_rtc_get_us()-started));
+           (unsigned long)(bk_aon_rtc_get_us()-started),(unsigned long)PRINTER_SERVICE_CRUISE_LOW_US);
     return BK_OK;
 }
