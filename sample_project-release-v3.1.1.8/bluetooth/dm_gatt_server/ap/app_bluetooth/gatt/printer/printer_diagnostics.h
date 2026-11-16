@@ -7,7 +7,7 @@
 
 /* One CMY black line before the unchanged yellow page, no automatic repeats. */
 #ifndef PRINTER_BLACK_PREFIX
-#define PRINTER_BLACK_PREFIX 1
+#define PRINTER_BLACK_PREFIX 0 /* rollback: isolate reported all-blank regression */
 #endif
 
 /* Move only the known upper yellow band's S1 rows within the same section. */
