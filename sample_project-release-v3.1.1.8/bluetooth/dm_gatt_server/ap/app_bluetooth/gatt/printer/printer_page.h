@@ -31,6 +31,11 @@ int printer_page_render_band(const printer_page_t *page, uint32_t first_row, uin
                         uint8_t *columns, uint32_t column_bytes,
                         uint8_t *scratch, uint32_t scratch_bytes,
                         uint32_t dots[3], void (*yield_cpu)(void));
+/* Reverse scan: mirror source X and reverse domain delay compensation together. */
+int printer_page_render_band_reverse(const printer_page_t *page, uint32_t first_row, uint32_t rows,
+                        uint8_t *columns, uint32_t column_bytes,
+                        uint8_t *scratch, uint32_t scratch_bytes,
+                        uint32_t dots[3], void (*yield_cpu)(void));
 int printer_page_render(const printer_page_t *page, uint32_t swath,
                         uint8_t *columns, uint32_t column_bytes,
                         uint8_t *scratch, uint32_t scratch_bytes,

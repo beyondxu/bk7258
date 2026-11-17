@@ -98,6 +98,10 @@
 #define PRINTER_NOZZLE_CHECK 0 /* keep the 600-nozzle short-line test available */
 #endif
 
+/* Alternate actual print direction after each nonempty band. */
+#ifndef PRINTER_PAGE_BIDIRECTIONAL
+#define PRINTER_PAGE_BIDIRECTIONAL 1
+#endif
 /* Narrow-band experiment: 24 rows (~1.016mm) per paper advance.
  * PAGE_FEED_STEPS remains the calibration for192 rows, not for one narrow band.
  */
@@ -113,7 +117,7 @@
 #endif
 
 #ifndef PRINTER_PAGE_HEAD_SETTLE_MS
-#define PRINTER_PAGE_HEAD_SETTLE_MS 2000U /* powered idle, no columns before each diagnostic group */
+#define PRINTER_PAGE_HEAD_SETTLE_MS 0U /* powered idle, no columns before each diagnostic group */
 #endif
 #if PRINTER_PAGE_HEAD_SETTLE_MS != 0 && PRINTER_PAGE_HEAD_SETTLE_MS != 2000
 #error Page head settle comparison supports 0 or 2000 milliseconds

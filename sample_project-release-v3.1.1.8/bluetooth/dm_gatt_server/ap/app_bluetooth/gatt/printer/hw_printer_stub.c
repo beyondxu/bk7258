@@ -9,7 +9,7 @@
 #include "motor_sdk_driver.h"
 #include "printer_protocol.h"
 #include "printer_diagnostics.h"
-#if PRINTER_IDLE_AB
+#if PRINTER_IDLE_AB || PRINTER_PAGE_BIDIRECTIONAL
 #include <driver/aon_rtc.h>
 #endif
 #include "printer_audit_utils.h"
@@ -865,6 +865,9 @@ void standalone_carriage_blank_spi_test(void) {
  */
 #if PRINTER_SERVICE_PRINT
 #include "printer_service_print.h"
+#endif
+#if PRINTER_PAGE_BIDIRECTIONAL
+#include "printer_bidirectional_print.h"
 #endif
 static int printer_execute_cyan_line(const uint8_t *columns) {
 #if PRINTER_SERVICE_PRINT

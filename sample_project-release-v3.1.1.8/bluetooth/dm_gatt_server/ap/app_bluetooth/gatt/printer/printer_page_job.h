@@ -1,3 +1,6 @@
+#ifndef PRINTER_PAGE_BIDIRECTIONAL
+#define PRINTER_PAGE_BIDIRECTIONAL 0
+#endif
 #ifndef PRINTER_PAGE_BAND_ROWS
 #define PRINTER_PAGE_BAND_ROWS 192U
 #endif
@@ -57,6 +60,9 @@
 #endif
 #if PRINTER_PAGE_BAND_ROWS != 192 && (PRINTER_PAGE_ONLY_SWATH >= 0 || PRINTER_BLACK_PREFIX || PRINTER_YELLOW_S1_REMAP || PRINTER_PAGE_REPEAT_SAME_POWER)
 #error Narrow bands require full actual page without fixed-row or repeated-pass diagnostics
+#endif
+#if PRINTER_PAGE_BIDIRECTIONAL && (PRINTER_PAGE_COLOR_MODE != 1 || PRINTER_APP_YELLOW_ONLY || PRINTER_IDLE_AB || PRINTER_MAP_X_DIRECTION != -1)
+#error Bidirectional page requires actual combined CMY and the forward direction mapping
 #endif
 /* Private hardware orchestrator. Included after verified shuttle helpers. */
 static int printer_run_full_page(const uint8_t *bin, uint32_t length) {
@@ -153,9 +159,18 @@ static int printer_run_full_page(const uint8_t *bin, uint32_t length) {
     os_printf("[BLACK_PREFIX_END] code=%d ink_unverified\r\n", result);
     if (result) goto done;
 #endif
+#if PRINTER_PAGE_BIDIRECTIONAL
+    uint8_t scan_direction = 1U;
+#endif
     for (uint32_t strip = 0; strip < bands; ++strip) {
         if (PRINTER_PAGE_ONLY_SWATH >= 0 && strip != (uint32_t)PRINTER_PAGE_ONLY_SWATH) continue;
         uint32_t dots[3];
+#if PRINTER_PAGE_BIDIRECTIONAL
+        if (!scan_direction)
+            result = printer_page_render_band_reverse(&page, strip * PRINTER_PAGE_BAND_ROWS, PRINTER_PAGE_BAND_ROWS, columns,
+                                    PRINTER_PAGE_COLUMNS * 100U, scratch, page.width * 72U, dots, printer_map_yield_cpu);
+        else
+#endif
         result = printer_page_render_band(&page, strip * PRINTER_PAGE_BAND_ROWS, PRINTER_PAGE_BAND_ROWS, columns, PRINTER_PAGE_COLUMNS * 100U,
                                     scratch, page.width * 72U, dots, printer_map_yield_cpu);
         if (result) goto done;
@@ -187,7 +202,10 @@ static int printer_run_full_page(const uint8_t *bin, uint32_t length) {
             os_printf("[PAGE_PASS] swath=%lu group=%u/%u mask=%u dots=%lu no_feed_between_passes\r\n",
                       (unsigned long)(strip + 1U), group + 1U, groups, mask, (unsigned long)pass_dots);
             failure_locked = true;
-#if PRINTER_PAGE_REPEAT_SAME_POWER
+#if PRINTER_PAGE_BIDIRECTIONAL
+            result = printer_execute_bidirectional_line(data, scan_direction);
+            if (!result) scan_direction ^= 1U;
+#elif PRINTER_PAGE_REPEAT_SAME_POWER
             result = printer_execute_same_power_repeat(data);
 #else
             result = printer_execute_cyan_line(data);
@@ -207,6 +225,10 @@ static int printer_run_full_page(const uint8_t *bin, uint32_t length) {
             if (result != BK_OK || sent != feed_steps) { result = -10; goto done; }
         }
     }
+#if PRINTER_PAGE_BIDIRECTIONAL
+    result = printer_bidirectional_finish();
+    if (result) goto done;
+#endif
     failure_locked = false;
 #if PRINTER_PAGE_REPEAT_SAME_POWER
     os_printf("[PAGE_REPEAT_DONE] copies=2 feeds=1 head_sessions=1 ink_unverified\r\n");

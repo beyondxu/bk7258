@@ -80,28 +80,43 @@ done:
     if (result) printer_page_release(page, release);
     return result;
 }
-int printer_page_render_band(const printer_page_t *page, uint32_t first_row, uint32_t rows,
+static int render_band(const printer_page_t *page, uint32_t first_row, uint32_t rows, unsigned reverse,
                         uint8_t *columns, uint32_t column_bytes,
                         uint8_t *scratch, uint32_t scratch_bytes,
                         uint32_t dots[3], void (*yield_cpu)(void)) {
     if (!page || !page->planes || !page->width || !columns || !scratch || !dots || first_row >= page->height || !rows || rows > 192U ||
         column_bytes < PRINTER_PAGE_COLUMNS * 100U || scratch_bytes < page->width * 72U) return -1;
+    printer_map_config_t cfg = page->cfg;
+    if (reverse) cfg.x_direction = -cfg.x_direction;
     memset(scratch, 0, page->width * 72U); memset(dots, 0, 3U * sizeof(*dots));
     for (uint32_t ch = 0; ch < 3; ++ch) for (uint32_t x = 0; x < page->width; ++x) {
         const uint8_t *p = page->planes + ch * page->width * page->stride + x * page->stride;
         for (uint32_t row = 0; row < rows; ++row) {
             uint32_t y = first_row + row;
             if (y < page->height && bit(p, y)) {
-                scratch[ch * page->width * 24U + x * 24U + row / 8U] |= (uint8_t)(0x80U >> (row % 8U));
+                scratch[ch * page->width * 24U + (reverse ? page->width - 1U - x : x) * 24U + row / 8U] |= (uint8_t)(0x80U >> (row % 8U));
                 ++dots[ch];
             }
         }
     }
     for (uint32_t x = 0; x < PRINTER_PAGE_COLUMNS; ++x) {
-        if (printer_map_column(scratch, page->width, x, &page->cfg, columns + x * 100U)) return -1;
+        if (printer_map_column(scratch, page->width, x, &cfg, columns + x * 100U)) return -1;
         if (yield_cpu && (x & 31U) == 0U) yield_cpu();
     }
     return 0;
+}
+
+int printer_page_render_band(const printer_page_t *page, uint32_t first_row, uint32_t rows,
+                        uint8_t *columns, uint32_t column_bytes,
+                        uint8_t *scratch, uint32_t scratch_bytes,
+                        uint32_t dots[3], void (*yield_cpu)(void)) {
+    return render_band(page,first_row,rows,0U,columns,column_bytes,scratch,scratch_bytes,dots,yield_cpu);
+}
+int printer_page_render_band_reverse(const printer_page_t *page, uint32_t first_row, uint32_t rows,
+                        uint8_t *columns, uint32_t column_bytes,
+                        uint8_t *scratch, uint32_t scratch_bytes,
+                        uint32_t dots[3], void (*yield_cpu)(void)) {
+    return render_band(page,first_row,rows,1U,columns,column_bytes,scratch,scratch_bytes,dots,yield_cpu);
 }
 
 int printer_page_render(const printer_page_t *page, uint32_t swath,

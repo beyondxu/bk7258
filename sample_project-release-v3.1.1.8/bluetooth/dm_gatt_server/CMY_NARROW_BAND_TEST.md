@@ -1,3 +1,6 @@
+> Historical single-direction comparison. Active firmware now uses fast alternating
+> directions; see CMY_BIDIRECTIONAL_TEST.md. Band/feed details below still apply.
+
 # CMY narrow-band comparison
 
 Video of the sample printer shows frequent traversals and paper advances, but
