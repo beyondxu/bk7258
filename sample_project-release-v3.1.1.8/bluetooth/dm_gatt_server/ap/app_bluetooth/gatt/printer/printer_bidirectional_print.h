@@ -7,7 +7,7 @@ static uint32_t s_bidi_max_column_us, s_bidi_long_column_waits;
 static int s_bidi_move_error;
 static uint64_t s_bidi_column_us;
 #define PRINTER_BIDI_START_LOW_US 1000U
-#define PRINTER_BIDI_CRUISE_LOW_US 260U
+#define PRINTER_BIDI_CRUISE_LOW_US 230U
 #define PRINTER_BIDI_RAMP_STEPS 250U
 static void printer_bidirectional_abort(void) {
     if (!s_bidi_power) return; /* preflight failure must not move/enable hardware */

@@ -1,3 +1,13 @@
+> Active V6: the user reports V5 jumping/noise is much improved and requested
+> a modest speed increase. Cruise LOW260us becomes230us; HIGH4us, start LOW1000us,
+> outer250-step ramps, fixed pulse delays and no catch-up remain. Startup marker
+> APP_SERVICE_CMY_BIDI_V6. The baseline V5 analysis below is retained for context.
+> Nominal cruise step rate rises from1/264us to1/234us (~12.8%); actual image
+> traverse gain is smaller due to unchanged synchronous SPI/HC32 waits. This does
+> not alter ink pulse width, voltage, image point count, feed or service geometry.
+> The updated tests check exact230us LOWs/ramps and the same adversarial waits.
+> Hardware smoothness at the new speed still needs one target observation.
+
 # Fixed STEP delay comparison after V4 carriage jumping
 
 The user reports jumping and abnormal sound. V4's target log has blank passes
