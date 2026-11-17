@@ -42,7 +42,7 @@ static bool printer_link_is_ready(void){return true;}
 static uint64_t bk_aon_rtc_get_us(void){return mode==6?(us/32U)*32U:us;}
 static void up(unsigned pin){
  if(pin==50){assert(!step);dir=1;leg_index=0;return;}
- assert(pin==19&&!step&&boost);if(leg_index)assert(us-last_pulse_fall>=230U);++leg_index;step=1;
+ assert(pin==19&&!step&&boost);if(leg_index)assert(us-last_pulse_fall>=(dir?230U:260U));++leg_index;step=1;
  if(head)assert(pos>=1964&&pos<=9444);
  pos+=dir?1:-1;assert(pos>=0&&pos<=11408);
 }
@@ -52,7 +52,7 @@ static void down(unsigned pin){if(pin==50){assert(!step);dir=0;leg_index=0;retur
 static void delay_us(unsigned n){
  if(step)assert(n==4);
  else if(n==50)assert(leg_index==0);
- else {assert(leg_index);unsigned i=leg_index-1U,edge=i<11407U-i?i:11407U-i;unsigned low=edge<250U?1000U-770U*edge/250U:230U;assert(n==low);}
+ else {assert(leg_index);unsigned i=leg_index-1U,edge=i<11407U-i?i:11407U-i;unsigned ramp=dir?250U:400U,start=dir?1000U:1200U,cruise=dir?230U:260U;unsigned low=edge<ramp?start-(start-cruise)*edge/ramp:cruise;assert(n==low);}
  us+=n;
 }
 /* No explicit task sleep is allowed in the pulse loop. */
@@ -77,7 +77,7 @@ static int tph_fire_raw_column_bytes(const uint8_t*p){
   unsigned x=(400U+ch)*1119U/1180U+route.delay_columns;
   if(x==physical_col)expected[route.slot]|=route.mask;
  }
- if(s_blank_spi_columns)assert(us-last_column_start==6U*234U+last_tx_us);
+ if(s_blank_spi_columns)assert(us-last_column_start==6U*(dir?234U:264U)+last_tx_us);
  last_column_start=us;
  assert(!memcmp(p,expected,100)); /* physical alignment, not merely reverse bytes */
  if(mode==1&&spi_count==10)return -1;

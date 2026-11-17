@@ -9,6 +9,9 @@ static uint64_t s_bidi_column_us;
 #define PRINTER_BIDI_START_LOW_US 1000U
 #define PRINTER_BIDI_CRUISE_LOW_US 230U
 #define PRINTER_BIDI_RAMP_STEPS 250U
+#define PRINTER_BIDI_REVERSE_START_LOW_US 1200U
+#define PRINTER_BIDI_REVERSE_CRUISE_LOW_US 260U
+#define PRINTER_BIDI_REVERSE_RAMP_STEPS 400U
 static void printer_bidirectional_abort(void) {
     if (!s_bidi_power) return; /* preflight failure must not move/enable hardware */
     s_bidi_known=false;
@@ -31,6 +34,9 @@ static bool printer_bidi_move(uint8_t direction,const uint8_t *columns) {
     if (direction) GPIO_UP(TPH_MOT_DIR);else GPIO_DOWN(TPH_MOT_DIR);
     delay_us(50);
     s_bidi_move_error=-9;
+    const uint32_t start_low=direction?PRINTER_BIDI_START_LOW_US:PRINTER_BIDI_REVERSE_START_LOW_US;
+    const uint32_t cruise_low=direction?PRINTER_BIDI_CRUISE_LOW_US:PRINTER_BIDI_REVERSE_CRUISE_LOW_US;
+    const uint32_t ramp=direction?PRINTER_BIDI_RAMP_STEPS:PRINTER_BIDI_REVERSE_RAMP_STEPS;
     const uint32_t lead=PRINTER_SERVICE_MARGIN_STEPS+(direction?200U:206U);
     const uint32_t image_end=PRINTER_SERVICE_MARGIN_STEPS+PRINTER_SERVICE_BASE_STEPS;
     for (uint32_t i=0;i<PRINTER_SERVICE_SPAN_STEPS;++i) {
@@ -46,9 +52,7 @@ static bool printer_bidi_move(uint8_t direction,const uint8_t *columns) {
             ++s_blank_spi_columns;
         }
         uint32_t edge=i<PRINTER_SERVICE_SPAN_STEPS-1U-i?i:PRINTER_SERVICE_SPAN_STEPS-1U-i;
-        uint32_t low=edge<PRINTER_BIDI_RAMP_STEPS
-            ? PRINTER_BIDI_START_LOW_US-(PRINTER_BIDI_START_LOW_US-PRINTER_BIDI_CRUISE_LOW_US)*edge/PRINTER_BIDI_RAMP_STEPS
-            : PRINTER_BIDI_CRUISE_LOW_US;
+        uint32_t low=edge<ramp?start_low-(start_low-cruise_low)*edge/ramp:cruise_low;
         GPIO_UP(TPH_MOT_STEP);delay_us(4);GPIO_DOWN(TPH_MOT_STEP);delay_us(low);
         ++s_blank_spi_steps[direction?1:0];
     }

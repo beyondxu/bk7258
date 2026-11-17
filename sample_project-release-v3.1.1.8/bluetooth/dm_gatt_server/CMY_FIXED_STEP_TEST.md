@@ -1,3 +1,11 @@
+> Active V7: the user reports residual noise specifically on leftward return.
+> Keep RIGHT LOW230us, start1000us and250-step ramps. Use LEFT LOW260us,
+> start1200us and400-step outer ramps, including the final head-OFF park.
+> Both ramps remain within1964-step margins. Startup APP_SERVICE_CMY_BIDI_V7.
+> Pixel/nozzle routes, column count, feed, geometry and HC32 energy are unchanged.
+> Direction-specific pulse/ramp and physical-column tests pass; actual sound and
+> reverse print registration must be observed. Earlier V6/V5 notes follow.
+
 > Active V6: the user reports V5 jumping/noise is much improved and requested
 > a modest speed increase. Cruise LOW260us becomes230us; HIGH4us, start LOW1000us,
 > outer250-step ramps, fixed pulse delays and no catch-up remain. Startup marker
