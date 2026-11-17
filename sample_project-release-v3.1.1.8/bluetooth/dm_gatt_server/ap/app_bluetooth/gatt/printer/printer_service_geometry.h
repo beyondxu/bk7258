@@ -1,11 +1,12 @@
 #ifndef PRINTER_SERVICE_GEOMETRY_H
 #define PRINTER_SERVICE_GEOMETRY_H
 /* User measured the old 7480-step stroke as approximately 40mm.
- * Previous 8mm margin: 1496 steps. Add round(7480 * 0.5 / 40) = 94
- * steps per side: 1590 steps (~8.5mm). Still an open-loop estimate.
+ * Add 2mm per side to the prior 1590-step (~8.5mm) margin:
+ * 1590 + round(7480 * 2 / 40) = 1964 steps (~10.5mm).
+ * These distances remain open-loop estimates, not measured end positions.
  */
 #define PRINTER_SERVICE_BASE_STEPS 7480U
-#define PRINTER_SERVICE_MARGIN_STEPS 1590U
+#define PRINTER_SERVICE_MARGIN_STEPS 1964U
 #define PRINTER_SERVICE_SPAN_STEPS (PRINTER_SERVICE_BASE_STEPS+2U*PRINTER_SERVICE_MARGIN_STEPS)
 /* Only the head-OFF service trial uses these speed parameters. */
 #define PRINTER_SERVICE_START_LOW_US 3000U
