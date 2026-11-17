@@ -192,7 +192,9 @@ static int printer_run_full_page(const uint8_t *bin, uint32_t length) {
             unsigned mask = PRINTER_APP_YELLOW_ONLY ? 4U : groups == 1 ? 7U : group == 0 ? 1U : 6U;
             uint32_t pass_dots = 0;
             for (unsigned ch = 0; ch < 3; ++ch) if (mask & (1U << ch)) pass_dots += dots[ch];
+#if !PRINTER_PAGE_BIDIRECTIONAL
             if (!pass_dots) continue;
+#endif
             const uint8_t *data = columns;
             if (groups == 2) {
                 result = printer_page_color_columns(columns, pass_columns, PRINTER_PAGE_COLUMNS * 100U, mask);
@@ -203,7 +205,7 @@ static int printer_run_full_page(const uint8_t *bin, uint32_t length) {
                       (unsigned long)(strip + 1U), group + 1U, groups, mask, (unsigned long)pass_dots);
             failure_locked = true;
 #if PRINTER_PAGE_BIDIRECTIONAL
-            result = printer_execute_bidirectional_line(data, scan_direction);
+            result = printer_execute_bidirectional_line(pass_dots ? data : NULL, scan_direction);
             if (!result) scan_direction ^= 1U;
 #elif PRINTER_PAGE_REPEAT_SAME_POWER
             result = printer_execute_same_power_repeat(data);
@@ -219,7 +221,11 @@ static int printer_run_full_page(const uint8_t *bin, uint32_t length) {
             /* Difference of cumulative floors prevents rounding drift at small feeds. */
             const uint32_t feed_steps = (uint32_t)(((uint64_t)(strip + 1U) * PRINTER_PAGE_BAND_ROWS * PRINTER_PAGE_FEED_STEPS) / 192U
                                       - ((uint64_t)strip * PRINTER_PAGE_BAND_ROWS * PRINTER_PAGE_FEED_STEPS) / 192U);
+#if PRINTER_PAGE_BIDIRECTIONAL
+            result = printer_bidirectional_feed(feed_steps, PRINTER_PAGE_FEED_DIRECTION, &sent);
+#else
             result = motor_page_feed(feed_steps, PRINTER_PAGE_FEED_DIRECTION, &sent);
+#endif
             os_printf("[PAGE_FEED] after=%lu pulses=%lu/%u result=%d distance_unverified\r\n",
                       (unsigned long)(strip + 1U), (unsigned long)sent, (unsigned)feed_steps, result);
             if (result != BK_OK || sent != feed_steps) { result = -10; goto done; }
@@ -238,6 +244,9 @@ static int printer_run_full_page(const uint8_t *bin, uint32_t length) {
     else os_printf("[PAGE_DONE] swaths=%lu no_auto_eject feed_distance_and_ink_unverified\r\n", (unsigned long)bands);
 #endif
 done:
+#if PRINTER_PAGE_BIDIRECTIONAL
+    if (result) printer_bidirectional_abort();
+#endif
 #if PRINTER_BLACK_PREFIX
     if (black_columns) printer_map_psram_free(black_columns);
 #endif

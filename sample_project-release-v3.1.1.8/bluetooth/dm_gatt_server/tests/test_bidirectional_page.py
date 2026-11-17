@@ -29,11 +29,11 @@ h=r'''
 #define TPH_MOT_STEP 19
 #define os_printf printf
 static uint32_t s_blank_spi_columns,s_blank_spi_steps[2];
-static uint64_t us;
+static uint64_t us,last_column_start;
 static int32_t pos;
 static unsigned dir,step,head,boost,commands,scans,feed_count,spi_count,mode;
 static unsigned expected_band, expected_bands=42;
-static unsigned live;
+static unsigned live,powerups,powerdowns;
 static void*printer_map_psram_alloc(size_t n){void*p=malloc(n);if(p)++live;return p;}
 static void printer_map_psram_free(void*p){if(p){assert(live);--live;free(p);}}
 static void printer_map_yield_cpu(void){}
@@ -48,10 +48,11 @@ static void up(unsigned pin){
 static void down(unsigned pin){if(pin==50){assert(!step);dir=0;return;}assert(pin==19&&step);step=0;}
 #define GPIO_UP(p) up(p)
 #define GPIO_DOWN(p) down(p)
-static void delay_us(unsigned n){if(step)assert(n==4);else assert(n>=50&&n<=1000);us+=n;}
+static void delay_us(unsigned n){if(step)assert(n==4);else assert(n>=1&&n<=1000);us+=n;}
 static void rtos_delay_milliseconds(unsigned n){assert(!step&&!head&&n==1);us+=n*1000U;}
-static void carriage_verified_power_up(void){assert(!head&&!step&&!boost);boost=1;us+=75000;}
-static void carriage_verified_power_down(void){assert(!head&&!step);boost=0;}
+static void carriage_verified_power_up(void){assert(!head&&!step&&!boost);boost=1;++powerups;us+=75000;}
+static void carriage_wake_on_powered_rail(void){assert(!head&&!step&&boost);us+=15000;}
+static void carriage_verified_power_down(void){assert(!head&&!step);boost=0;++powerdowns;}
 static int tph_mcu_set_head_power(uint8_t on){
  ++commands;
  if((mode==2&&commands==2)||(mode==3&&commands==3))return -1;
@@ -70,10 +71,13 @@ static int tph_fire_raw_column_bytes(const uint8_t*p){
   unsigned x=(400U+ch)*1119U/1180U+route.delay_columns;
   if(x==physical_col)expected[route.slot]|=route.mask;
  }
+ if(s_blank_spi_columns)assert(us-last_column_start==1020U);
+ last_column_start=us;
  assert(!memcmp(p,expected,100)); /* physical alignment, not merely reverse bytes */
  if(mode==1&&spi_count==10)return -1;
  ++spi_count;us+=350;return 0;
 }
+static int motor_page_feed_fast_keep_power(uint32_t,uint8_t,uint32_t*);
 #include "printer_bidirectional_print.h"
 /* Inspect full motion BEFORE the real page controller can proceed to feed. */
 static int execute_scan(const uint8_t*p,uint8_t direction){
@@ -81,12 +85,12 @@ static int execute_scan(const uint8_t*p,uint8_t direction){
  uint64_t start=us;
  assert(direction==((scans%expected_bands)%2==0?1:0));
  int rc=printer_execute_bidirectional_line(p,direction);
- if(!rc){assert(spi_count-start_spi==1180);assert(pos==(direction?11408:0));assert(us-start<2500000);++scans;}
+ if(!rc){assert(spi_count-start_spi==(p?1180U:0U));assert(boost);assert(pos==(direction?11408:0));assert(us-start<2500000);++scans;}
  return rc;
 }
 #define printer_execute_bidirectional_line execute_scan
-static int motor_page_feed(uint32_t steps,uint8_t direction,uint32_t*sent){
- assert(!head&&!step&&!boost&&direction==0);
+static int motor_page_feed_fast_keep_power(uint32_t steps,uint8_t direction,uint32_t*sent){
+ assert(!head&&!step&&boost&&direction==0);
  unsigned i=feed_count%41;
  assert(steps==((i+1)*3170U)/8U-(i*3170U)/8U);
  if(mode==4){*sent=10;return -1;}
@@ -96,7 +100,7 @@ static int motor_page_feed(uint32_t steps,uint8_t direction,uint32_t*sent){
 int main(int argc,char**argv){
  assert(argc==3);mode=atoi(argv[2]);FILE*f=fopen(argv[1],"rb");assert(f);fseek(f,0,SEEK_END);long n=ftell(f);rewind(f);uint8_t*b=malloc(n);assert(fread(b,1,n,f)==(size_t)n);fclose(f);
  int rc=printer_run_full_page(b,n);assert(!live&&!head&&!boost&&!step);
- if(!mode||mode==5){if(mode==5)expected_bands=3;assert(!rc&&scans==expected_bands&&feed_count==41&&pos==0);expected_band=0;assert(!printer_run_full_page(b,n));assert(scans==2*expected_bands&&feed_count==82&&pos==0);
+ if(!mode||mode==5){assert(!rc&&scans==expected_bands&&feed_count==41&&pos==0&&powerups==1&&powerdowns==1);expected_band=0;assert(!printer_run_full_page(b,n));assert(scans==2*expected_bands&&feed_count==82&&pos==0&&powerups==2&&powerdowns==2);
  /* Odd number of scans: the final park is one head-OFF move, zero image calls. */
  printer_map_config_t cfg={3000,-1,0,0};printer_page_t page;
  assert(!printer_page_prepare(b,n,&cfg,&page,printer_map_psram_alloc,printer_map_psram_free,printer_map_yield_cpu));

@@ -746,6 +746,31 @@ bk_err_t motor_page_feed_keep_power(uint32_t steps, uint8_t direction, uint32_t 
 
 /* Head-OFF service-travel diagnostic. Explicit bounded geometry, no SPI. */
 #include "printer_service_geometry.h"
+/* Bounded small-band feed while the page owns an already settled boost.
+ * U4 is disabled at its counted endpoint. No GPIO reclaim or boost cycling. */
+bk_err_t motor_page_feed_fast_keep_power(uint32_t steps, uint8_t direction, uint32_t *sent) {
+    if (!sent) return BK_FAIL;
+    *sent=0;
+    if (!steps || steps>500U || direction>1U) return BK_FAIL;
+    bk_motor_set_state(1,0);
+    SET_GPIO_HIGH(PAPER_MOT_MS1); SET_GPIO_HIGH(PAPER_MOT_MS2); SET_GPIO_HIGH(PAPER_MOT_MS3);
+    SET_GPIO_HIGH(PAPER_MOT_SLEEP); rtos_delay_milliseconds(5);
+    SET_GPIO_HIGH(PAPER_MOT_RES); SET_GPIO_LOW(PAPER_MOT_EN);
+    rtos_delay_milliseconds(10);
+    SET_GPIO_LEVEL(PAPER_MOT_DIR,direction);
+    bk_delay_us(50);
+    for (uint32_t i=0;i<steps;++i) {
+        uint32_t edge=i<steps-1U-i?i:steps-1U-i;
+        uint32_t low=edge<64U?800U-400U*edge/64U:400U;
+        SET_GPIO_HIGH(PAPER_MOT_STEP); bk_delay_us(4);
+        SET_GPIO_LOW(PAPER_MOT_STEP); bk_delay_us(low);
+        ++*sent;
+        if ((i&31U)==31U) rtos_delay_milliseconds(1);
+    }
+    bk_motor_set_state(0,0);
+    return BK_OK;
+}
+
 bk_err_t motor_carriage_service_leg(uint8_t direction, uint32_t steps, uint32_t *sent) {
     if (!sent) return BK_FAIL;
     *sent=0;

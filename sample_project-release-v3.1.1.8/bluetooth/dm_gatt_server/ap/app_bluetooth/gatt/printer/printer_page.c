@@ -88,20 +88,27 @@ static int render_band(const printer_page_t *page, uint32_t first_row, uint32_t 
         column_bytes < PRINTER_PAGE_COLUMNS * 100U || scratch_bytes < page->width * 72U) return -1;
     printer_map_config_t cfg = page->cfg;
     if (reverse) cfg.x_direction = -cfg.x_direction;
-    memset(scratch, 0, page->width * 72U); memset(dots, 0, 3U * sizeof(*dots));
-    for (uint32_t ch = 0; ch < 3; ++ch) for (uint32_t x = 0; x < page->width; ++x) {
-        const uint8_t *p = page->planes + ch * page->width * page->stride + x * page->stride;
-        for (uint32_t row = 0; row < rows; ++row) {
-            uint32_t y = first_row + row;
-            if (y < page->height && bit(p, y)) {
-                scratch[ch * page->width * 24U + (reverse ? page->width - 1U - x : x) * 24U + row / 8U] |= (uint8_t)(0x80U >> (row % 8U));
+    /* Scatter only the requested rows instead of visiting192 rows for every
+     * output column. Route validation completes before mutating the output. */
+    for (uint32_t ch=0;ch<3;++ch) for (uint32_t row=0;row<rows;++row) {
+        printer_map_route_t route;
+        if (printer_map_route(ch,row,&cfg,&route) || page->width+route.delay_columns>PRINTER_PAGE_COLUMNS) return -1;
+    }
+    memset(columns,0,PRINTER_PAGE_COLUMNS*100U); memset(dots,0,3U*sizeof(*dots));
+    for (uint32_t ch=0;ch<3;++ch) for (uint32_t row=0;row<rows;++row) {
+        uint32_t y=first_row+row;
+        if (y>=page->height) continue;
+        printer_map_route_t route;
+        if (printer_map_route(ch,row,&cfg,&route)) return -1;
+        for (uint32_t x=0;x<page->width;++x) {
+            const uint8_t *p=page->planes+ch*page->width*page->stride+x*page->stride;
+            if (bit(p,y)) {
+                uint32_t dx=(reverse?page->width-1U-x:x)+route.delay_columns;
+                columns[dx*100U+route.slot]|=(uint8_t)route.mask;
                 ++dots[ch];
             }
         }
-    }
-    for (uint32_t x = 0; x < PRINTER_PAGE_COLUMNS; ++x) {
-        if (printer_map_column(scratch, page->width, x, &cfg, columns + x * 100U)) return -1;
-        if (yield_cpu && (x & 31U) == 0U) yield_cpu();
+        if (yield_cpu && (row&7U)==7U) yield_cpu();
     }
     return 0;
 }

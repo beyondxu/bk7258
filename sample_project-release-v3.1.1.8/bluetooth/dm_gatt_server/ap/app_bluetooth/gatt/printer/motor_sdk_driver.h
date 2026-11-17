@@ -72,6 +72,8 @@ bk_err_t bk_motor_move_run(uint8_t is_tph_motor, uint32_t steps, uint8_t directi
 void motor_all_power_up_and_enable(void);
 bk_err_t motor_page_feed(uint32_t steps, uint8_t direction, uint32_t *sent);
 /* Caller owns an already enabled boost; never toggles it. */
+/* Small-band feed, at most500 pulses; caller owns settled boost. */
+bk_err_t motor_page_feed_fast_keep_power(uint32_t steps, uint8_t direction, uint32_t *sent);
 bk_err_t motor_page_feed_keep_power(uint32_t steps, uint8_t direction, uint32_t *sent);
 void motor_carriage_test_power_up(void);
 bk_err_t motor_carriage_test_leg(uint8_t direction, uint32_t steps, uint32_t *sent);

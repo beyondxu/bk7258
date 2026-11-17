@@ -1,82 +1,116 @@
 #ifndef PRINTER_BIDIRECTIONAL_PRINT_H
 #define PRINTER_BIDIRECTIONAL_PRINT_H
 #include "printer_service_geometry.h"
-/* Counted endpoints only: motor/ink feedback is not available. A partial move
- * invalidates position and never triggers a blind return. */
-static bool s_bidi_right = false, s_bidi_known = true;
-static uint32_t s_bidi_max_column_us;
+/* A page owns the settled boost. Counted endpoints are not encoder feedback. */
+static bool s_bidi_right=false, s_bidi_known=true, s_bidi_power=false;
+static uint32_t s_bidi_max_column_us, s_bidi_step_overruns;
+static int s_bidi_move_error;
 static uint64_t s_bidi_column_us;
-#define PRINTER_BIDI_START_LOW_US 1000U
-#define PRINTER_BIDI_CRUISE_LOW_US 80U
+#define PRINTER_BIDI_START_PERIOD_US 600U
+#define PRINTER_BIDI_CRUISE_PERIOD_US 170U
 #define PRINTER_BIDI_RAMP_STEPS 250U
-static bool printer_bidi_move(uint8_t direction, uint32_t steps, const uint8_t *columns) {
-    if (direction) GPIO_UP(TPH_MOT_DIR); else GPIO_DOWN(TPH_MOT_DIR);
+static void printer_bidirectional_abort(void) {
+    if (!s_bidi_power) return; /* preflight failure must not move/enable hardware */
+    s_bidi_known=false;
+    (void)tph_mcu_set_head_power(0);
+    carriage_verified_power_down();
+    s_bidi_power=false;
+}
+static int printer_bidi_power_up(void) {
+    if (s_bidi_power) {carriage_wake_on_powered_rail();return 0;}
+    if (tph_mcu_set_head_power(0)!=BK_OK) return -8;
+    carriage_verified_power_up();
+    s_bidi_power=true;
+    return 0;
+}
+/* One full stroke: acceleration only at the two OUTER endpoints, with no
+ * artificial ramp/stop between maintenance and image segments. A 170us step
+ * average budget includes synchronous SPI across six steps. On an overrun, slow
+ * down locally; never issue catch-up bursts or omit a required READY wait. */
+static bool printer_bidi_move(uint8_t direction,const uint8_t *columns) {
+    uint64_t column_group_start=0;
+    if (direction) GPIO_UP(TPH_MOT_DIR);else GPIO_DOWN(TPH_MOT_DIR);
     delay_us(50);
-    /* Forward fires before edges at200+6*n. Reverse must start206 steps in:
-     * 7480-206-6*n = 200+6*(1179-n). This avoids a one-column seam shift. */
-    const uint32_t lead = direction ? 200U : 206U;
-    for (uint32_t i=0;i<steps;++i) {
+    s_bidi_move_error=-9;
+    const uint32_t lead=PRINTER_SERVICE_MARGIN_STEPS+(direction?200U:206U);
+    const uint32_t image_end=PRINTER_SERVICE_MARGIN_STEPS+PRINTER_SERVICE_BASE_STEPS;
+    for (uint32_t i=0;i<PRINTER_SERVICE_SPAN_STEPS;++i) {
+        uint64_t start=bk_aon_rtc_get_us();
+        if (columns && i==PRINTER_SERVICE_MARGIN_STEPS && tph_mcu_set_head_power(1)!=BK_OK) {s_bidi_move_error=-8;return false;}
+        if (columns && i==image_end && tph_mcu_set_head_power(0)!=BK_OK) {s_bidi_move_error=-8;return false;}
         if (columns && i>=lead && (i-lead)%6U==0U && (i-lead)/6U<1180U) {
-            uint64_t start=bk_aon_rtc_get_us();
+            uint64_t tx=bk_aon_rtc_get_us();
+            column_group_start=tx;
             if (tph_fire_raw_column_bytes(columns+s_blank_spi_columns*100U)!=BK_OK) return false;
-            uint32_t elapsed=(uint32_t)(bk_aon_rtc_get_us()-start);
+            uint32_t elapsed=(uint32_t)(bk_aon_rtc_get_us()-tx);
             s_bidi_column_us+=elapsed;
-            if (elapsed>s_bidi_max_column_us) s_bidi_max_column_us=elapsed;
+            if (elapsed>s_bidi_max_column_us)s_bidi_max_column_us=elapsed;
             ++s_blank_spi_columns;
         }
-        uint32_t edge=i<steps-1U-i ? i : steps-1U-i;
-        uint32_t low=edge<PRINTER_BIDI_RAMP_STEPS
-            ? PRINTER_BIDI_START_LOW_US-(PRINTER_BIDI_START_LOW_US-PRINTER_BIDI_CRUISE_LOW_US)*edge/PRINTER_BIDI_RAMP_STEPS
-            : PRINTER_BIDI_CRUISE_LOW_US;
-        GPIO_UP(TPH_MOT_STEP); delay_us(4); GPIO_DOWN(TPH_MOT_STEP); delay_us(low);
+        uint32_t edge=i<PRINTER_SERVICE_SPAN_STEPS-1U-i?i:PRINTER_SERVICE_SPAN_STEPS-1U-i;
+        uint32_t period=edge<PRINTER_BIDI_RAMP_STEPS
+            ? PRINTER_BIDI_START_PERIOD_US-(PRINTER_BIDI_START_PERIOD_US-PRINTER_BIDI_CRUISE_PERIOD_US)*edge/PRINTER_BIDI_RAMP_STEPS
+            : PRINTER_BIDI_CRUISE_PERIOD_US;
+        GPIO_UP(TPH_MOT_STEP);delay_us(4);GPIO_DOWN(TPH_MOT_STEP);
         ++s_blank_spi_steps[direction?1:0];
-        if (!columns && (i&127U)==127U) rtos_delay_milliseconds(1);
+        uint32_t used=(uint32_t)(bk_aon_rtc_get_us()-start);
+        uint32_t low;
+        if (columns && i>=lead && i<lead+1180U*6U) {
+            /* Six physical steps share one column-time budget. Account for SPI
+             * before distributing remaining time; keep at least80us LOW even
+             * on a long handshake, so there are no catch-up pulse bursts. */
+            uint32_t slots=6U-(i-lead)%6U;
+            uint32_t group_used=(uint32_t)(bk_aon_rtc_get_us()-column_group_start);
+            uint32_t budget=6U*PRINTER_BIDI_CRUISE_PERIOD_US;
+            uint32_t future_high=4U*(slots-1U);
+            low=budget>group_used+future_high?(budget-group_used-future_high)/slots:0U;
+        } else low=used<period?period-used:0U;
+        if (low<80U) {low=80U;++s_bidi_step_overruns;}
+        delay_us(low);
+        if (!columns && (i&511U)==511U)rtos_delay_milliseconds(1);
     }
     return !columns || s_blank_spi_columns==1180U;
 }
-static int printer_execute_bidirectional_line(const uint8_t *columns, uint8_t direction) {
-    if (!columns || direction>1U) return -1;
-    if (!s_bidi_known || direction!=(s_bidi_right?0U:1U)) return -7;
-    int result=0;
-    s_blank_spi_columns=0;
-    s_blank_spi_steps[0]=s_blank_spi_steps[1]=0;
-    s_bidi_column_us=0; s_bidi_max_column_us=0;
+static int printer_execute_bidirectional_line(const uint8_t *columns,uint8_t direction) {
+    if (direction>1U)return -1;
+    if (!s_bidi_known || direction!=(s_bidi_right?0U:1U))return -7;
+    s_blank_spi_columns=0;s_blank_spi_steps[0]=s_blank_spi_steps[1]=0;
+    s_bidi_column_us=0;s_bidi_max_column_us=0;s_bidi_step_overruns=0;
     uint64_t start=bk_aon_rtc_get_us();
-    if (tph_mcu_set_head_power(0)!=BK_OK) return -8;
-    carriage_verified_power_up();
-    if (!printer_bidi_move(direction,PRINTER_SERVICE_MARGIN_STEPS,NULL)) {result=-9;goto stop;}
-    if (tph_mcu_set_head_power(1)!=BK_OK) {result=-8;goto stop;}
-#if PRINTER_PAGE_HEAD_SETTLE_MS > 0
-    rtos_delay_milliseconds(PRINTER_PAGE_HEAD_SETTLE_MS);
-#endif
-    if (!printer_bidi_move(direction,PRINTER_SERVICE_BASE_STEPS,columns)) {result=-9;goto stop;}
-    if (tph_mcu_set_head_power(0)!=BK_OK) {result=-8;goto stop;}
-    if (!printer_bidi_move(direction,PRINTER_SERVICE_MARGIN_STEPS,NULL)) {result=-9;goto stop;}
-    s_bidi_right=direction?true:false;
-stop:
-    if (result) {
-        s_bidi_known=false;
-        (void)tph_mcu_set_head_power(0);
+    int result=printer_bidi_power_up();
+    if (result)return result;
+    if (!printer_bidi_move(direction,columns))result=s_bidi_move_error;
+    if (!result)s_bidi_right=direction?true:false;
+    else {
+        printer_bidirectional_abort();
         os_printf("[BIDI_STOP] code=%d position_unknown no_blind_return restart_restore_left\r\n",result);
     }
-    carriage_verified_power_down();
-    os_printf("[BIDI_SCAN] direction=%s code=%d columns=%lu/1180 forward=%lu reverse=%lu elapsed_us=%lu column_total_us=%lu column_max_us=%lu endpoint=%s motion_and_ink_unverified\r\n",
-              direction?"RIGHT":"LEFT",result,(unsigned long)s_blank_spi_columns,
+    os_printf("[BIDI_SCAN] direction=%s code=%d blank=%u columns=%lu forward=%lu reverse=%lu elapsed_us=%lu column_total_us=%lu column_max_us=%lu step_overruns=%lu endpoint=%s counted_motion_ink_unverified\r\n",
+              direction?"RIGHT":"LEFT",result,columns?0U:1U,(unsigned long)s_blank_spi_columns,
               (unsigned long)s_blank_spi_steps[1],(unsigned long)s_blank_spi_steps[0],
               (unsigned long)(bk_aon_rtc_get_us()-start),(unsigned long)s_bidi_column_us,
-              (unsigned long)s_bidi_max_column_us,s_bidi_known?(s_bidi_right?"RIGHT":"LEFT"):"UNKNOWN");
+              (unsigned long)s_bidi_max_column_us,(unsigned long)s_bidi_step_overruns,
+              s_bidi_known?(s_bidi_right?"RIGHT":"LEFT"):"UNKNOWN");
+    return result;
+}
+static int printer_bidirectional_feed(uint32_t steps,uint8_t direction,uint32_t *sent) {
+    if (!s_bidi_power || !s_bidi_known)return -1;
+    uint64_t start=bk_aon_rtc_get_us();
+    int result=motor_page_feed_fast_keep_power(steps,direction,sent);
+    os_printf("[BIDI_FEED] steps=%lu elapsed_us=%lu code=%d head_OFF boost_held distance_unverified\r\n",
+              (unsigned long)(sent?*sent:0),(unsigned long)(bk_aon_rtc_get_us()-start),result);
     return result;
 }
 static int printer_bidirectional_finish(void) {
-    if (!s_bidi_known) return -7;
-    if (!s_bidi_right) return 0;
-    if (tph_mcu_set_head_power(0)!=BK_OK) {s_bidi_known=false;return -8;}
-    carriage_verified_power_up();
-    bool ok=printer_bidi_move(0U,PRINTER_SERVICE_SPAN_STEPS,NULL);
-    carriage_verified_power_down();
-    if (!ok) {s_bidi_known=false;return -9;}
-    s_bidi_right=false;
-    os_printf("[BIDI_PARK] endpoint=LEFT head_OFF columns=0 counted_position_only\r\n");
+    if (!s_bidi_known)return -7;
+    if (!s_bidi_power)return 0;
+    if (s_bidi_right) {
+        carriage_wake_on_powered_rail();
+        if (!printer_bidi_move(0U,NULL)) {printer_bidirectional_abort();return -9;}
+        s_bidi_right=false;
+        os_printf("[BIDI_PARK] endpoint=LEFT head_OFF columns=0 counted_position_only\r\n");
+    }
+    carriage_verified_power_down();s_bidi_power=false;
     return 0;
 }
 #endif

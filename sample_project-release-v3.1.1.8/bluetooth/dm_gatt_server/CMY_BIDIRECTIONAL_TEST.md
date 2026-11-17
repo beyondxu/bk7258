@@ -1,3 +1,6 @@
+> Historical V3 comparison. The active V4 workflow is described in
+> CMY_CONTINUOUS_SWEEP_TEST.md.
+
 # Fast alternating CMY band test
 
 The previous captured24-row job required about19.1s per nonempty band, including
