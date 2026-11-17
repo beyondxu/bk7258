@@ -75,6 +75,11 @@ bk_err_t bk_timer_driver_deinit(void);
  *    - BK_ERR_TIMER_IS_RUNNING: timer id is running
  *    - others: other errors.
  */
+/* Fixed auto-reload period in microseconds (not current-count-relative delay).
+ * Only idle, non-reserved channels may be started. update is ISR-safe for an
+ * already owned channel and rejects a period shorter than its current count. */
+bk_err_t bk_timer_start_us(timer_id_t timer_id,uint32_t time_us,timer_isr_t callback);
+bk_err_t bk_timer_set_period_us(timer_id_t timer_id,uint32_t time_us);
 bk_err_t bk_timer_start(timer_id_t timer_id, uint32_t time_ms, timer_isr_t callback);
 
 /**

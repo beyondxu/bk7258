@@ -1,6 +1,12 @@
 #ifndef PRINTER_BIDIRECTIONAL_PRINT_H
 #define PRINTER_BIDIRECTIONAL_PRINT_H
 #include "printer_service_geometry.h"
+#ifndef PRINTER_BUFFERED_LINE
+#define PRINTER_BUFFERED_LINE 0
+#endif
+#if PRINTER_BUFFERED_LINE
+static void printer_buffered_stop(void);
+#endif
 /* A page owns the settled boost. Counted endpoints are not encoder feedback. */
 static bool s_bidi_right=false, s_bidi_known=true, s_bidi_power=false;
 static uint32_t s_bidi_max_column_us, s_bidi_long_column_waits;
@@ -13,6 +19,9 @@ static uint64_t s_bidi_column_us;
 #define PRINTER_BIDI_REVERSE_CRUISE_LOW_US 260U
 #define PRINTER_BIDI_REVERSE_RAMP_STEPS 400U
 static void printer_bidirectional_abort(void) {
+#if PRINTER_BUFFERED_LINE
+    printer_buffered_stop();
+#endif
     if (!s_bidi_power) return; /* preflight failure must not move/enable hardware */
     s_bidi_known=false;
     (void)tph_mcu_set_head_power(0);
@@ -26,6 +35,9 @@ static int printer_bidi_power_up(void) {
     s_bidi_power=true;
     return 0;
 }
+#if PRINTER_BUFFERED_LINE
+#include "printer_buffered_motion.h"
+#endif
 /* Fixed per-pulse HIGH/LOW delays. SPI may extend the preceding STEP-low
  * interval, but its latency is NEVER recovered with shorter subsequent pulses.
  * No RTC-derived per-step pacing and no explicit task sleep inside the stroke.
@@ -59,6 +71,9 @@ static bool printer_bidi_move(uint8_t direction,const uint8_t *columns) {
     return !columns || s_blank_spi_columns==1180U;
 }
 static int printer_execute_bidirectional_line(const uint8_t *columns,uint8_t direction) {
+#if PRINTER_BUFFERED_LINE
+    return printer_execute_buffered_line(columns,direction);
+#endif
     if (direction>1U)return -1;
     if (!s_bidi_known || direction!=(s_bidi_right?0U:1U))return -7;
     s_blank_spi_columns=0;s_blank_spi_steps[0]=s_blank_spi_steps[1]=0;
@@ -92,10 +107,18 @@ static int printer_bidirectional_finish(void) {
     if (!s_bidi_known)return -7;
     if (!s_bidi_power)return 0;
     if (s_bidi_right) {
+#if PRINTER_BUFFERED_LINE
+        int result=printer_execute_buffered_line(NULL,0U);
+        if(result)return result;
+#else
         if (!printer_bidi_move(0U,NULL)) {printer_bidirectional_abort();return -9;}
+#endif
         s_bidi_right=false;
         os_printf("[BIDI_PARK] endpoint=LEFT head_OFF columns=0 counted_position_only\r\n");
     }
+#if PRINTER_BUFFERED_LINE
+    printer_buffered_stop();
+#endif
     carriage_verified_power_down();s_bidi_power=false;
     return 0;
 }

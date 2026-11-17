@@ -55,5 +55,11 @@ bk_err_t tph_fire_raw_column_bytes(const uint8_t *p_column_100b);
 }
 #endif
 
+#include "printer_line_protocol.h"
+typedef struct {uint32_t token,period_us,crc;} tph_line_ticket_t;
+bk_err_t tph_line_probe(void);
+bk_err_t tph_line_prepare(const uint8_t *columns,uint32_t period_us,tph_line_ticket_t *ticket);
+bk_err_t tph_line_finish(const tph_line_ticket_t *ticket);
+bk_err_t tph_line_cancel(const tph_line_ticket_t *ticket);
 #endif // TPH_DRIVER_H
 

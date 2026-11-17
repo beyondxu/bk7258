@@ -347,7 +347,7 @@ static void app_printer_task_entry(void *arg) {
         os_printf("[SYS] APP_SERVICE_BLACK_YELLOW_V1 margin_each=%lu print_steps=%lu span=%lu service_head_OFF black_then_yellow\r\n",
                   (unsigned long)PRINTER_SERVICE_MARGIN_STEPS, (unsigned long)PRINTER_SERVICE_BASE_STEPS, (unsigned long)PRINTER_SERVICE_SPAN_STEPS);
 #else
-        os_printf("[SYS] APP_SERVICE_CMY_BIDI_V9 margin_each=%lu print_steps=%lu span=%lu actual_APP_CMY bands_24 alternating_direction fixed_step_low_us_RIGHT230_LEFT260 reverse_ramp400 no_catchup blank_band_scans page_power_session U4_hold_phase_MS111 service_head_OFF\r\n",
+        os_printf("[SYS] APP_SERVICE_CMY_BUFFERED_V10 margin_each=%lu print_steps=%lu span=%lu actual_APP_CMY bands_24 alternating_direction HC_LBUFv1_required timer4_step_us120 line_period_us720 no_column_waits blank_band_scans page_power_session U4_hold_phase_MS111 service_head_OFF\r\n",
                   (unsigned long)PRINTER_SERVICE_MARGIN_STEPS, (unsigned long)PRINTER_SERVICE_BASE_STEPS, (unsigned long)PRINTER_SERVICE_SPAN_STEPS);
 #endif
 #elif PRINTER_BLACK_PREFIX

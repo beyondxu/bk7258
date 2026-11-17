@@ -1,3 +1,6 @@
+> Current cached-line timer version retains this phase fix; use
+> CACHED_LINE_TIMER_TEST.md for the paired BK/HC32 update and test.
+
 # U4 carriage phase preservation (V9)
 
 User priority is carriage-motor sound; do not change U5 paper-feed speeds,

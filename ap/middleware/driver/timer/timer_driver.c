@@ -384,6 +384,39 @@ bk_err_t bk_timer_start_without_callback(timer_id_t timer_id, uint32_t time_ms)
     return BK_OK;
 }
 
+/* Printer-owned fixed-period timer API. Existing millisecond/delay APIs retain
+ * their behavior. Do not use the relative delay API for a two-clock line. */
+bk_err_t bk_timer_start_us(timer_id_t timer_id,uint32_t time_us,timer_isr_t callback)
+{
+    TIMER_RETURN_ON_NOT_INIT();
+    TIMER_RETURN_ON_INVALID_ID(timer_id);
+#if CONFIG_TIMER_SUPPORT_ID_BITS
+    TIMER_RETURN_TIMER_ID_IS_ERR(timer_id);
+#endif
+    if(timer_id==TIMER_ID0 || !callback || time_us<50U || time_us>1000000U)return BK_FAIL;
+    TIMER_PM_CHECK_RESTORE(timer_id);
+    if(timer_hal_get_enable_status(&s_timer.hal)&BIT(timer_id))return BK_ERR_TIMER_IS_RUNNING;
+    timer_chan_init_common(timer_id);
+    timer_chan_enable_interrupt_common(timer_id);
+    s_timer_isr[timer_id]=callback;
+    timer_hal_init_timer(&s_timer.hal,timer_id,time_us,TIMER_UNIT_US);
+    timer_hal_start_common(&s_timer.hal,timer_id);
+    return BK_OK;
+}
+bk_err_t bk_timer_set_period_us(timer_id_t timer_id,uint32_t time_us)
+{
+    TIMER_RETURN_ON_NOT_INIT();
+    TIMER_RETURN_ON_INVALID_ID(timer_id);
+#if CONFIG_TIMER_SUPPORT_ID_BITS
+    TIMER_RETURN_TIMER_ID_IS_ERR(timer_id);
+#endif
+    if(timer_id==TIMER_ID0 || time_us<50U || time_us>1000000U)return BK_FAIL;
+    uint32_t end=timer_hal_cal_end_count(timer_id,time_us,1,TIMER_UNIT_US);
+    if(timer_hal_get_count(&s_timer.hal,timer_id)+260U>=end)return BK_FAIL;
+    timer_ll_set_end_count(s_timer.hal.hw,timer_id,end);
+    return BK_OK;
+}
+
 bk_err_t bk_timer_start(timer_id_t timer_id, uint32_t time_ms, timer_isr_t callback)
 {
 #if CONFIG_TIMER_US

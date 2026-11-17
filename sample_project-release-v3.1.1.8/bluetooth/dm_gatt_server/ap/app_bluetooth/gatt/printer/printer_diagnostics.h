@@ -98,6 +98,10 @@
 #define PRINTER_NOZZLE_CHECK 0 /* keep the 600-nozzle short-line test available */
 #endif
 
+/* Requires matching HC32 LBUFv1 firmware: cache the full row before moving. */
+#ifndef PRINTER_BUFFERED_LINE
+#define PRINTER_BUFFERED_LINE 1
+#endif
 /* Alternate actual print direction after each nonempty band. */
 #ifndef PRINTER_PAGE_BIDIRECTIONAL
 #define PRINTER_PAGE_BIDIRECTIONAL 1
