@@ -1,3 +1,6 @@
+> V4 produced reported carriage jumping/abnormal sound. Do not use it for further
+> target prints. Active V5 removes its per-column pacing; see CMY_FIXED_STEP_TEST.md.
+
 # Continuous-sweep CMY workflow (V4)
 
 The V3 target trace shows image traversals around2.23s, communication around

@@ -29,7 +29,8 @@ h=r'''
 #define TPH_MOT_STEP 19
 #define os_printf printf
 static uint32_t s_blank_spi_columns,s_blank_spi_steps[2];
-static uint64_t us,last_column_start;
+static uint64_t us,last_column_start,last_pulse_fall;
+static unsigned leg_index,last_tx_us;
 static int32_t pos;
 static unsigned dir,step,head,boost,commands,scans,feed_count,spi_count,mode;
 static unsigned expected_band, expected_bands=42;
@@ -38,18 +39,23 @@ static void*printer_map_psram_alloc(size_t n){void*p=malloc(n);if(p)++live;retur
 static void printer_map_psram_free(void*p){if(p){assert(live);--live;free(p);}}
 static void printer_map_yield_cpu(void){}
 static bool printer_link_is_ready(void){return true;}
-static uint64_t bk_aon_rtc_get_us(void){return us;}
+static uint64_t bk_aon_rtc_get_us(void){return mode==6?(us/32U)*32U:us;}
 static void up(unsigned pin){
- if(pin==50){assert(!step);dir=1;return;}
- assert(pin==19&&!step&&boost);step=1;
+ if(pin==50){assert(!step);dir=1;leg_index=0;return;}
+ assert(pin==19&&!step&&boost);if(leg_index)assert(us-last_pulse_fall>=260U);++leg_index;step=1;
  if(head)assert(pos>=1964&&pos<=9444);
  pos+=dir?1:-1;assert(pos>=0&&pos<=11408);
 }
-static void down(unsigned pin){if(pin==50){assert(!step);dir=0;return;}assert(pin==19&&step);step=0;}
+static void down(unsigned pin){if(pin==50){assert(!step);dir=0;leg_index=0;return;}assert(pin==19&&step);step=0;last_pulse_fall=us;}
 #define GPIO_UP(p) up(p)
 #define GPIO_DOWN(p) down(p)
-static void delay_us(unsigned n){if(step)assert(n==4);else assert(n>=1&&n<=1000);us+=n;}
-static void rtos_delay_milliseconds(unsigned n){assert(!step&&!head&&n==1);us+=n*1000U;}
+static void delay_us(unsigned n){
+ if(step)assert(n==4);
+ else if(n==50)assert(leg_index==0);
+ else {assert(leg_index);unsigned i=leg_index-1U,edge=i<11407U-i?i:11407U-i;unsigned low=edge<250U?1000U-740U*edge/250U:260U;assert(n==low);}
+ us+=n;
+}
+/* No explicit task sleep is allowed in the pulse loop. */
 static void carriage_verified_power_up(void){assert(!head&&!step&&!boost);boost=1;++powerups;us+=75000;}
 static void carriage_wake_on_powered_rail(void){assert(!head&&!step&&boost);us+=15000;}
 static void carriage_verified_power_down(void){assert(!head&&!step);boost=0;++powerdowns;}
@@ -71,11 +77,11 @@ static int tph_fire_raw_column_bytes(const uint8_t*p){
   unsigned x=(400U+ch)*1119U/1180U+route.delay_columns;
   if(x==physical_col)expected[route.slot]|=route.mask;
  }
- if(s_blank_spi_columns)assert(us-last_column_start==1020U);
+ if(s_blank_spi_columns)assert(us-last_column_start==6U*264U+last_tx_us);
  last_column_start=us;
  assert(!memcmp(p,expected,100)); /* physical alignment, not merely reverse bytes */
  if(mode==1&&spi_count==10)return -1;
- ++spi_count;us+=350;return 0;
+ ++spi_count;last_tx_us=mode==6?(s_blank_spi_columns%64==0?7157U:s_blank_spi_columns%8==0?813U:350U):350U;us+=last_tx_us;return 0;
 }
 static int motor_page_feed_fast_keep_power(uint32_t,uint8_t,uint32_t*);
 #include "printer_bidirectional_print.h"
@@ -85,7 +91,7 @@ static int execute_scan(const uint8_t*p,uint8_t direction){
  uint64_t start=us;
  assert(direction==((scans%expected_bands)%2==0?1:0));
  int rc=printer_execute_bidirectional_line(p,direction);
- if(!rc){assert(spi_count-start_spi==(p?1180U:0U));assert(boost);assert(pos==(direction?11408:0));assert(us-start<2500000);++scans;}
+ if(!rc){assert(spi_count-start_spi==(p?1180U:0U));assert(boost);assert(pos==(direction?11408:0));assert(us-start<4200000);++scans;}
  return rc;
 }
 #define printer_execute_bidirectional_line execute_scan
@@ -100,7 +106,7 @@ static int motor_page_feed_fast_keep_power(uint32_t steps,uint8_t direction,uint
 int main(int argc,char**argv){
  assert(argc==3);mode=atoi(argv[2]);FILE*f=fopen(argv[1],"rb");assert(f);fseek(f,0,SEEK_END);long n=ftell(f);rewind(f);uint8_t*b=malloc(n);assert(fread(b,1,n,f)==(size_t)n);fclose(f);
  int rc=printer_run_full_page(b,n);assert(!live&&!head&&!boost&&!step);
- if(!mode||mode==5){assert(!rc&&scans==expected_bands&&feed_count==41&&pos==0&&powerups==1&&powerdowns==1);expected_band=0;assert(!printer_run_full_page(b,n));assert(scans==2*expected_bands&&feed_count==82&&pos==0&&powerups==2&&powerdowns==2);
+ if(!mode||mode==5||mode==6){assert(!rc&&scans==expected_bands&&feed_count==41&&pos==0&&powerups==1&&powerdowns==1);expected_band=0;assert(!printer_run_full_page(b,n));assert(scans==2*expected_bands&&feed_count==82&&pos==0&&powerups==2&&powerdowns==2);
  /* Odd number of scans: the final park is one head-OFF move, zero image calls. */
  printer_map_config_t cfg={3000,-1,0,0};printer_page_t page;
  assert(!printer_page_prepare(b,n,&cfg,&page,printer_map_psram_alloc,printer_map_psram_free,printer_map_yield_cpu));
@@ -119,4 +125,4 @@ with tempfile.TemporaryDirectory() as t:
  p=Path(t);(p/'test.c').write_text(h);(p/'fixture.bin').write_bytes(blob({(ch,400+ch,y)for ch in range(3)for y in range(1476)}))
  subprocess.run(['cc','-std=c99','-O1','-Wall','-Wextra','-Werror','-fsanitize=address,undefined','-I'+str(D),str(p/'test.c'),str(D/'printer_mapper.c'),str(D/'printer_page.c'),'-o',str(p/'test')],check=True)
  (p/'sparse.bin').write_bytes(blob({(ch,400+ch,y)for ch in range(3)for y in range(1476)if (y*992//1476)//24 in [0,2,41]}))
- for mode in range(6):subprocess.run([str(p/'test'),str(p/('sparse.bin' if mode==5 else 'fixture.bin')),str(mode)],check=True,env={**os.environ,'ASAN_OPTIONS':'detect_leaks=0'})
+ for mode in range(7):subprocess.run([str(p/'test'),str(p/('sparse.bin' if mode==5 else 'fixture.bin')),str(mode)],check=True,env={**os.environ,'ASAN_OPTIONS':'detect_leaks=0'})
