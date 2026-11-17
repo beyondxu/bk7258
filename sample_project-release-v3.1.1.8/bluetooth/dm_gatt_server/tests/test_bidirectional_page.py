@@ -43,8 +43,8 @@ static uint64_t bk_aon_rtc_get_us(void){return mode==6?(us/32U)*32U:us;}
 static void up(unsigned pin){
  if(pin==50){assert(!step);dir=1;leg_index=0;return;}
  assert(pin==19&&!step&&boost);if(leg_index)assert(us-last_pulse_fall>=(dir?230U:260U));++leg_index;step=1;
- if(head)assert(pos>=1964&&pos<=9444);
- pos+=dir?1:-1;assert(pos>=0&&pos<=11408);
+ if(head)assert(pos>=1590&&pos<=9070);
+ pos+=dir?1:-1;assert(pos>=0&&pos<=10660);
 }
 static void down(unsigned pin){if(pin==50){assert(!step);dir=0;leg_index=0;return;}assert(pin==19&&step);step=0;last_pulse_fall=us;}
 #define GPIO_UP(p) up(p)
@@ -52,7 +52,7 @@ static void down(unsigned pin){if(pin==50){assert(!step);dir=0;leg_index=0;retur
 static void delay_us(unsigned n){
  if(step)assert(n==4);
  else if(n==50)assert(leg_index==0);
- else {assert(leg_index);unsigned i=leg_index-1U,edge=i<11407U-i?i:11407U-i;unsigned ramp=dir?250U:400U,start=dir?1000U:1200U,cruise=dir?230U:260U;unsigned low=edge<ramp?start-(start-cruise)*edge/ramp:cruise;assert(n==low);}
+ else {assert(leg_index);unsigned i=leg_index-1U,edge=i<10659U-i?i:10659U-i;unsigned ramp=dir?250U:400U,start=dir?1000U:1200U,cruise=dir?230U:260U;unsigned low=edge<ramp?start-(start-cruise)*edge/ramp:cruise;assert(n==low);}
  us+=n;
 }
 /* No explicit task sleep is allowed in the pulse loop. */
@@ -62,13 +62,13 @@ static void carriage_verified_power_down(void){assert(!head&&!step);boost=0;++po
 static int tph_mcu_set_head_power(uint8_t on){
  ++commands;
  if((mode==2&&commands==2)||(mode==3&&commands==3))return -1;
- if(on)assert(pos==1964||pos==9444);
+ if(on)assert(pos==1590||pos==9070);
  head=on;return 0;
 }
 static int tph_fire_raw_column_bytes(const uint8_t*p){
  assert(head&&boost&&!step);
- assert(pos>=2164&&pos<=9238&&(pos-2164)%6==0);
- unsigned physical_col=(pos-2164)/6;
+ assert(pos>=1790&&pos<=8864&&(pos-1790)%6==0);
+ unsigned physical_col=(pos-1790)/6;
  uint8_t expected[100]={0};
  unsigned rows=992U-expected_band*24U;if(rows>24)rows=24;
  printer_map_config_t cfg={3000,-1,0,0};
@@ -91,7 +91,7 @@ static int execute_scan(const uint8_t*p,uint8_t direction){
  uint64_t start=us;
  assert(direction==((scans%expected_bands)%2==0?1:0));
  int rc=printer_execute_bidirectional_line(p,direction);
- if(!rc){assert(spi_count-start_spi==(p?1180U:0U));assert(boost);assert(pos==(direction?11408:0));assert(us-start<4200000);++scans;}
+ if(!rc){assert(spi_count-start_spi==(p?1180U:0U));assert(boost);assert(pos==(direction?10660:0));assert(us-start<4200000);++scans;}
  return rc;
 }
 #define printer_execute_bidirectional_line execute_scan
@@ -112,12 +112,12 @@ int main(int argc,char**argv){
  assert(!printer_page_prepare(b,n,&cfg,&page,printer_map_psram_alloc,printer_map_psram_free,printer_map_yield_cpu));
  uint8_t *columns=malloc(118000),*scratch=malloc(page.width*72U);uint32_t dots[3];
  assert(!printer_page_render_band(&page,0,24,columns,118000,scratch,page.width*72U,dots,NULL));
- expected_band=0;assert(!execute_scan(columns,1));assert(pos==11408);
+ expected_band=0;assert(!execute_scan(columns,1));assert(pos==10660);
  unsigned old_spi=spi_count;assert(!printer_bidirectional_finish());assert(pos==0&&spi_count==old_spi&&!head&&!boost);
  assert(!printer_bidirectional_finish());assert(pos==0&&spi_count==old_spi);
  free(columns);free(scratch);printer_page_release(&page,printer_map_psram_free);assert(!live);
  }
- else{assert(rc==(mode==1?-9:mode==4?-10:-8));unsigned pulses=s_blank_spi_steps[0]+s_blank_spi_steps[1];assert(printer_run_full_page(b,n)==-7);assert(pulses==s_blank_spi_steps[0]+s_blank_spi_steps[1]);if(mode==4)assert(pos==11408&&scans==1);else assert(!scans&&!feed_count);}
+ else{assert(rc==(mode==1?-9:mode==4?-10:-8));unsigned pulses=s_blank_spi_steps[0]+s_blank_spi_steps[1];assert(printer_run_full_page(b,n)==-7);assert(pulses==s_blank_spi_steps[0]+s_blank_spi_steps[1]);if(mode==4)assert(pos==10660&&scans==1);else assert(!scans&&!feed_count);}
  free(b);puts("PASS: alternating directions, exact physical CMY positions, 24-row/final-band routing, fractional feeds, stop/lock after failure");
 }
 '''

@@ -1,3 +1,12 @@
+> Active V8: reduce both margins2mm after the extended stroke operated service
+> mechanisms and interfered with paper grip. Margins1964->1590 steps (~8.5mm),
+> full span11408->10660 steps (~57mm), print segment7480 unchanged. Manually
+> establish the LEFT origin2mm right of the V7 mark to shrink both ends while
+> retaining the image position. Startup APP_SERVICE_CMY_BIDI_V8.
+> Keep RIGHT230us/250-step ramps and LEFT260us/400-step ramps,24-row bands,
+> fractional paper feed, reverse registration and head-OFF service regions.
+> Tests update all absolute physical positions and pulse limits accordingly.
+
 > Active V7: the user reports residual noise specifically on leftward return.
 > Keep RIGHT LOW230us, start1000us and250-step ramps. Use LEFT LOW260us,
 > start1200us and400-step outer ramps, including the final head-OFF park.

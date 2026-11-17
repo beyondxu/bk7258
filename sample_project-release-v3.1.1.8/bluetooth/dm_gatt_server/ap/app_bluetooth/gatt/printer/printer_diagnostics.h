@@ -5,7 +5,7 @@
 #define PRINTER_IDLE_AB 0 /* frozen-line OFF/ON versus held-power idle comparison */
 #endif
 
-/* Actual APP CMY printing with 10.5mm-per-side non-firing service travel. */
+/* Actual APP CMY printing with 8.5mm-per-side non-firing service travel. */
 #ifndef PRINTER_SERVICE_TRAVEL_TEST
 #define PRINTER_SERVICE_TRAVEL_TEST 0
 #endif
