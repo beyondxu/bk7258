@@ -1,3 +1,5 @@
+> The active test now uses24-row bands. See CMY_NARROW_BAND_TEST.md.
+
 # Actual APP CMY print with service travel
 
 The active build prints the actual decoded APP C/M/Y page, combined pass,

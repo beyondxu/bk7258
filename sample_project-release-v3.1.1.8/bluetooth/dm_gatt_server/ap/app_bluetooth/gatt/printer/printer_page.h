@@ -24,6 +24,13 @@ int printer_page_color_columns(const uint8_t *source, uint8_t *target,
                                uint32_t bytes, uint32_t channel_mask);
 int printer_page_transform(printer_page_t *page, uint32_t flags, void (*yield_cpu)(void));
 void printer_page_release(printer_page_t *page, void (*release)(void *));
+/* Place rows [first_row,first_row+rows) on nozzle rows [0,rows), at most192.
+ * Caller advances paper by the same row height; never repeat image pixels.
+ */
+int printer_page_render_band(const printer_page_t *page, uint32_t first_row, uint32_t rows,
+                        uint8_t *columns, uint32_t column_bytes,
+                        uint8_t *scratch, uint32_t scratch_bytes,
+                        uint32_t dots[3], void (*yield_cpu)(void));
 int printer_page_render(const printer_page_t *page, uint32_t swath,
                         uint8_t *columns, uint32_t column_bytes,
                         uint8_t *scratch, uint32_t scratch_bytes,

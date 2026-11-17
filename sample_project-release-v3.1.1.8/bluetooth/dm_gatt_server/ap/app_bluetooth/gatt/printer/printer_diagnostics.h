@@ -98,6 +98,12 @@
 #define PRINTER_NOZZLE_CHECK 0 /* keep the 600-nozzle short-line test available */
 #endif
 
+/* Narrow-band experiment: 24 rows (~1.016mm) per paper advance.
+ * PAGE_FEED_STEPS remains the calibration for192 rows, not for one narrow band.
+ */
+#ifndef PRINTER_PAGE_BAND_ROWS
+#define PRINTER_PAGE_BAND_ROWS 24U
+#endif
 #ifndef PRINTER_PAGE_ONLY_SWATH
 #define PRINTER_PAGE_ONLY_SWATH (-1) /* diagnostic covers all physical rows */
 #endif

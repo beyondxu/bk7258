@@ -1,3 +1,9 @@
+#ifndef PRINTER_PAGE_BAND_ROWS
+#define PRINTER_PAGE_BAND_ROWS 192U
+#endif
+#if PRINTER_PAGE_BAND_ROWS < 1 || PRINTER_PAGE_BAND_ROWS > 192
+#error Page band rows must be between1 and192
+#endif
 #ifndef PRINTER_SERVICE_TRAVEL_TEST
 #define PRINTER_SERVICE_TRAVEL_TEST 0
 #endif
@@ -48,6 +54,9 @@
 #endif
 #if PRINTER_PAGE_REPEAT_SAME_POWER && (PRINTER_PAGE_ONLY_SWATH != 4 || PRINTER_PAGE_COLOR_MODE != 1)
 #error Same-power repeat requires original swath 5 and combined CMY
+#endif
+#if PRINTER_PAGE_BAND_ROWS != 192 && (PRINTER_PAGE_ONLY_SWATH >= 0 || PRINTER_BLACK_PREFIX || PRINTER_YELLOW_S1_REMAP || PRINTER_PAGE_REPEAT_SAME_POWER)
+#error Narrow bands require full actual page without fixed-row or repeated-pass diagnostics
 #endif
 /* Private hardware orchestrator. Included after verified shuttle helpers. */
 static int printer_run_full_page(const uint8_t *bin, uint32_t length) {
@@ -117,8 +126,11 @@ static int printer_run_full_page(const uint8_t *bin, uint32_t length) {
     result = printer_build_black_prefix(&page, black_columns, scratch);
     if (result) goto done;
 #endif
+    const uint32_t bands = (page.height + PRINTER_PAGE_BAND_ROWS - 1U) / PRINTER_PAGE_BAND_ROWS;
+    os_printf("[PAGE_BAND_PLAN] rows=%u bands=%lu base_feed_192=%u cumulative_fractional_feed no_duplicate_pixels\r\n",
+              (unsigned)PRINTER_PAGE_BAND_ROWS, (unsigned long)bands, (unsigned)PRINTER_PAGE_FEED_STEPS);
     os_printf("[PAGE_PLAN] source=1180x1476 output=%lux%lu swaths=%lu columns=1180 max_delay=%lu pitch=%lu y_pitch=4233 direction=%ld feed_steps=%u transform=%u color_mode=%u CANDIDATE_FEED aspect_fit\r\n",
-              (unsigned long)page.width, (unsigned long)page.height, (unsigned long)page.swaths,
+              (unsigned long)page.width, (unsigned long)page.height, (unsigned long)bands,
               (unsigned long)page.max_delay, (unsigned long)cfg.x_pitch_centi_um,
               (long)cfg.x_direction, (unsigned)PRINTER_PAGE_FEED_STEPS, (unsigned)PRINTER_PAGE_TRANSFORM, (unsigned)PRINTER_PAGE_COLOR_MODE);
     os_printf("[PAGE_DOTS] source_CMY=%lu,%lu,%lu resized_CMY=%lu,%lu,%lu\r\n",
@@ -141,10 +153,10 @@ static int printer_run_full_page(const uint8_t *bin, uint32_t length) {
     os_printf("[BLACK_PREFIX_END] code=%d ink_unverified\r\n", result);
     if (result) goto done;
 #endif
-    for (uint32_t strip = 0; strip < page.swaths; ++strip) {
+    for (uint32_t strip = 0; strip < bands; ++strip) {
         if (PRINTER_PAGE_ONLY_SWATH >= 0 && strip != (uint32_t)PRINTER_PAGE_ONLY_SWATH) continue;
         uint32_t dots[3];
-        result = printer_page_render(&page, strip, columns, PRINTER_PAGE_COLUMNS * 100U,
+        result = printer_page_render_band(&page, strip * PRINTER_PAGE_BAND_ROWS, PRINTER_PAGE_BAND_ROWS, columns, PRINTER_PAGE_COLUMNS * 100U,
                                     scratch, page.width * 72U, dots, printer_map_yield_cpu);
         if (result) goto done;
 #if PRINTER_APP_YELLOW_ONLY
@@ -155,7 +167,7 @@ static int printer_run_full_page(const uint8_t *bin, uint32_t length) {
                   (unsigned long)printer_crc32(columns, PRINTER_PAGE_COLUMNS * 100U));
 #endif
         os_printf("[PAGE_SWATH] index=%lu/%lu y=%lu dots_CMY=%lu,%lu,%lu\r\n",
-                  (unsigned long)(strip + 1U), (unsigned long)page.swaths, (unsigned long)(strip * 192U),
+                  (unsigned long)(strip + 1U), (unsigned long)bands, (unsigned long)(strip * PRINTER_PAGE_BAND_ROWS),
                   (unsigned long)dots[0], (unsigned long)dots[1], (unsigned long)dots[2]);
         if (PRINTER_PAGE_ONLY_SWATH >= 0 && !(dots[0] || dots[1] || dots[2])) {
             os_printf("[PAGE_ISOLATE_EMPTY] no_motion\r\n"); result = -6; goto done;
@@ -182,14 +194,17 @@ static int printer_run_full_page(const uint8_t *bin, uint32_t length) {
 #endif
             if (result) goto done;
         }
-        if (PRINTER_PAGE_ONLY_SWATH < 0 && strip + 1U < page.swaths) {
+        if (PRINTER_PAGE_ONLY_SWATH < 0 && strip + 1U < bands) {
             uint32_t sent = 0;
             failure_locked = true;
             if (tph_mcu_set_head_power(0) != BK_OK) { result = -8; goto done; }
-            result = motor_page_feed(PRINTER_PAGE_FEED_STEPS, PRINTER_PAGE_FEED_DIRECTION, &sent);
+            /* Difference of cumulative floors prevents rounding drift at small feeds. */
+            const uint32_t feed_steps = (uint32_t)(((uint64_t)(strip + 1U) * PRINTER_PAGE_BAND_ROWS * PRINTER_PAGE_FEED_STEPS) / 192U
+                                      - ((uint64_t)strip * PRINTER_PAGE_BAND_ROWS * PRINTER_PAGE_FEED_STEPS) / 192U);
+            result = motor_page_feed(feed_steps, PRINTER_PAGE_FEED_DIRECTION, &sent);
             os_printf("[PAGE_FEED] after=%lu pulses=%lu/%u result=%d distance_unverified\r\n",
-                      (unsigned long)(strip + 1U), (unsigned long)sent, (unsigned)PRINTER_PAGE_FEED_STEPS, result);
-            if (result != BK_OK || sent != PRINTER_PAGE_FEED_STEPS) { result = -10; goto done; }
+                      (unsigned long)(strip + 1U), (unsigned long)sent, (unsigned)feed_steps, result);
+            if (result != BK_OK || sent != feed_steps) { result = -10; goto done; }
         }
     }
     failure_locked = false;
@@ -198,7 +213,7 @@ static int printer_run_full_page(const uint8_t *bin, uint32_t length) {
 #else
     if (PRINTER_PAGE_ONLY_SWATH >= 0)
         os_printf("[PAGE_ISOLATE_DONE] original_swath=%u feed=0 ink_unverified\r\n", (unsigned)PRINTER_PAGE_ONLY_SWATH + 1U);
-    else os_printf("[PAGE_DONE] swaths=%lu no_auto_eject feed_distance_and_ink_unverified\r\n", (unsigned long)page.swaths);
+    else os_printf("[PAGE_DONE] swaths=%lu no_auto_eject feed_distance_and_ink_unverified\r\n", (unsigned long)bands);
 #endif
 done:
 #if PRINTER_BLACK_PREFIX
