@@ -20,7 +20,7 @@ static void printer_bidirectional_abort(void) {
     s_bidi_power=false;
 }
 static int printer_bidi_power_up(void) {
-    if (s_bidi_power) {carriage_wake_on_powered_rail();return 0;}
+    if (s_bidi_power) return 0; /* preserve U4 microstep phase within the page */
     if (tph_mcu_set_head_power(0)!=BK_OK) return -8;
     carriage_verified_power_up();
     s_bidi_power=true;
@@ -92,7 +92,6 @@ static int printer_bidirectional_finish(void) {
     if (!s_bidi_known)return -7;
     if (!s_bidi_power)return 0;
     if (s_bidi_right) {
-        carriage_wake_on_powered_rail();
         if (!printer_bidi_move(0U,NULL)) {printer_bidirectional_abort();return -9;}
         s_bidi_right=false;
         os_printf("[BIDI_PARK] endpoint=LEFT head_OFF columns=0 counted_position_only\r\n");

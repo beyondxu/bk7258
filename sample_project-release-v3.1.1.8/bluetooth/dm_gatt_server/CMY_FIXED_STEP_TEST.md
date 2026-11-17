@@ -1,3 +1,6 @@
+> Active V9 preserves U4 microstep phase throughout the page after checking
+> the ATD5984 datasheet. See U4_PHASE_HOLD_TEST.md; V8 geometry/speeds remain.
+
 > Active V8: reduce both margins2mm after the extended stroke operated service
 > mechanisms and interfered with paper grip. Margins1964->1590 steps (~8.5mm),
 > full span11408->10660 steps (~57mm), print segment7480 unchanged. Manually

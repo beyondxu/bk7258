@@ -747,12 +747,12 @@ bk_err_t motor_page_feed_keep_power(uint32_t steps, uint8_t direction, uint32_t 
 /* Head-OFF service-travel diagnostic. Explicit bounded geometry, no SPI. */
 #include "printer_service_geometry.h"
 /* Bounded small-band feed while the page owns an already settled boost.
- * U4 is disabled at its counted endpoint. No GPIO reclaim or boost cycling. */
+ * U4 stays enabled at its counted endpoint; do not reset/sleep its translator.
+ * No U4 GPIO, reclaim or boost cycling is performed here. */
 bk_err_t motor_page_feed_fast_keep_power(uint32_t steps, uint8_t direction, uint32_t *sent) {
     if (!sent) return BK_FAIL;
     *sent=0;
     if (!steps || steps>500U || direction>1U) return BK_FAIL;
-    bk_motor_set_state(1,0);
     SET_GPIO_HIGH(PAPER_MOT_MS1); SET_GPIO_HIGH(PAPER_MOT_MS2); SET_GPIO_HIGH(PAPER_MOT_MS3);
     SET_GPIO_HIGH(PAPER_MOT_SLEEP); rtos_delay_milliseconds(5);
     SET_GPIO_HIGH(PAPER_MOT_RES); SET_GPIO_LOW(PAPER_MOT_EN);

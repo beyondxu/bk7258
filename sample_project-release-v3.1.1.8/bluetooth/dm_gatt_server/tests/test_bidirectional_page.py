@@ -57,7 +57,6 @@ static void delay_us(unsigned n){
 }
 /* No explicit task sleep is allowed in the pulse loop. */
 static void carriage_verified_power_up(void){assert(!head&&!step&&!boost);boost=1;++powerups;us+=75000;}
-static void carriage_wake_on_powered_rail(void){assert(!head&&!step&&boost);us+=15000;}
 static void carriage_verified_power_down(void){assert(!head&&!step);boost=0;++powerdowns;}
 static int tph_mcu_set_head_power(uint8_t on){
  ++commands;
