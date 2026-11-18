@@ -150,6 +150,9 @@
 #endif
 /* Independent head-OFF preparation before image row zero. Startup paper
  * travel is an absolute loading offset, NOT a scale or per-band feed. */
+#ifndef PRINTER_BOOT_CARRIAGE_PREP
+#define PRINTER_BOOT_CARRIAGE_PREP 1 /* once after link self-test, before BLE */
+#endif
 #ifndef PRINTER_STARTUP_PREP
 #define PRINTER_STARTUP_PREP 1
 #endif
@@ -267,6 +270,7 @@
 #endif
 
 void printer_run_startup_diagnostic(void);
+int printer_run_boot_carriage_prepare(void);
 void printer_run_carriage_diagnostic(void);
 
 #endif

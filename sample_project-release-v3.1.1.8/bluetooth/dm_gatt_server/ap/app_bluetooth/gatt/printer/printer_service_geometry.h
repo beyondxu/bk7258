@@ -1,12 +1,11 @@
 #ifndef PRINTER_SERVICE_GEOMETRY_H
 #define PRINTER_SERVICE_GEOMETRY_H
-/* User measured7480 steps as approximately40mm. Reduce both service
- * extensions by2mm after mechanism engagement interfered with paper grip:
- * 1964 - round(7480*2/40) = 1590 steps (~8.5mm each).
- * Counted geometry only; manually move the LEFT origin2mm rightward.
- */
+/* Existing calibrated stroke plus requested 2mm TOTAL: +1mm at each end.
+ * Approximate calibration 7480 steps / 40mm => 187 extra steps per side.
+ * LEFT counted origin must correspond to the new left endpoint (1mm farther
+ * left). This is not automatic homing; no Hall/limit feedback is active. */
 #define PRINTER_SERVICE_BASE_STEPS 7480U
-#define PRINTER_SERVICE_MARGIN_STEPS 1590U
+#define PRINTER_SERVICE_MARGIN_STEPS 1777U
 #define PRINTER_SERVICE_SPAN_STEPS (PRINTER_SERVICE_BASE_STEPS+2U*PRINTER_SERVICE_MARGIN_STEPS)
 /* Only the head-OFF service trial uses these speed parameters. */
 #define PRINTER_SERVICE_START_LOW_US 3000U

@@ -173,7 +173,7 @@ static int printer_run_full_page(const uint8_t *bin, uint32_t length) {
 #if PRINTER_STARTUP_PREP
     if (PRINTER_PAGE_ONLY_SWATH < 0) {
         failure_locked = true;
-        result = printer_startup_prepare();
+        result = printer_startup_prepare(1U);
         if (result) goto done;
     }
 #endif

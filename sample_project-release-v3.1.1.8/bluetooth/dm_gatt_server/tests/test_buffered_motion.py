@@ -38,7 +38,7 @@ typedef struct {uint32_t token,period_us,crc;}tph_line_ticket_t;
 static void advance(unsigned us);
 static uint64_t bk_aon_rtc_get_us(void){return now_us/32U*32U;}
 static void delay_us(unsigned n){assert(n==4||n==50);now_us+=n;}
-static void up(unsigned p){if(p==50){assert(!timer_enabled&&!step);dir=1;return;}assert(p==19&&boost&&!step);step=1;pos+=dir?1:-1;assert(pos>=0&&pos<=10660);}
+static void up(unsigned p){if(p==50){assert(!timer_enabled&&!step);dir=1;return;}assert(p==19&&boost&&!step);step=1;pos+=dir?1:-1;assert(pos>=0&&pos<=((int32_t)PRINTER_SERVICE_SPAN_STEPS));}
 static void down(unsigned p){if(p==50){assert(!timer_enabled&&!step);dir=0;return;}assert(p==19&&step);step=0;}
 #define GPIO_UP(p) up(p)
 #define GPIO_DOWN(p) down(p)
@@ -46,7 +46,7 @@ static void bk_gpio_set_output_low(unsigned pin){
  assert(pin==1);sync_high=0;
  if(cache.state==PL_ARMED){
   cache.state=PL_RUNNING;cache.fired=0;hc_fires=0;
-  assert(timer_enabled);assert(pos==(dir?(int32_t)PRINTER_CANVAS_LEAD_STEPS:10660-(int32_t)PRINTER_CANVAS_LEAD_STEPS));
+  assert(timer_enabled);assert(pos==(dir?(int32_t)PRINTER_CANVAS_LEAD_STEPS:((int32_t)PRINTER_SERVICE_SPAN_STEPS)-(int32_t)PRINTER_CANVAS_LEAD_STEPS));
   assert(cache.period_us==PRINTER_CANVAS_COLUMN_US);
   ++cache.fired;++hc_fires;next_hc=now_us+cache.period_us;
  }
@@ -78,7 +78,7 @@ static void printer_bidirectional_abort(void){printer_buffered_stop();boost=0;s_
 #if PRINTER_STARTUP_LOAD_STEPS > 0
 static unsigned load_calls;
 static int motor_page_load_keep_power(unsigned steps,unsigned direction,uint32_t*sent){
- assert(pos==10660&&s_bidi_right&&boost&&!timer_enabled&&sync_high&&!hc_fires);
+ assert(pos==((int32_t)PRINTER_SERVICE_SPAN_STEPS)&&s_bidi_right&&boost&&!timer_enabled&&sync_high&&!hc_fires);
  assert(cache.state==PL_IDLE&&steps==TEST_LOAD_STEPS&&!direction);
  ++load_calls;*sent=steps;return 0;
 }
@@ -94,9 +94,9 @@ static void advance(unsigned us){
   if(h<=b){
    if(mode!=4){
     int32_t delta=(cache.fired*PRINTER_CANVAS_COLUMN_US+PRINTER_CANVAS_STEP_US-1U)/PRINTER_CANVAS_STEP_US;
-    assert(pos==(dir?(int32_t)PRINTER_CANVAS_LEAD_STEPS+delta:10660-(int32_t)PRINTER_CANVAS_LEAD_STEPS-delta));
+    assert(pos==(dir?(int32_t)PRINTER_CANVAS_LEAD_STEPS+delta:((int32_t)PRINTER_SERVICE_SPAN_STEPS)-(int32_t)PRINTER_CANVAS_LEAD_STEPS-delta));
     /* Every column occurs after acceleration and before deceleration. */
-    assert(pos>450&&pos<10660-450);
+    assert(pos>450&&pos<((int32_t)PRINTER_SERVICE_SPAN_STEPS)-450);
    }
    ++cache.fired;++hc_fires;
    if(cache.fired==1180)cache.state=PL_DONE;else next_hc+=cache.period_us;
@@ -111,7 +111,7 @@ static void advance(unsigned us){
 int main(int argc,char**argv){
  assert(argc==2);mode=atoi(argv[1]);uint8_t*row=malloc(PL_ROW_BYTES);for(unsigned i=0;i<PL_ROW_BYTES;i++)row[i]=(i*7+i/100)&63U;
  if(mode==6){
-  assert(!printer_startup_prepare());
+  assert(!printer_startup_prepare(1U));
   assert(pos==0&&!s_bidi_right&&s_bidi_known&&!hc_fires&&!timer_enabled&&sync_high);
 #if PRINTER_STARTUP_LOAD_STEPS > 0
   assert(load_calls==1);
@@ -120,10 +120,10 @@ int main(int argc,char**argv){
  }
  int rc=printer_execute_buffered_line(row,1);
  if(!mode||mode==5){
-  assert(!rc&&pos==10660&&s_bidi_right&&hc_fires==1180&&s_blank_spi_columns==1180&&cache.state==PL_DONE);
+  assert(!rc&&pos==((int32_t)PRINTER_SERVICE_SPAN_STEPS)&&s_bidi_right&&hc_fires==1180&&s_blank_spi_columns==1180&&cache.state==PL_DONE);
   assert(!memcmp(cache.data,row,PL_ROW_BYTES));
   assert(!printer_execute_buffered_line(row,0));assert(pos==0&&!s_bidi_right&&hc_fires==1180);
-  assert(!printer_execute_buffered_line(NULL,1));assert(pos==10660&&s_blank_spi_columns==0);
+  assert(!printer_execute_buffered_line(NULL,1));assert(pos==((int32_t)PRINTER_SERVICE_SPAN_STEPS)&&s_blank_spi_columns==0);
   assert(!printer_execute_buffered_line(NULL,0));assert(pos==0);printer_buffered_stop();
  }else if(mode==4){assert(rc==-14&&!s_bidi_known&&s_buf_steps==3000&&!timer_enabled&&pos==3000);}
  else {assert(rc==(mode==3?-14:-13));assert(pos==0&&!s_blank_spi_steps[0]&&!s_blank_spi_steps[1]&&!timer_enabled&&!hc_fires);}

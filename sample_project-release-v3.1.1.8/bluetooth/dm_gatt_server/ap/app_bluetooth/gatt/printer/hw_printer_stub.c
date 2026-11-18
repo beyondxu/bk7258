@@ -937,3 +937,20 @@ stop:
 #endif
 #include "printer_page_job.h"
 #endif
+
+/* Run only before BLE/worker creation; reuse the verified timer-only path. */
+int printer_run_boot_carriage_prepare(void) {
+#if PRINTER_BOOT_CARRIAGE_PREP && PRINTER_FULL_PAGE && PRINTER_PAGE_BIDIRECTIONAL && PRINTER_STARTUP_PREP
+    static bool attempted=false;
+    if (attempted || !printer_link_is_ready()) return -7;
+    attempted=true;
+    os_printf("[BOOT_CARRIAGE_BEGIN] round_trips=1 head_OFF feed=0 counted_LEFT_origin_required\r\n");
+    int result=printer_startup_prepare(0U);
+    if (!result) result=printer_bidirectional_finish();
+    if (result) printer_bidirectional_abort();
+    os_printf("[BOOT_CARRIAGE_DONE] code=%d endpoint=%s no_ink_no_feed motion_unverified\r\n",result,s_bidi_known?(s_bidi_right?"RIGHT":"LEFT"):"UNKNOWN");
+    return result;
+#else
+    return 0;
+#endif
+}

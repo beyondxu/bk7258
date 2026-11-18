@@ -328,6 +328,14 @@ static void app_printer_task_entry(void *arg) {
 	   rtos_delay_milliseconds(1000);
     if (link_ready && PRINTER_CARRIAGE_TEST) standalone_carriage_blank_spi_test();
     else if (link_ready) printer_run_startup_diagnostic();
+    if (link_ready && !PRINTER_CARRIAGE_TEST && PRINTER_BOOT_CARRIAGE_PREP) {
+        int boot_prep=printer_run_boot_carriage_prepare();
+        if (boot_prep) {
+            link_ready=false;s_printer_link_ready=false;
+            os_printf("[SYS] BOOT_CARRIAGE_FAILED code=%d printing_BLOCKED restore_LEFT_before_restart\r\n",boot_prep);
+        }
+    }
+
 	   // ★ 测试打印：绿色 (青+黄, 掩码 0x33, 打印 600 列) ★
 	  // test_print_solid_color_bar(COLOR_MASK_GREEN, 600);
 	// test_print_multi_lines_for_scope(COLOR_MASK_GREEN, 10);
@@ -347,7 +355,7 @@ static void app_printer_task_entry(void *arg) {
         os_printf("[SYS] APP_SERVICE_BLACK_YELLOW_V1 margin_each=%lu print_steps=%lu span=%lu service_head_OFF black_then_yellow\r\n",
                   (unsigned long)PRINTER_SERVICE_MARGIN_STEPS, (unsigned long)PRINTER_SERVICE_BASE_STEPS, (unsigned long)PRINTER_SERVICE_SPAN_STEPS);
 #else
-        os_printf("[SYS] APP_SERVICE_CMY_PREP_V12 margin_each=%lu print_steps=%lu span=%lu actual_APP_CMY bands_24 alternating_direction HC_LBUFv1_required timer4_step_us120 line_period_us985 canvas_width_mm50_same_endpoints head_OFF_startup_round_trip load_offset_uncalibrated no_column_waits blank_band_scans page_power_session U4_hold_phase_MS111 service_head_OFF\r\n",
+        os_printf("[SYS] APP_SERVICE_CMY_BOOT_PREP_V13 margin_each=%lu print_steps=%lu span=%lu actual_APP_CMY bands_24 alternating_direction HC_LBUFv1_required timer4_step_us120 line_period_us985 canvas_width_mm50_same_endpoints boot_head_OFF_round_trip_1 total_stroke_plus_2mm head_OFF_startup_round_trip load_offset_uncalibrated no_column_waits blank_band_scans page_power_session U4_hold_phase_MS111 service_head_OFF\r\n",
                   (unsigned long)PRINTER_SERVICE_MARGIN_STEPS, (unsigned long)PRINTER_SERVICE_BASE_STEPS, (unsigned long)PRINTER_SERVICE_SPAN_STEPS);
 #endif
 #elif PRINTER_BLACK_PREFIX
