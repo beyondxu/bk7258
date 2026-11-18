@@ -157,7 +157,7 @@
 #define PRINTER_STARTUP_PREP 1
 #endif
 #ifndef PRINTER_STARTUP_WIPE_STEPS
-#define PRINTER_STARTUP_WIPE_STEPS 4114U /* 22mm one-way, +2mm maintenance only */
+#define PRINTER_STARTUP_WIPE_STEPS 3740U /* user correction: stage 1 stays 20mm */
 #endif
 #ifndef PRINTER_STARTUP_WIPE_ROUNDS
 #define PRINTER_STARTUP_WIPE_ROUNDS 2U

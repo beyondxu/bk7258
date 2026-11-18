@@ -81,7 +81,7 @@ static void printer_bidirectional_abort(void){printer_buffered_stop();boost=0;s_
 #define PRINTER_PAGE_FEED_DIRECTION 0
 #define PRINTER_STARTUP_LOAD_ROUNDS 3U
 #define PRINTER_BUFFERED_LINE 1
-#define PRINTER_STARTUP_WIPE_STEPS 4114U
+#define PRINTER_STARTUP_WIPE_STEPS 3740U
 #define PRINTER_STARTUP_WIPE_ROUNDS 2U
 static unsigned load_calls,total_paper;
 static int motor_page_load_keep_power_guarded(uint32_t steps,uint8_t direction,uint32_t*sent,int(*keep_running)(void)){
@@ -130,11 +130,11 @@ int main(int argc,char**argv){
  if(mode==7||mode==8){
   assert(printer_buffered_wipe(0U,2U)==-7&&pos==-(int32_t)PRINTER_MAINTENANCE_EXTRA_STEPS);
   assert(printer_buffered_wipe(PRINTER_MAINTENANCE_SPAN_STEPS,2U)==-7&&pos==-(int32_t)PRINTER_MAINTENANCE_EXTRA_STEPS);
-  assert(printer_buffered_wipe(4114U,3U)==-7&&pos==-(int32_t)PRINTER_MAINTENANCE_EXTRA_STEPS);
-  int wipe=printer_buffered_wipe(4114U,2U);
+  assert(printer_buffered_wipe(3740U,3U)==-7&&pos==-(int32_t)PRINTER_MAINTENANCE_EXTRA_STEPS);
+  int wipe=printer_buffered_wipe(3740U,2U);
   if(mode==7){
-   assert(!wipe&&pos==-(int32_t)PRINTER_MAINTENANCE_EXTRA_STEPS&&s_bidi_known&&!s_bidi_right&&max_pos==3740);
-   assert(s_blank_spi_steps[0]==8228&&s_blank_spi_steps[1]==8228);
+   assert(!wipe&&pos==-(int32_t)PRINTER_MAINTENANCE_EXTRA_STEPS&&s_bidi_known&&!s_bidi_right&&max_pos==3740-(int32_t)PRINTER_MAINTENANCE_EXTRA_STEPS);
+   assert(s_blank_spi_steps[0]==7480&&s_blank_spi_steps[1]==7480);
   }
   else assert(wipe==-14&&pos==-(int32_t)PRINTER_MAINTENANCE_EXTRA_STEPS+60&&!s_bidi_known);
   assert(!hc_fires&&!timer_enabled&&sync_high);printer_buffered_stop();free(row);
@@ -173,7 +173,7 @@ int main(int argc,char**argv){
 #endif
   assert(hc_fires==1180&&cache.state==PL_DONE);
   assert(!printer_bidirectional_finish()&&pos==-(int32_t)PRINTER_MAINTENANCE_EXTRA_STEPS&&s_bidi_at_wiper&&!boost);
-  printer_buffered_stop();free(row);puts("PASS startup: two 22mm wipes, six concurrent 1.8mm feeds, total 10.8mm, final LEFT, no fires until loading completes, image row starts from actual endpoint");return 0;
+  printer_buffered_stop();free(row);puts("PASS startup: two 20mm wipes, six concurrent 1.8mm feeds, total 10.8mm, final LEFT, no fires until loading completes, image row starts from actual endpoint");return 0;
  }
  int rc=printer_execute_buffered_line(row,1);
  if(!mode||mode==5){

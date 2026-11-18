@@ -1,3 +1,5 @@
+用户后续纠正：第一阶段不加长，恢复20mm；最终参数见 [STAGE1_20MM_STAGE2_PLUS2_TEST.md](STAGE1_20MM_STAGE2_PLUS2_TEST.md)。下文为V19记录。
+
 # V19：维护行程加2mm，喷墨行程不变
 
 BK分支codex/printer-startup-load-prep；启动标记APP_SERVICE_CMY_MAINT_PLUS2_V19。

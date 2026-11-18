@@ -17,7 +17,7 @@ h=r'''
 #define BK_OK 0
 #define PRINTER_STARTUP_LOAD_STEPS 702U
 #define PRINTER_STARTUP_LOAD_ROUNDS 3U
-#define PRINTER_STARTUP_WIPE_STEPS 4114U
+#define PRINTER_STARTUP_WIPE_STEPS 3740U
 #define PRINTER_STARTUP_WIPE_ROUNDS 2U
 #define PRINTER_BUFFERED_LINE 1
 #define PRINTER_PAGE_FEED_DIRECTION 0
@@ -43,7 +43,7 @@ static int printer_buffered_load_while_moving(unsigned steps,unsigned dir){
 }
 static int tph_line_probe(void){return mode==11?-1:0;}
 static int printer_buffered_wipe(unsigned steps,unsigned rounds){
- assert(!s_bidi_right&&steps==4114&&rounds==2&&!strcmp(trace,"P"));record('W');
+ assert(!s_bidi_right&&steps==3740&&rounds==2&&!strcmp(trace,"P"));record('W');
  return mode==1?-14:mode==4?-8:0;
 }
 static int printer_buffered_leave_wiper(void){
