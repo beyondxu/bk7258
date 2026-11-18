@@ -1,3 +1,5 @@
+当前三轮、分六次进纸共12mm的实现见 [WIPER20_PARALLEL_LOAD12_TEST.md](WIPER20_PARALLEL_LOAD12_TEST.md)。下文为V16历史参数。
+
 # 刮刀端20mm往返两轮，字车与10mm进纸并行
 
 BK分支 codex/printer-startup-load-prep，启动标记 APP_SERVICE_CMY_WIPE20_PARLOAD10_V16。

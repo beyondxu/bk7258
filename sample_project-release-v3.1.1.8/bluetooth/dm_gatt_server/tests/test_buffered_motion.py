@@ -72,25 +72,26 @@ static int motor_page_load_keep_power_guarded(uint32_t,uint8_t,uint32_t*,int(*)(
 #include "printer_buffered_motion.h"
 static void printer_bidirectional_abort(void){printer_buffered_stop();boost=0;s_bidi_power=false;s_bidi_known=false;}
 #ifndef TEST_LOAD_STEPS
-#define TEST_LOAD_STEPS 3900U
+#define TEST_LOAD_STEPS 780U
 #endif
 #define PRINTER_STARTUP_LOAD_STEPS TEST_LOAD_STEPS
 #define PRINTER_PAGE_FEED_DIRECTION 0
+#define PRINTER_STARTUP_LOAD_ROUNDS 3U
 #define PRINTER_BUFFERED_LINE 1
 #define PRINTER_STARTUP_WIPE_STEPS 3740U
 #define PRINTER_STARTUP_WIPE_ROUNDS 2U
-static unsigned load_calls;
+static unsigned load_calls,total_paper;
 static int motor_page_load_keep_power_guarded(uint32_t steps,uint8_t direction,uint32_t*sent,int(*keep_running)(void)){
- assert(pos==0&&!s_bidi_right&&boost&&timer_enabled&&sync_high&&!hc_fires);
- assert(cache.state==PL_IDLE&&steps==3900&&!direction&&keep_running);
- ++load_calls;*sent=0;
+ assert(pos==(dir?0:(int32_t)PRINTER_SERVICE_SPAN_STEPS)&&s_bidi_right==!dir&&boost&&timer_enabled&&sync_high&&!hc_fires);
+ assert(cache.state==PL_IDLE&&steps==780&&!direction&&keep_running);
+ int32_t start_pos=pos;++load_calls;*sent=0;
  for(unsigned i=0;i<steps;i++){
   if(!keep_running())return -1;
   if(mode==9&&i==100)return -1;
-  advance(1200U);++*sent;
+  advance(1200U);++*sent;++total_paper;
   assert(sync_high&&!hc_fires&&cache.state==PL_IDLE);
  }
- assert(pos>0); /* carriage progressed while paper was feeding, not afterwards */
+ assert(pos!=start_pos); /* carriage progressed while paper was feeding, not afterwards */
  return 0;
 }
 #define printer_execute_bidirectional_line printer_execute_buffered_line
@@ -134,7 +135,7 @@ int main(int argc,char**argv){
   puts("PASS short timer wipe: zero fires, exact excursions, no blind return on IRQ fault");return 0;
  }
  if(mode==9||mode==10){
-  int result=printer_buffered_load_while_moving(3900U,0U);
+  int result=printer_buffered_load_while_moving(780U,0U);
   assert(result==(mode==9?-10:-14)&&!s_bidi_known&&!timer_enabled&&!hc_fires&&sync_high);
   if(mode==9)assert(pos>0&&pos<(int32_t)PRINTER_SERVICE_SPAN_STEPS);
   else assert(pos==60);
@@ -144,9 +145,10 @@ int main(int argc,char**argv){
   assert(!printer_startup_prepare(1U));
   assert(s_bidi_known&&!hc_fires&&!timer_enabled&&sync_high);
 #if PRINTER_STARTUP_LOAD_STEPS > 0
-  assert(load_calls==1&&pos==(int32_t)PRINTER_SERVICE_SPAN_STEPS&&s_bidi_right);
-  assert(!printer_execute_buffered_line(row,0));
-  assert(pos==0);
+  assert(load_calls==6&&total_paper==4680&&pos==0&&!s_bidi_right);
+  assert(!printer_execute_buffered_line(row,1));
+  assert(pos==(int32_t)PRINTER_SERVICE_SPAN_STEPS);
+  assert(!printer_execute_buffered_line(NULL,0)&&pos==0);
 #else
   assert(!load_calls&&pos==0&&!s_bidi_right);
   assert(!printer_execute_buffered_line(row,1));
@@ -154,7 +156,7 @@ int main(int argc,char**argv){
   assert(!printer_execute_buffered_line(NULL,0)&&pos==0);
 #endif
   assert(hc_fires==1180&&cache.state==PL_DONE);
-  printer_buffered_stop();free(row);puts("PASS startup: two 20mm wipes, paper and carriage move together, no fires until loading completes, image row starts from actual endpoint");return 0;
+  printer_buffered_stop();free(row);puts("PASS startup: two 20mm wipes, six concurrent 2mm feeds, total 12mm, final LEFT, no fires until loading completes, image row starts from actual endpoint");return 0;
  }
  int rc=printer_execute_buffered_line(row,1);
  if(!mode||mode==5){

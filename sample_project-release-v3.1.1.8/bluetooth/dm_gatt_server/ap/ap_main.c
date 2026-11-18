@@ -355,7 +355,7 @@ static void app_printer_task_entry(void *arg) {
         os_printf("[SYS] APP_SERVICE_BLACK_YELLOW_V1 margin_each=%lu print_steps=%lu span=%lu service_head_OFF black_then_yellow\r\n",
                   (unsigned long)PRINTER_SERVICE_MARGIN_STEPS, (unsigned long)PRINTER_SERVICE_BASE_STEPS, (unsigned long)PRINTER_SERVICE_SPAN_STEPS);
 #else
-        os_printf("[SYS] APP_SERVICE_CMY_WIPE20_PARLOAD10_V16 margin_each=%lu print_steps=%lu span=%lu actual_APP_CMY bands_24 alternating_direction HC_LBUFv1_required timer4_step_us120 line_period_us985 canvas_width_mm50_same_endpoints boot_head_OFF_round_trip_1 total_stroke_plus_2mm page_wipe_2x20mm_then_parallel_load10_head_OFF page_load_10mm_3900steps no_column_waits blank_band_scans page_power_session U4_hold_phase_MS111 service_head_OFF\r\n",
+        os_printf("[SYS] APP_SERVICE_CMY_WIPE20_PARLOAD12_V17 margin_each=%lu print_steps=%lu span=%lu actual_APP_CMY bands_24 alternating_direction HC_LBUFv1_required timer4_step_us120 line_period_us985 canvas_width_mm50_same_endpoints boot_head_OFF_round_trip_1 span11408_total_stroke_plus_2mm_V16 page_wipe_2x20mm_then_parallel_load_3rounds_2mm_each_leg_total12mm_head_OFF page_load_6legs_780steps no_column_waits blank_band_scans page_power_session U4_hold_phase_MS111 service_head_OFF\r\n",
                   (unsigned long)PRINTER_SERVICE_MARGIN_STEPS, (unsigned long)PRINTER_SERVICE_BASE_STEPS, (unsigned long)PRINTER_SERVICE_SPAN_STEPS);
 #endif
 #elif PRINTER_BLACK_PREFIX

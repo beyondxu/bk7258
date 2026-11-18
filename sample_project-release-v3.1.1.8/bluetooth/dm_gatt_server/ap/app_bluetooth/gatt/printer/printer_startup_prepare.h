@@ -18,6 +18,11 @@ static int printer_startup_prepare(unsigned for_page) {
         if (result) return result;
 #endif
 #if PRINTER_STARTUP_LOAD_STEPS > 0
+        const uint32_t legs=PRINTER_STARTUP_LOAD_ROUNDS*2U;
+        os_printf("[PAGE_LOAD_PLAN] round_trips=%u legs=%lu paper_steps_per_leg=%u total_paper_steps=%lu head_OFF\r\n",
+                  PRINTER_STARTUP_LOAD_ROUNDS,(unsigned long)legs,PRINTER_STARTUP_LOAD_STEPS,
+                  (unsigned long)(legs*PRINTER_STARTUP_LOAD_STEPS));
+        for(uint32_t leg=0;leg<legs;++leg){
 #if PRINTER_BUFFERED_LINE
         result=printer_buffered_load_while_moving(PRINTER_STARTUP_LOAD_STEPS,PRINTER_PAGE_FEED_DIRECTION);
         if(result)return result;
@@ -29,6 +34,10 @@ static int printer_startup_prepare(unsigned for_page) {
                   (unsigned long)sent,(unsigned long)PRINTER_STARTUP_LOAD_STEPS,result);
         if (result!=BK_OK || sent!=PRINTER_STARTUP_LOAD_STEPS) return -10;
 #endif
+            os_printf("[PAGE_LOAD_LEG_DONE] leg=%lu/%lu cumulative_paper_steps=%lu head_OFF\r\n",
+                      (unsigned long)(leg+1U),(unsigned long)legs,
+                      (unsigned long)((leg+1U)*PRINTER_STARTUP_LOAD_STEPS));
+        }
 #else
         os_printf("[PAGE_PREP_LOAD] disabled reason=OFFSET_UNCALIBRATED pulses=0\r\n");
 #endif

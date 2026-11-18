@@ -163,7 +163,13 @@
 #define PRINTER_STARTUP_WIPE_ROUNDS 2U
 #endif
 #ifndef PRINTER_STARTUP_LOAD_STEPS
-#define PRINTER_STARTUP_LOAD_STEPS 3900U /* user requests 10mm; measured 11700 pulses/30mm */
+#define PRINTER_STARTUP_LOAD_STEPS 780U /* 2mm PER SINGLE LEG, 11700 pulses/30mm */
+#endif
+#ifndef PRINTER_STARTUP_LOAD_ROUNDS
+#define PRINTER_STARTUP_LOAD_ROUNDS 3U /* six single legs; 6*2mm = 12mm */
+#endif
+#if PRINTER_STARTUP_LOAD_ROUNDS < 1 || PRINTER_STARTUP_LOAD_ROUNDS > 3
+#error Startup loading requires one to three bounded round trips
 #endif
 #if PRINTER_STARTUP_LOAD_STEPS > 5000U
 #error Startup loading offset must be bounded to at most 5000 pulses

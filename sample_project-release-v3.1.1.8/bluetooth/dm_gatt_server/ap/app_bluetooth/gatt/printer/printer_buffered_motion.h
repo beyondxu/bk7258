@@ -125,17 +125,19 @@ failed:
 }
 static int printer_buffered_load_continue(void){return s_buf_error==0U;}
 /* The carriage runs in TIMER4 while this task feeds paper. Image ARM/SYNC is
- * deliberately absent. Return at RIGHT; the page starts its first row LEFT. */
+ * deliberately absent. Alternate direction from the current counted endpoint. */
 static int printer_buffered_load_while_moving(uint32_t paper_steps,uint8_t paper_direction){
- if(!s_bidi_known||s_bidi_right||s_buf_active||!paper_steps||paper_steps>5000U||paper_direction>1U)return -7;
+ if(!s_bidi_known||s_buf_active||!paper_steps||paper_steps>5000U||paper_direction>1U)return -7;
  if(tph_mcu_set_head_power(0)!=BK_OK)return -8;
  if(printer_buffered_claim())return -14;
  if(printer_bidi_power_up()!=0)return -8;
- GPIO_UP(TPH_MOT_DIR);delay_us(50U);
- s_buf_target=PRINTER_SERVICE_SPAN_STEPS;s_buf_direction=1U;s_buf_ink=0U;s_buf_sync=0U;
+ uint8_t carriage_direction=s_bidi_right?0U:1U;
+ if(carriage_direction)GPIO_UP(TPH_MOT_DIR);else GPIO_DOWN(TPH_MOT_DIR);
+ delay_us(50U);
+ s_buf_target=PRINTER_SERVICE_SPAN_STEPS;s_buf_direction=carriage_direction;s_buf_ink=0U;s_buf_sync=0U;
  s_buf_steps=0;s_buf_error=0;s_buf_max_gap=0;s_buf_cruise_max_gap=0;
  s_buf_period=printer_buffered_period(0U);
- os_printf("[PAGE_LOAD_MOVE_BEGIN] paper_steps=%lu carriage=RIGHT head_OFF no_ARM_no_SYNC\r\n",(unsigned long)paper_steps);
+ os_printf("[PAGE_LOAD_MOVE_BEGIN] paper_steps=%lu carriage=%s head_OFF no_ARM_no_SYNC\r\n",(unsigned long)paper_steps,carriage_direction?"RIGHT":"LEFT");
  s_buf_last_irq=(uint32_t)bk_aon_rtc_get_us();
  uint32_t begin=s_buf_last_irq,sent=0;int result=-14;
  s_bidi_known=false;__sync_synchronize();s_buf_active=1U;
@@ -148,8 +150,8 @@ static int printer_buffered_load_while_moving(uint32_t paper_steps,uint8_t paper
  }
  (void)bk_timer_stop(PL_MOTOR_TIMER);
  if(s_buf_error||s_buf_steps!=PRINTER_SERVICE_SPAN_STEPS)goto failed;
- s_bidi_known=true;s_bidi_right=true;
- os_printf("[PAGE_PREP_LOAD] pulses=%lu/%lu code=0 parallel_carriage_steps=%lu endpoint=RIGHT head_OFF distance_unverified\r\n",(unsigned long)sent,(unsigned long)paper_steps,(unsigned long)s_buf_steps);
+ s_bidi_known=true;s_bidi_right=carriage_direction?true:false;
+ os_printf("[PAGE_PREP_LOAD] pulses=%lu/%lu code=0 parallel_carriage_steps=%lu endpoint=%s head_OFF distance_unverified\r\n",(unsigned long)sent,(unsigned long)paper_steps,(unsigned long)s_buf_steps,s_bidi_right?"RIGHT":"LEFT");
  return 0;
 failed:
  os_printf("[PAGE_LOAD_MOVE_STOP] code=%d paper_pulses=%lu carriage_pulses=%lu irq_error=%lu no_blind_return\r\n",result,(unsigned long)sent,(unsigned long)s_buf_steps,(unsigned long)s_buf_error);
