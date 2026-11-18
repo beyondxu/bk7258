@@ -1,3 +1,5 @@
+当前 50mm APP 画布调整见 [APP_CANVAS_50MM_TEST.md](APP_CANVAS_50MM_TEST.md)。下文保留原 V10 参数记录。
+
 # 整行缓存与定时打印：V10
 
 旧程序在每列SPI/HC32握手期间停止输出STEP。即使平均速度相近，仍有每列停顿；

@@ -139,6 +139,9 @@ static int printer_run_full_page(const uint8_t *bin, uint32_t length) {
               (unsigned long)page.width, (unsigned long)page.height, (unsigned long)bands,
               (unsigned long)page.max_delay, (unsigned long)cfg.x_pitch_centi_um,
               (long)cfg.x_direction, (unsigned)PRINTER_PAGE_FEED_STEPS, (unsigned)PRINTER_PAGE_TRANSFORM, (unsigned)PRINTER_PAGE_COLOR_MODE);
+    os_printf("[PAGE_SIZE] canvas_width_um=%lu canvas_height_um=%lu APP_white_margins_preserved measured_calibration_required\r\n",
+              (unsigned long)(((uint64_t)page.width*cfg.x_pitch_centi_um+50U)/100U),
+              (unsigned long)(((uint64_t)page.height*PRINTER_PAGE_Y_PITCH+50U)/100U));
     os_printf("[PAGE_DOTS] source_CMY=%lu,%lu,%lu resized_CMY=%lu,%lu,%lu\r\n",
               (unsigned long)page.source_dots[0], (unsigned long)page.source_dots[1], (unsigned long)page.source_dots[2],
               (unsigned long)page.output_dots[0], (unsigned long)page.output_dots[1], (unsigned long)page.output_dots[2]);

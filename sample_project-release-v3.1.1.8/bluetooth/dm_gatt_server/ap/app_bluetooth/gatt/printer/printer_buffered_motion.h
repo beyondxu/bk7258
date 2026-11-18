@@ -1,8 +1,9 @@
 #ifndef PRINTER_BUFFERED_MOTION_H
 #define PRINTER_BUFFERED_MOTION_H
 #include <driver/timer.h>
+#include "printer_canvas_geometry.h"
 #define PL_MOTOR_TIMER TIMER_ID4
-#define PL_STEP_PERIOD_US 120U
+#define PL_STEP_PERIOD_US PRINTER_CANVAS_STEP_US
 #define PL_START_PERIOD_US 1000U
 #define PL_RAMP_STEPS 400U
 static volatile uint32_t s_buf_active,s_buf_steps,s_buf_sync,s_buf_error,s_buf_last_irq,s_buf_max_gap,s_buf_cruise_max_gap,s_buf_period;
@@ -22,7 +23,7 @@ static void printer_buffered_tick(timer_id_t id){
  if(gap>s_buf_max_gap)s_buf_max_gap=gap;
  if(s_buf_steps>PL_RAMP_STEPS+2U&&s_buf_steps<PRINTER_SERVICE_SPAN_STEPS-PL_RAMP_STEPS&&gap>s_buf_cruise_max_gap)s_buf_cruise_max_gap=gap;
  s_buf_last_irq=now;
- uint32_t lead=PRINTER_SERVICE_MARGIN_STEPS+(s_buf_direction?200U:206U);
+ uint32_t lead=PRINTER_CANVAS_LEAD_STEPS;
  if(s_buf_ink&&s_buf_steps==lead){s_buf_sync_us=now;s_buf_sync=1U;bk_gpio_set_output_low(PIN_BK_SYNC_OUT);}
  GPIO_UP(TPH_MOT_STEP);delay_us(4U);GPIO_DOWN(TPH_MOT_STEP);
  ++s_buf_steps;++s_blank_spi_steps[s_buf_direction?1:0];
@@ -51,7 +52,7 @@ static int printer_execute_buffered_line(const uint8_t*columns,uint8_t direction
  uint64_t prepare_start=bk_aon_rtc_get_us();
  if(printer_bidi_power_up()!=0){result=-8;goto stop;}
  if(columns){
-  if(tph_line_prepare(columns,PL_STEP_PERIOD_US*6U,&ticket)!=BK_OK){result=-13;goto stop;}
+  if(tph_line_prepare(columns,PRINTER_CANVAS_COLUMN_US,&ticket)!=BK_OK){result=-13;goto stop;}
   armed=1;
  }
  uint32_t prepare_us=(uint32_t)(bk_aon_rtc_get_us()-prepare_start);

@@ -14,6 +14,7 @@ h=r'''
 #include <string.h>
 #include "printer_line_cache.h"
 #include "printer_service_geometry.h"
+#include "printer_canvas_geometry.h"
 typedef int bk_err_t;typedef int timer_id_t;typedef void(*timer_isr_t)(timer_id_t);
 #define BK_OK 0
 #define BK_FAIL -1
@@ -45,7 +46,8 @@ static void bk_gpio_set_output_low(unsigned pin){
  assert(pin==1);sync_high=0;
  if(cache.state==PL_ARMED){
   cache.state=PL_RUNNING;cache.fired=0;hc_fires=0;
-  assert(timer_enabled);assert(pos==(dir?1790:8864));
+  assert(timer_enabled);assert(pos==(dir?(int32_t)PRINTER_CANVAS_LEAD_STEPS:10660-(int32_t)PRINTER_CANVAS_LEAD_STEPS));
+  assert(cache.period_us==PRINTER_CANVAS_COLUMN_US);
   ++cache.fired;++hc_fires;next_hc=now_us+cache.period_us;
  }
 }
@@ -75,7 +77,12 @@ static void advance(unsigned us){
   uint64_t next=b<h?b:h;if(next>target)break;
   now_us=next;
   if(h<=b){
-   if(mode!=4)assert(pos==(dir?1790+(int32_t)cache.fired*6:8864-(int32_t)cache.fired*6));
+   if(mode!=4){
+    int32_t delta=(cache.fired*PRINTER_CANVAS_COLUMN_US+PRINTER_CANVAS_STEP_US-1U)/PRINTER_CANVAS_STEP_US;
+    assert(pos==(dir?(int32_t)PRINTER_CANVAS_LEAD_STEPS+delta:10660-(int32_t)PRINTER_CANVAS_LEAD_STEPS-delta));
+    /* Every column occurs after acceleration and before deceleration. */
+    assert(pos>450&&pos<10660-450);
+   }
    ++cache.fired;++hc_fires;
    if(cache.fired==1180)cache.state=PL_DONE;else next_hc+=cache.period_us;
   }else{

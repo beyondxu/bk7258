@@ -197,7 +197,8 @@
 #error Mapping audit requires receive-only mode; do not enable uncalibrated firing
 #endif
 #ifndef PRINTER_MAP_X_PITCH_CENTI_UM
-#define PRINTER_MAP_X_PITCH_CENTI_UM 3000
+#include "printer_canvas_geometry.h"
+#define PRINTER_MAP_X_PITCH_CENTI_UM PRINTER_CANVAS_X_PITCH_CENTI_UM
 #endif
 #ifndef PRINTER_MAP_X_DIRECTION
 #define PRINTER_MAP_X_DIRECTION -1
