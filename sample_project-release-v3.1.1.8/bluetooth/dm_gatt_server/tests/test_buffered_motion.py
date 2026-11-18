@@ -33,6 +33,12 @@ static printer_line_cache_t cache;
 static uint64_t now_us,next_bk,next_hc;
 static unsigned timer_enabled,timer_period,timer_reserved,boost,step,dir,sync_high=1,mode,hc_fires,irq_stall;
 static int32_t pos,max_pos;
+static unsigned oc3_level=1,oc3_events,oc3_left_edges,oc3_right_pulses;
+static void (*oc3_handler)(void);
+static int motor_oc3_ready(void){return mode!=20;}
+static int motor_oc3_active(void){return !oc3_level;}
+static void motor_oc3_set_handler(void(*handler)(void)){oc3_handler=handler;}
+
 static timer_isr_t callback;
 static uint32_t s_blank_spi_columns,s_blank_spi_steps[2];
 static bool s_bidi_at_wiper=false;
@@ -41,7 +47,23 @@ typedef struct {uint32_t token,period_us,crc;}tph_line_ticket_t;
 static void advance(unsigned us);
 static uint64_t bk_aon_rtc_get_us(void){return now_us/32U*32U;}
 static void delay_us(unsigned n){assert(n==4||n==50);now_us+=n;}
-static void up(unsigned p){if(p==50){assert(!timer_enabled&&!step);dir=1;return;}assert(p==19&&boost&&!step);step=1;pos+=dir?1:-1;if(pos>max_pos)max_pos=pos;assert(pos>=-(int32_t)PRINTER_MAINTENANCE_EXTRA_STEPS&&pos<=((int32_t)PRINTER_SERVICE_SPAN_STEPS));}
+static void up(unsigned p){
+ if(p==50){assert(!timer_enabled&&!step);dir=1;return;}
+ assert(p==19&&boost&&!step);step=1;pos+=dir?1:-1;
+ if(pos>max_pos)max_pos=pos;
+ assert(pos>=-(int32_t)PRINTER_MAINTENANCE_EXTRA_STEPS&&pos<=(int32_t)PRINTER_SERVICE_SPAN_STEPS);
+ if(dir){
+  ++oc3_right_pulses;
+  unsigned trip=mode==15?3001U:mode==22?10801U:mode==16?10001U:mode==17?61U:101U;
+  if(((mode==13||mode==15||mode==16||mode==17||mode==18||mode==21||mode==22)&&!oc3_events&&oc3_right_pulses==trip)||(mode==23&&oc3_level&&pos==(int32_t)PRINTER_SERVICE_SPAN_STEPS)){
+   /* An optical edge fixes RIGHT even if the previous counted origin was wrong. */
+   ++oc3_events;oc3_level=0;pos=PRINTER_SERVICE_SPAN_STEPS;
+   if(mode!=21){assert(oc3_handler);oc3_handler();} /* mode21 tests level fallback */
+  }
+ }else if(!oc3_level){
+  if(++oc3_left_edges>=8&&mode!=18&&mode!=24)oc3_level=1;
+ }
+}
 static void down(unsigned p){if(p==50){assert(!timer_enabled&&!step);dir=0;return;}assert(p==19&&step);step=0;}
 #define GPIO_UP(p) up(p)
 #define GPIO_DOWN(p) down(p)
@@ -127,6 +149,61 @@ static void advance(unsigned us){
 int main(int argc,char**argv){
  assert(argc==2);mode=atoi(argv[1]);if(mode>=6){pos=-(int32_t)PRINTER_MAINTENANCE_EXTRA_STEPS;s_bidi_at_wiper=true;}
  uint8_t*row=malloc(PL_ROW_BYTES);for(unsigned i=0;i<PL_ROW_BYTES;i++)row[i]=(i*7+i/100)&63U;
+ if(mode>=13){
+  if(mode==14){pos=PRINTER_SERVICE_SPAN_STEPS;oc3_level=0;}
+  if(mode==13||mode==14||mode==18||mode==21){
+   int result=printer_buffered_boot_round_trip();
+   assert(result==(mode==18?PRINTER_OC3_STUCK:0));
+   assert(pos==-(int32_t)PRINTER_MAINTENANCE_EXTRA_STEPS&&!load_calls&&!hc_fires);
+   assert(!timer_enabled&&sync_high);
+   if(mode==14)assert(!oc3_right_pulses);
+   if(mode==18)assert(!s_bidi_known&&!oc3_level);else assert(s_bidi_known&&s_bidi_at_wiper&&oc3_level);
+  }else if(mode==15){
+   pos=0;s_bidi_at_wiper=false;
+   assert(printer_execute_buffered_line(row,1U)==PRINTER_OC3_RETURNED);
+   assert(hc_fires>0&&hc_fires<1180&&pos==-(int32_t)PRINTER_MAINTENANCE_EXTRA_STEPS&&s_bidi_at_wiper&&s_bidi_known);
+   assert(oc3_right_pulses==3001&&!timer_enabled&&sync_high&&oc3_level);
+  }else if(mode==16){
+   assert(!printer_buffered_load_while_moving(702U,0U));
+   assert(s_bidi_right&&!s_bidi_at_wiper&&total_paper==702&&oc3_level==0);
+   assert(!printer_buffered_load_while_moving(702U,0U));
+   assert(!s_bidi_right&&s_bidi_at_wiper&&total_paper==1404&&oc3_level);
+   assert(pos==-(int32_t)PRINTER_MAINTENANCE_EXTRA_STEPS&&!hc_fires);
+  }else if(mode==17){
+   assert(!printer_buffered_load_while_moving(702U,0U));
+   assert(total_paper==702&&!hc_fires&&s_bidi_known&&s_bidi_right&&!oc3_level);
+   assert(!printer_buffered_load_while_moving(702U,0U));
+   assert(total_paper==1404&&s_bidi_at_wiper&&oc3_level&&pos==-(int32_t)PRINTER_MAINTENANCE_EXTRA_STEPS);
+  }else if(mode==19){
+   pos=PRINTER_SERVICE_SPAN_STEPS;s_bidi_at_wiper=false;s_bidi_right=true;oc3_level=0;
+   assert(!printer_buffered_park_at_wiper()&&oc3_level&&!hc_fires);
+   assert(pos==-(int32_t)PRINTER_MAINTENANCE_EXTRA_STEPS&&!oc3_events);
+  }else if(mode==20){
+   pos=0;s_bidi_at_wiper=false;
+   assert(printer_execute_buffered_line(row,1U)==-14&&!timer_enabled&&!hc_fires&&pos==0);
+  }
+  if(mode==24){
+   pos=PRINTER_SERVICE_SPAN_STEPS;s_bidi_at_wiper=false;s_bidi_right=true;oc3_level=0;
+   assert(printer_execute_buffered_line(row,0U)==PRINTER_OC3_STUCK&&!s_bidi_known);
+   assert(pos==-(int32_t)PRINTER_MAINTENANCE_EXTRA_STEPS&&!timer_enabled);
+  }
+  if(mode==22){
+   pos=0;s_bidi_at_wiper=false;
+   assert(!printer_execute_buffered_line(row,1U)&&s_bidi_right&&hc_fires==1180);
+   assert(!printer_execute_buffered_line(row,0U)&&s_bidi_at_wiper&&hc_fires==1180);
+   assert(pos==-(int32_t)PRINTER_MAINTENANCE_EXTRA_STEPS&&oc3_level);
+  }
+  if(mode==23){
+   assert(!printer_startup_prepare(1U)&&load_calls==6&&total_paper==4212&&oc3_events==3&&pos==0);
+   for(unsigned pair=0;pair<2;pair++){
+    assert(!printer_execute_buffered_line(row,1U)&&s_bidi_right&&hc_fires==1180);
+    assert(!printer_execute_buffered_line(row,0U)&&s_bidi_at_wiper&&hc_fires==1180);
+    assert(pos==-(int32_t)PRINTER_MAINTENANCE_EXTRA_STEPS&&oc3_level);
+   }
+   assert(oc3_events==5&&total_paper==4212);
+  }
+  printer_buffered_stop();free(row);puts("PASS OC3: edge/poll/initial-LOW stop, fixed LEFT return, no retrigger on LEFT, partial-print abort, late/early feed handling, stuck/input-init failure");return 0;
+ }
  if(mode==7||mode==8){
   assert(printer_buffered_wipe(0U,2U)==-7&&pos==-(int32_t)PRINTER_MAINTENANCE_EXTRA_STEPS);
   assert(printer_buffered_wipe(PRINTER_MAINTENANCE_SPAN_STEPS,2U)==-7&&pos==-(int32_t)PRINTER_MAINTENANCE_EXTRA_STEPS);
@@ -164,12 +241,12 @@ int main(int argc,char**argv){
   assert(load_calls==6&&total_paper==4212&&pos==0&&!s_bidi_right&&!s_bidi_at_wiper);
   assert(!printer_execute_buffered_line(row,1));
   assert(pos==(int32_t)PRINTER_SERVICE_SPAN_STEPS);
-  assert(!printer_execute_buffered_line(NULL,0)&&pos==0);
+  assert(!printer_execute_buffered_line(NULL,0)&&pos==-(int32_t)PRINTER_MAINTENANCE_EXTRA_STEPS);
 #else
   assert(!load_calls&&pos==0&&!s_bidi_right&&!s_bidi_at_wiper);
   assert(!printer_execute_buffered_line(row,1));
   assert(pos==(int32_t)PRINTER_SERVICE_SPAN_STEPS);
-  assert(!printer_execute_buffered_line(NULL,0)&&pos==0);
+  assert(!printer_execute_buffered_line(NULL,0)&&pos==-(int32_t)PRINTER_MAINTENANCE_EXTRA_STEPS);
 #endif
   assert(hc_fires==1180&&cache.state==PL_DONE);
   assert(!printer_bidirectional_finish()&&pos==-(int32_t)PRINTER_MAINTENANCE_EXTRA_STEPS&&s_bidi_at_wiper&&!boost);
@@ -179,10 +256,10 @@ int main(int argc,char**argv){
  if(!mode||mode==5){
   assert(!rc&&pos==((int32_t)PRINTER_SERVICE_SPAN_STEPS)&&s_bidi_right&&hc_fires==1180&&s_blank_spi_columns==1180&&cache.state==PL_DONE);
   assert(!memcmp(cache.data,row,PL_ROW_BYTES));
-  assert(!printer_execute_buffered_line(row,0));assert(pos==0&&!s_bidi_right&&hc_fires==1180);
+  assert(!printer_execute_buffered_line(row,0));assert(pos==-(int32_t)PRINTER_MAINTENANCE_EXTRA_STEPS&&!s_bidi_right&&hc_fires==1180);
   assert(!printer_execute_buffered_line(NULL,1));assert(pos==((int32_t)PRINTER_SERVICE_SPAN_STEPS)&&s_blank_spi_columns==0);
-  assert(!printer_execute_buffered_line(NULL,0));assert(pos==0);
-  assert(!printer_buffered_park_at_wiper()&&pos==-(int32_t)PRINTER_MAINTENANCE_EXTRA_STEPS&&s_buf_steps==PRINTER_MAINTENANCE_EXTRA_STEPS);
+  assert(!printer_execute_buffered_line(NULL,0));assert(pos==-(int32_t)PRINTER_MAINTENANCE_EXTRA_STEPS);
+  assert(!printer_buffered_park_at_wiper()&&pos==-(int32_t)PRINTER_MAINTENANCE_EXTRA_STEPS&&s_buf_steps==PRINTER_MAINTENANCE_SPAN_STEPS);
   assert(!printer_buffered_leave_wiper()&&pos==0);
   assert(!printer_execute_buffered_line(NULL,1)&&pos==(int32_t)PRINTER_SERVICE_SPAN_STEPS);
   assert(!printer_bidirectional_finish()&&pos==-(int32_t)PRINTER_MAINTENANCE_EXTRA_STEPS&&s_buf_steps==PRINTER_MAINTENANCE_SPAN_STEPS&&!boost);
@@ -195,7 +272,7 @@ int main(int argc,char**argv){
 with tempfile.TemporaryDirectory() as t:
  p=Path(t);(p/'test.c').write_text(h);(p/'driver').mkdir();(p/'driver/timer.h').write_text('/* timer API provided by deterministic test platform */\n')
  subprocess.run(['cc','-std=c99','-O1','-Wall','-Wextra','-Werror','-fsanitize=address,undefined','-I'+str(p),'-I'+str(D),'-I'+str(H),str(p/'test.c'),'-o',str(p/'test')],check=True)
- for mode in range(13):subprocess.run([str(p/'test'),str(mode)],check=True,env={**os.environ,'ASAN_OPTIONS':'detect_leaks=0'})
+ for mode in range(25):subprocess.run([str(p/'test'),str(mode)],check=True,env={**os.environ,'ASAN_OPTIONS':'detect_leaks=0'})
 
  # Also exercise the explicitly disabled loading configuration.
  subprocess.run(['cc','-std=c99','-O1','-Wall','-Wextra','-Werror','-DTEST_LOAD_STEPS=0','-fsanitize=address,undefined','-I'+str(p),'-I'+str(D),'-I'+str(H),str(p/'test.c'),'-o',str(p/'test-zero')],check=True)

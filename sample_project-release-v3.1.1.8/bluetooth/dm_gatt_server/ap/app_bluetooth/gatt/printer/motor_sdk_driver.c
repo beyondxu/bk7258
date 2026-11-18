@@ -48,6 +48,38 @@ static void safe_gpio_config_input_pullup(gpio_id_t pin) {
     bk_gpio_set_config(pin, &cfg);
 }
 
+/* ADC_OC3 is a digital optocoupler input; register callback before enabling IRQ. */
+static volatile unsigned s_oc3_ready;
+static void (*volatile s_oc3_handler)(void);
+static void motor_oc3_isr(gpio_id_t pin){
+    if(pin==TPH_OC3_GPIO && bk_gpio_get_input(TPH_OC3_GPIO)==0 && s_oc3_handler)
+        s_oc3_handler();
+}
+int motor_oc3_ready(void){return s_oc3_ready!=0U;}
+int motor_oc3_active(void){return bk_gpio_get_input(TPH_OC3_GPIO)==0;}
+void motor_oc3_set_handler(void (*handler)(void)){s_oc3_handler=handler;}
+bk_err_t motor_oc3_init(void){
+    s_oc3_ready=0U;
+    (void)bk_gpio_disable_interrupt(TPH_OC3_GPIO);
+    (void)gpio_dev_unmap(TPH_OC3_GPIO);
+    gpio_config_t cfg={.io_mode=GPIO_INPUT_ENABLE,.pull_mode=GPIO_PULL_UP_EN,
+                       .func_mode=GPIO_SECOND_FUNC_DISABLE};
+    bk_err_t result=bk_gpio_set_config(TPH_OC3_GPIO,&cfg);
+    if(result!=BK_OK)return result;
+    result=bk_gpio_set_interrupt_type(TPH_OC3_GPIO,GPIO_INT_TYPE_FALLING_EDGE);
+    if(result!=BK_OK)return result;
+    result=bk_gpio_register_isr(TPH_OC3_GPIO,motor_oc3_isr);
+    if(result!=BK_OK)return result;
+    result=bk_gpio_clear_interrupt(TPH_OC3_GPIO);
+    if(result!=BK_OK)return result;
+    result=bk_gpio_enable_interrupt(TPH_OC3_GPIO);
+    if(result!=BK_OK)return result;
+    s_oc3_ready=1U;
+    printf("[OC3_INIT] gpio=24 input_pullup active_LOW falling_irq initial_level=%u\r\n",
+           (unsigned)bk_gpio_get_input(TPH_OC3_GPIO));
+    return BK_OK;
+}
+
 bk_err_t bk_motor_gpio_config_init(void) {
     bk_gpio_driver_init();
 
@@ -85,6 +117,9 @@ bk_err_t bk_motor_gpio_config_init(void) {
     SET_GPIO_HIGH(PAPER_MOT_EN);   
     SET_GPIO_LOW(PAPER_MOT_SLEEP); 
     SET_GPIO_LOW(PAPER_MOT_RES);   
+
+    bk_err_t oc3_result=motor_oc3_init();
+    if(oc3_result!=BK_OK){TEST_LOGE("OC3 init failed code=%d\r\n",oc3_result);return oc3_result;}
 
     return BK_OK;
 }

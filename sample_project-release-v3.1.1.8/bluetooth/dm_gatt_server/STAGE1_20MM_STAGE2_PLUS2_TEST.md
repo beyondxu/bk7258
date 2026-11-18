@@ -1,3 +1,5 @@
+最新GPIO24光耦终点控制见 [OC3_GPIO24_ENDPOINT_TEST.md](OC3_GPIO24_ENDPOINT_TEST.md)。原尺寸和维护参数继续保留。
+
 # V20：第一阶段保持20mm，仅第二阶段及回刮刀加长2mm
 
 启动标记APP_SERVICE_CMY_WIPE20_MAINT_PLUS2_V20。

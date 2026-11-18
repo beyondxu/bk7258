@@ -223,7 +223,7 @@ static int printer_run_full_page(const uint8_t *bin, uint32_t length) {
             failure_locked = true;
 #if PRINTER_PAGE_BIDIRECTIONAL
             result = printer_execute_bidirectional_line(pass_dots ? data : NULL, scan_direction);
-            if (!result) scan_direction ^= 1U;
+            if (!result) scan_direction = s_bidi_right?0U:1U;
 #elif PRINTER_PAGE_REPEAT_SAME_POWER
             result = printer_execute_same_power_repeat(data);
 #else
@@ -262,7 +262,14 @@ static int printer_run_full_page(const uint8_t *bin, uint32_t length) {
 #endif
 done:
 #if PRINTER_PAGE_BIDIRECTIONAL
-    if (result) printer_bidirectional_abort();
+    if (result) {
+#if PRINTER_BUFFERED_LINE
+        if(result==PRINTER_OC3_RETURNED && s_bidi_known && s_bidi_at_wiper)
+            (void)printer_bidirectional_finish();
+        else
+#endif
+            printer_bidirectional_abort();
+    }
 #endif
 #if PRINTER_BLACK_PREFIX
     if (black_columns) printer_map_psram_free(black_columns);

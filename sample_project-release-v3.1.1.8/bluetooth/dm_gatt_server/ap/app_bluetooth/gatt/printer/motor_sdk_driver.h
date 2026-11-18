@@ -17,6 +17,13 @@
 
 // 喷墨头移动电机 (U4) 引脚
 // 15V 升压电路使能引脚 (U3)
+/* ADC_OC3 schematic net: digital active-LOW sponge-side carriage switch. */
+#define TPH_OC3_GPIO GPIO_24
+bk_err_t motor_oc3_init(void);
+int motor_oc3_ready(void);
+int motor_oc3_active(void);
+void motor_oc3_set_handler(void (*handler)(void));
+
 #define PIN_VDD15V_EN          GPIO_13
 
 // 喷墨头移动电机 (U4) 引脚

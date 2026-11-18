@@ -15,6 +15,8 @@ static int printer_startup_prepare(unsigned for_page) {
 #if PRINTER_BUFFERED_LINE && PRINTER_STARTUP_WIPE_STEPS > 0
         /* Wipe before loading: no nozzle may fire while paper is uncovered. */
         result=printer_buffered_wipe(PRINTER_STARTUP_WIPE_STEPS,PRINTER_STARTUP_WIPE_ROUNDS);
+        if(result==PRINTER_OC3_RETURNED&&s_bidi_known&&s_bidi_at_wiper)
+            result=printer_buffered_wipe(PRINTER_STARTUP_WIPE_STEPS,PRINTER_STARTUP_WIPE_ROUNDS);
         if (result) return result;
 #endif
 #if PRINTER_STARTUP_LOAD_STEPS > 0
