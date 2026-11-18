@@ -1,3 +1,5 @@
+最新参数见 [WIPER20_PARALLEL_LOAD10P8_TEST.md](WIPER20_PARALLEL_LOAD10P8_TEST.md)。下文为V17历史记录。
+
 # 第二阶段：字车三轮往返，每单程进纸2mm，共12mm
 
 BK分支codex/printer-startup-load-prep，启动标记APP_SERVICE_CMY_WIPE20_PARLOAD12_V17。

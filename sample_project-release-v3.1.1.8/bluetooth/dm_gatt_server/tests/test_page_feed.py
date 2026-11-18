@@ -50,8 +50,8 @@ int main(void){uint32_t sent;assert(!motor_page_feed(3170,0,&sent));assert(sent=
  assert(motor_page_feed_fast_keep_power(396,0,NULL)==-1);
  assert(pulses==before&&boost_calls==calls&&inits==old_inits&&boost&&u4_off_calls==old_u4_off);
  uint64_t load_start=clock_us;
- assert(!motor_page_load_keep_power(780,0,&sent));
- assert(sent==780&&pulses==before+780&&boost&&!high&&dir==0);
+ assert(!motor_page_load_keep_power(702,0,&sent));
+ assert(sent==702&&pulses==before+702&&boost&&!high&&dir==0);
  assert(clock_us-load_start>1000000U&&clock_us-load_start<2000000U);
  before=pulses;load_start=clock_us;
  assert(!motor_page_load_keep_power(3900,0,&sent));

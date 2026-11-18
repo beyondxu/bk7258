@@ -163,10 +163,10 @@
 #define PRINTER_STARTUP_WIPE_ROUNDS 2U
 #endif
 #ifndef PRINTER_STARTUP_LOAD_STEPS
-#define PRINTER_STARTUP_LOAD_STEPS 780U /* 2mm PER SINGLE LEG, 11700 pulses/30mm */
+#define PRINTER_STARTUP_LOAD_STEPS 702U /* 1.8mm PER SINGLE LEG, 11700 pulses/30mm */
 #endif
 #ifndef PRINTER_STARTUP_LOAD_ROUNDS
-#define PRINTER_STARTUP_LOAD_ROUNDS 3U /* six single legs; 6*2mm = 12mm */
+#define PRINTER_STARTUP_LOAD_ROUNDS 3U /* six single legs; 6*1.8mm = 10.8mm */
 #endif
 #if PRINTER_STARTUP_LOAD_ROUNDS < 1 || PRINTER_STARTUP_LOAD_ROUNDS > 3
 #error Startup loading requires one to three bounded round trips

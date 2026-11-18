@@ -15,7 +15,7 @@ h=r'''
 #include <stdlib.h>
 #include <string.h>
 #define BK_OK 0
-#define PRINTER_STARTUP_LOAD_STEPS 780U
+#define PRINTER_STARTUP_LOAD_STEPS 702U
 #define PRINTER_STARTUP_LOAD_ROUNDS 3U
 #define PRINTER_STARTUP_WIPE_STEPS 3740U
 #define PRINTER_STARTUP_WIPE_ROUNDS 2U
@@ -36,7 +36,7 @@ static int tph_mcu_set_head_power(unsigned on){
  assert(!on&&s_bidi_right);record('H');return mode==2?-1:0;
 }
 static int printer_buffered_load_while_moving(unsigned steps,unsigned dir){
- assert(steps==780&&!dir&&trace[0]=='P'&&trace[1]=='W'&&n==load_calls+2U);
+ assert(steps==702&&!dir&&trace[0]=='P'&&trace[1]=='W'&&n==load_calls+2U);
  assert(s_bidi_right==((load_calls&1U)!=0U));++load_calls;record('F');
  if(mode==3||mode==5||(mode==12&&load_calls==3)||(mode==13&&load_calls==6))return -10;
  s_bidi_right=!s_bidi_right;total_paper+=steps;return 0;
@@ -66,15 +66,15 @@ int main(int argc,char**argv){
  }
  int rc=printer_startup_prepare((mode==8||mode==2)?0U:1U);
  if(mode==8){assert(!rc&&!strcmp(trace,"RHL")&&!s_bidi_right);return 0;}
- if(!mode)assert(!rc&&!strcmp(trace,"PWFFFFFF")&&!s_bidi_right&&load_calls==6&&total_paper==4680);
+ if(!mode)assert(!rc&&!strcmp(trace,"PWFFFFFF")&&!s_bidi_right&&load_calls==6&&total_paper==4212);
  else if(mode==1)assert(rc==-14&&!strcmp(trace,"PW")&&!s_bidi_right);
  else if(mode==2)assert(rc==-8&&!strcmp(trace,"RH")&&s_bidi_right);
  else if(mode==3||mode==5)assert(rc==-10&&!strcmp(trace,"PWF")&&!s_bidi_right);
  else if(mode==4)assert(rc==-8&&!strcmp(trace,"PW")&&!s_bidi_right);
  else if(mode==10)assert(rc==-8&&!strcmp(trace,"P"));
  else if(mode==11)assert(rc==-13&&!n);
- else if(mode==12)assert(rc==-10&&load_calls==3&&total_paper==1560&&!s_bidi_right);
- else if(mode==13)assert(rc==-10&&load_calls==6&&total_paper==3900&&s_bidi_right);
+ else if(mode==12)assert(rc==-10&&load_calls==3&&total_paper==1404&&!s_bidi_right);
+ else if(mode==13)assert(rc==-10&&load_calls==6&&total_paper==3510&&s_bidi_right);
  else assert(rc==-7&&!n);
  puts("PASS preparation order and bounded stop: no image firing, no return after feed failure");
 }
