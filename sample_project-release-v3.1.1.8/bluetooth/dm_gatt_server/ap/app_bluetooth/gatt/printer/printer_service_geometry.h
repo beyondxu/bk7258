@@ -6,6 +6,10 @@
 #define PRINTER_SERVICE_BASE_STEPS 7480U
 #define PRINTER_SERVICE_MARGIN_STEPS 1777U
 #define PRINTER_SERVICE_SPAN_STEPS (PRINTER_SERVICE_BASE_STEPS+2U*PRINTER_SERVICE_MARGIN_STEPS)
+/* Extend maintenance travel ONLY at the wiper side. The print LEFT/RIGHT
+ * anchors stay fixed; the wiper endpoint is 374 steps left of print LEFT. */
+#define PRINTER_MAINTENANCE_EXTRA_STEPS 374U /* 2mm at 7480 steps / 40mm */
+#define PRINTER_MAINTENANCE_SPAN_STEPS (PRINTER_SERVICE_SPAN_STEPS+PRINTER_MAINTENANCE_EXTRA_STEPS)
 /* Only the head-OFF service trial uses these speed parameters. */
 #define PRINTER_SERVICE_START_LOW_US 3000U
 #define PRINTER_SERVICE_CRUISE_LOW_US 600U

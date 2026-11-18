@@ -6,6 +6,7 @@
 #endif
 #if PRINTER_BUFFERED_LINE
 static void printer_buffered_stop(void);
+static bool s_bidi_at_wiper=true; /* distinct from print LEFT */
 #endif
 /* A page owns the settled boost. Counted endpoints are not encoder feedback. */
 static bool s_bidi_right=false, s_bidi_known=true, s_bidi_power=false;
@@ -106,18 +107,16 @@ static int printer_bidirectional_feed(uint32_t steps,uint8_t direction,uint32_t 
 static int printer_bidirectional_finish(void) {
     if (!s_bidi_known)return -7;
     if (!s_bidi_power)return 0;
-    if (s_bidi_right) {
 #if PRINTER_BUFFERED_LINE
-        int result=printer_execute_buffered_line(NULL,0U);
-        if(result)return result;
+    int result=printer_buffered_park_at_wiper();
+    if(result)return result;
+    printer_buffered_stop();
 #else
+    if (s_bidi_right) {
         if (!printer_bidi_move(0U,NULL)) {printer_bidirectional_abort();return -9;}
-#endif
         s_bidi_right=false;
         os_printf("[BIDI_PARK] endpoint=LEFT head_OFF columns=0 counted_position_only\r\n");
     }
-#if PRINTER_BUFFERED_LINE
-    printer_buffered_stop();
 #endif
     carriage_verified_power_down();s_bidi_power=false;
     return 0;

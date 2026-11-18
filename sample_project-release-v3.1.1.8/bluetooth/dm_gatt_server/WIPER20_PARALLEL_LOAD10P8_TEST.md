@@ -1,3 +1,5 @@
+最新仅扩大维护行程的实现见 [MAINTENANCE_EXTRA_2MM_TEST.md](MAINTENANCE_EXTRA_2MM_TEST.md)。下文为V18参数。
+
 # V18：总行程缩短2mm，每单程进纸1.8mm
 
 以用户后续“缩短2mm，两端各1mm”为准，替代同轮较早的缩短1mm要求。

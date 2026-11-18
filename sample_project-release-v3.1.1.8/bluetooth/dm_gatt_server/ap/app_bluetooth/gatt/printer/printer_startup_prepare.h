@@ -41,17 +41,26 @@ static int printer_startup_prepare(unsigned for_page) {
 #else
         os_printf("[PAGE_PREP_LOAD] disabled reason=OFFSET_UNCALIBRATED pulses=0\r\n");
 #endif
+#if PRINTER_BUFFERED_LINE
+        result=printer_buffered_leave_wiper();
+        if(result)return result;
+#endif
         os_printf("[PAGE_PREP_DONE] head_OFF load_complete next=image_row_zero\r\n");
         return 0; /* only now may the image controller ARM a firing row */
     }
     /* Boot remains one full head-OFF round trip, zero loading and zero wiping. */
     os_printf("[PAGE_PREP_LOAD] skipped reason=BOOT_NO_FEED pulses=0\r\n");
+#if PRINTER_BUFFERED_LINE
+    result=printer_buffered_boot_round_trip();
+    if(result)return result;
+#else
     result=printer_execute_bidirectional_line(NULL,1U);
     if (result) return result;
     os_printf("[PAGE_PREP_STAGE] stage=RIGHT_SERVICE head_OFF counted_position_only\r\n");
     if (tph_mcu_set_head_power(0)!=BK_OK) return -8;
     result=printer_execute_bidirectional_line(NULL,0U);
     if (result) return result;
+#endif
     os_printf("[PAGE_PREP_DONE] endpoint=LEFT head_OFF boot_round_trip_complete\r\n");
     return 0;
 }

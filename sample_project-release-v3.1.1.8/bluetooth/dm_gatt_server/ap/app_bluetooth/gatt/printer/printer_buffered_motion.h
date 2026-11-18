@@ -43,7 +43,7 @@ static int printer_execute_buffered_line(const uint8_t*columns,uint8_t direction
  tph_line_ticket_t ticket={0};
  int result=0,armed=0;
  if(direction>1U)return -1;
- if(!s_bidi_known||direction!=(s_bidi_right?0U:1U))return -7;
+ if(!s_bidi_known||s_bidi_at_wiper||direction!=(s_bidi_right?0U:1U))return -7;
  if(s_buf_active)return -14;
  s_buf_steps=0;s_buf_sync=0;s_buf_error=0;s_buf_max_gap=0;s_buf_cruise_max_gap=0;
  if(!s_bidi_power&&(tph_mcu_set_head_power(0)!=BK_OK||tph_line_probe()!=BK_OK))return -13;
@@ -92,10 +92,62 @@ stop:
  os_printf("[BUFFERED_STOP] code=%d irq_error=%lu pulses=%lu no_blind_return\r\n",result,(unsigned long)s_buf_error,(unsigned long)s_buf_steps);
  return result;
 }
+/* Head-OFF positioning between maintenance and print anchors. Never changes
+ * the image stroke or its first-column timing. No SPI while the timer runs. */
+static int printer_buffered_reposition(uint8_t direction,uint32_t steps){
+ if(!s_bidi_known||s_buf_active||direction>1U||!steps||steps>PRINTER_MAINTENANCE_SPAN_STEPS)return -7;
+ if(tph_mcu_set_head_power(0)!=BK_OK)return -8;
+ if(printer_buffered_claim())return -14;
+ if(printer_bidi_power_up()!=0)return -8;
+ if(direction)GPIO_UP(TPH_MOT_DIR);else GPIO_DOWN(TPH_MOT_DIR);
+ delay_us(50U);
+ s_buf_target=steps;s_buf_direction=direction;s_buf_ink=0;s_buf_sync=0;
+ s_buf_steps=0;s_buf_error=0;s_buf_max_gap=0;s_buf_cruise_max_gap=0;
+ s_buf_period=printer_buffered_period(0U);s_buf_last_irq=(uint32_t)bk_aon_rtc_get_us();
+ uint32_t begin=s_buf_last_irq;s_bidi_known=false;
+ __sync_synchronize();s_buf_active=1U;
+ if(bk_timer_start_us(PL_MOTOR_TIMER,s_buf_period,printer_buffered_tick)!=BK_OK)goto failed;
+ while(s_buf_active){
+  if((uint32_t)(bk_aon_rtc_get_us()-begin)>5000000U)goto failed;
+  rtos_delay_milliseconds(1U);
+ }
+ (void)bk_timer_stop(PL_MOTOR_TIMER);
+ if(s_buf_error||s_buf_steps!=steps)goto failed;
+ s_bidi_known=true;return 0;
+failed:
+ printer_buffered_stop();printer_bidirectional_abort();return -14;
+}
+static int printer_buffered_leave_wiper(void){
+ if(!s_bidi_known)return -7;
+ if(!s_bidi_at_wiper)return 0;
+ int result=printer_buffered_reposition(1U,PRINTER_MAINTENANCE_EXTRA_STEPS);
+ if(result)return result;
+ s_bidi_at_wiper=false;s_bidi_right=false;
+ os_printf("[PRINT_ANCHOR] endpoint=PRINT_LEFT offset_from_wiper=%u head_OFF\r\n",PRINTER_MAINTENANCE_EXTRA_STEPS);
+ return 0;
+}
+static int printer_buffered_park_at_wiper(void){
+ if(!s_bidi_known)return -7;
+ if(s_bidi_at_wiper)return 0;
+ uint32_t distance=s_bidi_right?PRINTER_MAINTENANCE_SPAN_STEPS:PRINTER_MAINTENANCE_EXTRA_STEPS;
+ int result=printer_buffered_reposition(0U,distance);
+ if(result)return result;
+ s_bidi_at_wiper=true;s_bidi_right=false;
+ os_printf("[BIDI_PARK] endpoint=WIPER pulses=%lu head_OFF columns=0 counted_position_only\r\n",(unsigned long)distance);
+ return 0;
+}
+static int printer_buffered_boot_round_trip(void){
+ if(!s_bidi_known||!s_bidi_at_wiper||s_bidi_right)return -7;
+ int result=printer_buffered_reposition(1U,PRINTER_MAINTENANCE_SPAN_STEPS);
+ if(result)return result;
+ s_bidi_at_wiper=false;s_bidi_right=true;
+ result=printer_buffered_park_at_wiper();
+ return result;
+}
 /* Two head-OFF wipe excursions, entirely within the counted full stroke.
  * The motor timer is shared with normal printing; no SPI in any pulse loop. */
 static int printer_buffered_wipe(uint32_t excursion,uint32_t rounds){
- if(!s_bidi_known||s_bidi_right||s_buf_active||!excursion||excursion>=PRINTER_SERVICE_SPAN_STEPS||!rounds||rounds>2U)return -7;
+ if(!s_bidi_known||!s_bidi_at_wiper||s_bidi_right||s_buf_active||!excursion||excursion>=PRINTER_MAINTENANCE_SPAN_STEPS||!rounds||rounds>2U)return -7;
  if(tph_mcu_set_head_power(0)!=BK_OK)return -8;
  if(printer_buffered_claim())return -14;
  if(printer_bidi_power_up()!=0)return -8;
@@ -127,14 +179,14 @@ static int printer_buffered_load_continue(void){return s_buf_error==0U;}
 /* The carriage runs in TIMER4 while this task feeds paper. Image ARM/SYNC is
  * deliberately absent. Alternate direction from the current counted endpoint. */
 static int printer_buffered_load_while_moving(uint32_t paper_steps,uint8_t paper_direction){
- if(!s_bidi_known||s_buf_active||!paper_steps||paper_steps>5000U||paper_direction>1U)return -7;
+ if(!s_bidi_known||(!s_bidi_right&&!s_bidi_at_wiper)||s_buf_active||!paper_steps||paper_steps>5000U||paper_direction>1U)return -7;
  if(tph_mcu_set_head_power(0)!=BK_OK)return -8;
  if(printer_buffered_claim())return -14;
  if(printer_bidi_power_up()!=0)return -8;
  uint8_t carriage_direction=s_bidi_right?0U:1U;
  if(carriage_direction)GPIO_UP(TPH_MOT_DIR);else GPIO_DOWN(TPH_MOT_DIR);
  delay_us(50U);
- s_buf_target=PRINTER_SERVICE_SPAN_STEPS;s_buf_direction=carriage_direction;s_buf_ink=0U;s_buf_sync=0U;
+ s_buf_target=PRINTER_MAINTENANCE_SPAN_STEPS;s_buf_direction=carriage_direction;s_buf_ink=0U;s_buf_sync=0U;
  s_buf_steps=0;s_buf_error=0;s_buf_max_gap=0;s_buf_cruise_max_gap=0;
  s_buf_period=printer_buffered_period(0U);
  os_printf("[PAGE_LOAD_MOVE_BEGIN] paper_steps=%lu carriage=%s head_OFF no_ARM_no_SYNC\r\n",(unsigned long)paper_steps,carriage_direction?"RIGHT":"LEFT");
@@ -149,8 +201,8 @@ static int printer_buffered_load_while_moving(uint32_t paper_steps,uint8_t paper
   rtos_delay_milliseconds(1U);
  }
  (void)bk_timer_stop(PL_MOTOR_TIMER);
- if(s_buf_error||s_buf_steps!=PRINTER_SERVICE_SPAN_STEPS)goto failed;
- s_bidi_known=true;s_bidi_right=carriage_direction?true:false;
+ if(s_buf_error||s_buf_steps!=PRINTER_MAINTENANCE_SPAN_STEPS)goto failed;
+ s_bidi_known=true;s_bidi_right=carriage_direction?true:false;s_bidi_at_wiper=!s_bidi_right;
  os_printf("[PAGE_PREP_LOAD] pulses=%lu/%lu code=0 parallel_carriage_steps=%lu endpoint=%s head_OFF distance_unverified\r\n",(unsigned long)sent,(unsigned long)paper_steps,(unsigned long)s_buf_steps,s_bidi_right?"RIGHT":"LEFT");
  return 0;
 failed:

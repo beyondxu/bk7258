@@ -17,7 +17,7 @@ h=r'''
 #define BK_OK 0
 #define PRINTER_STARTUP_LOAD_STEPS 702U
 #define PRINTER_STARTUP_LOAD_ROUNDS 3U
-#define PRINTER_STARTUP_WIPE_STEPS 3740U
+#define PRINTER_STARTUP_WIPE_STEPS 4114U
 #define PRINTER_STARTUP_WIPE_ROUNDS 2U
 #define PRINTER_BUFFERED_LINE 1
 #define PRINTER_PAGE_FEED_DIRECTION 0
@@ -43,8 +43,18 @@ static int printer_buffered_load_while_moving(unsigned steps,unsigned dir){
 }
 static int tph_line_probe(void){return mode==11?-1:0;}
 static int printer_buffered_wipe(unsigned steps,unsigned rounds){
- assert(!s_bidi_right&&steps==3740&&rounds==2&&!strcmp(trace,"P"));record('W');
+ assert(!s_bidi_right&&steps==4114&&rounds==2&&!strcmp(trace,"P"));record('W');
  return mode==1?-14:mode==4?-8:0;
+}
+static int printer_buffered_leave_wiper(void){
+ assert(!s_bidi_right&&load_calls==6&&total_paper==4212);record('A');
+ return mode==14?-14:0;
+}
+static int printer_buffered_boot_round_trip(void){
+ int result=printer_execute_bidirectional_line(NULL,1);
+ if(result)return result;
+ if(tph_mcu_set_head_power(0))return -8;
+ return printer_execute_bidirectional_line(NULL,0);
 }
 #include "printer_startup_prepare.h"
 #define PRINTER_BOOT_CARRIAGE_PREP 1
@@ -66,7 +76,7 @@ int main(int argc,char**argv){
  }
  int rc=printer_startup_prepare((mode==8||mode==2)?0U:1U);
  if(mode==8){assert(!rc&&!strcmp(trace,"RHL")&&!s_bidi_right);return 0;}
- if(!mode)assert(!rc&&!strcmp(trace,"PWFFFFFF")&&!s_bidi_right&&load_calls==6&&total_paper==4212);
+ if(!mode)assert(!rc&&!strcmp(trace,"PWFFFFFFA")&&!s_bidi_right&&load_calls==6&&total_paper==4212);
  else if(mode==1)assert(rc==-14&&!strcmp(trace,"PW")&&!s_bidi_right);
  else if(mode==2)assert(rc==-8&&!strcmp(trace,"RH")&&s_bidi_right);
  else if(mode==3||mode==5)assert(rc==-10&&!strcmp(trace,"PWF")&&!s_bidi_right);
@@ -75,6 +85,7 @@ int main(int argc,char**argv){
  else if(mode==11)assert(rc==-13&&!n);
  else if(mode==12)assert(rc==-10&&load_calls==3&&total_paper==1404&&!s_bidi_right);
  else if(mode==13)assert(rc==-10&&load_calls==6&&total_paper==3510&&s_bidi_right);
+ else if(mode==14)assert(rc==-14&&!strcmp(trace,"PWFFFFFFA")&&total_paper==4212);
  else assert(rc==-7&&!n);
  puts("PASS preparation order and bounded stop: no image firing, no return after feed failure");
 }
@@ -82,4 +93,4 @@ int main(int argc,char**argv){
 with tempfile.TemporaryDirectory() as tmp:
  p=Path(tmp);(p/'test.c').write_text(h)
  subprocess.run(['cc','-std=c99','-Wall','-Wextra','-Werror','-I'+str(D),str(p/'test.c'),'-o',str(p/'test')],check=True)
- for mode in range(14):subprocess.run([str(p/'test'),str(mode)],check=True)
+ for mode in range(15):subprocess.run([str(p/'test'),str(mode)],check=True)
