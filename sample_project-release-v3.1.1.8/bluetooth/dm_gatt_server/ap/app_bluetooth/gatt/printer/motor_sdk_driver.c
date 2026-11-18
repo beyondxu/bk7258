@@ -749,10 +749,13 @@ bk_err_t motor_page_feed_keep_power(uint32_t steps, uint8_t direction, uint32_t 
 /* Bounded small-band feed while the page owns an already settled boost.
  * U4 stays enabled at its counted endpoint; do not reset/sleep its translator.
  * No U4 GPIO, reclaim or boost cycling is performed here. */
-bk_err_t motor_page_feed_fast_keep_power(uint32_t steps, uint8_t direction, uint32_t *sent) {
+static bk_err_t motor_paper_move_keep_power(uint32_t steps, uint8_t direction,
+                                            uint32_t *sent, uint32_t limit,
+                                            uint32_t start_low, uint32_t cruise_low,
+                                            uint32_t ramp) {
     if (!sent) return BK_FAIL;
     *sent=0;
-    if (!steps || steps>500U || direction>1U) return BK_FAIL;
+    if (!steps || steps>limit || direction>1U) return BK_FAIL;
     SET_GPIO_HIGH(PAPER_MOT_MS1); SET_GPIO_HIGH(PAPER_MOT_MS2); SET_GPIO_HIGH(PAPER_MOT_MS3);
     SET_GPIO_HIGH(PAPER_MOT_SLEEP); rtos_delay_milliseconds(5);
     SET_GPIO_HIGH(PAPER_MOT_RES); SET_GPIO_LOW(PAPER_MOT_EN);
@@ -761,7 +764,7 @@ bk_err_t motor_page_feed_fast_keep_power(uint32_t steps, uint8_t direction, uint
     bk_delay_us(50);
     for (uint32_t i=0;i<steps;++i) {
         uint32_t edge=i<steps-1U-i?i:steps-1U-i;
-        uint32_t low=edge<64U?800U-400U*edge/64U:400U;
+        uint32_t low=edge<ramp?start_low-(start_low-cruise_low)*edge/ramp:cruise_low;
         SET_GPIO_HIGH(PAPER_MOT_STEP); bk_delay_us(4);
         SET_GPIO_LOW(PAPER_MOT_STEP); bk_delay_us(low);
         ++*sent;
@@ -769,6 +772,15 @@ bk_err_t motor_page_feed_fast_keep_power(uint32_t steps, uint8_t direction, uint
     }
     bk_motor_set_state(0,0);
     return BK_OK;
+}
+
+bk_err_t motor_page_feed_fast_keep_power(uint32_t steps, uint8_t direction, uint32_t *sent) {
+    return motor_paper_move_keep_power(steps,direction,sent,500U,800U,400U,64U);
+}
+/* Loading uses the conservative feed ramp; U4 retains its endpoint phase.
+ * Separate from row feed so a loading offset cannot stretch the image. */
+bk_err_t motor_page_load_keep_power(uint32_t steps, uint8_t direction, uint32_t *sent) {
+    return motor_paper_move_keep_power(steps,direction,sent,5000U,3000U,1000U,250U);
 }
 
 bk_err_t motor_carriage_service_leg(uint8_t direction, uint32_t steps, uint32_t *sent) {

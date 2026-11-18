@@ -3,7 +3,7 @@ from pathlib import Path
 import subprocess,tempfile
 src=Path(__file__).resolve().parents[1]/'ap/app_bluetooth/gatt/printer/motor_sdk_driver.c'
 s=src.read_text();func=s[s.index('static bk_err_t motor_page_feed_impl'):s.index('/* Head-OFF service-travel diagnostic.')]
-func+=s[s.index('bk_err_t motor_page_feed_fast_keep_power('):s.index('bk_err_t motor_carriage_service_leg(')]
+func+=s[s.index('static bk_err_t motor_paper_move_keep_power('):s.index('bk_err_t motor_carriage_service_leg(')]
 assert 'rtos_disable_int' not in func and '__disable_irq' not in func
 h=r'''
 #include <assert.h>
@@ -47,6 +47,16 @@ int main(void){uint32_t sent;assert(!motor_page_feed(3170,0,&sent));assert(sent=
  assert(motor_page_feed_fast_keep_power(0,0,&sent)==-1&&!sent);
  assert(motor_page_feed_fast_keep_power(396,2,&sent)==-1&&!sent);
  assert(motor_page_feed_fast_keep_power(396,0,NULL)==-1);
+ assert(pulses==before&&boost_calls==calls&&inits==old_inits&&boost&&u4_off_calls==old_u4_off);
+ uint64_t load_start=clock_us;
+ assert(!motor_page_load_keep_power(780,0,&sent));
+ assert(sent==780&&pulses==before+780&&boost&&!high&&dir==0);
+ assert(clock_us-load_start>1000000U&&clock_us-load_start<2000000U);
+ before=pulses;
+ assert(motor_page_load_keep_power(5001,0,&sent)==-1&&!sent);
+ assert(motor_page_load_keep_power(0,0,&sent)==-1&&!sent);
+ assert(motor_page_load_keep_power(780,2,&sent)==-1&&!sent);
+ assert(motor_page_load_keep_power(780,0,NULL)==-1);
  assert(pulses==before&&boost_calls==calls&&inits==old_inits&&boost&&u4_off_calls==old_u4_off);
 }
 '''.replace('FUNC',func)

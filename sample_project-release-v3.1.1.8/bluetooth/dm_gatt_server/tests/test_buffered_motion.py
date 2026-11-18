@@ -70,6 +70,21 @@ static int printer_bidi_power_up(void){boost=1;s_bidi_power=true;return 0;}
 static void printer_bidirectional_abort(void);
 #include "printer_buffered_motion.h"
 static void printer_bidirectional_abort(void){printer_buffered_stop();boost=0;s_bidi_power=false;s_bidi_known=false;}
+#ifndef TEST_LOAD_STEPS
+#define TEST_LOAD_STEPS 780U
+#endif
+#define PRINTER_STARTUP_LOAD_STEPS TEST_LOAD_STEPS
+#define PRINTER_PAGE_FEED_DIRECTION 0
+#if PRINTER_STARTUP_LOAD_STEPS > 0
+static unsigned load_calls;
+static int motor_page_load_keep_power(unsigned steps,unsigned direction,uint32_t*sent){
+ assert(pos==10660&&s_bidi_right&&boost&&!timer_enabled&&sync_high&&!hc_fires);
+ assert(cache.state==PL_IDLE&&steps==TEST_LOAD_STEPS&&!direction);
+ ++load_calls;*sent=steps;return 0;
+}
+#endif
+#define printer_execute_bidirectional_line printer_execute_buffered_line
+#include "printer_startup_prepare.h"
 static void advance(unsigned us){
  uint64_t target=now_us+us;
  while(timer_enabled || cache.state==PL_RUNNING){
@@ -95,6 +110,14 @@ static void advance(unsigned us){
 }
 int main(int argc,char**argv){
  assert(argc==2);mode=atoi(argv[1]);uint8_t*row=malloc(PL_ROW_BYTES);for(unsigned i=0;i<PL_ROW_BYTES;i++)row[i]=(i*7+i/100)&63U;
+ if(mode==6){
+  assert(!printer_startup_prepare());
+  assert(pos==0&&!s_bidi_right&&s_bidi_known&&!hc_fires&&!timer_enabled&&sync_high);
+#if PRINTER_STARTUP_LOAD_STEPS > 0
+  assert(load_calls==1);
+#endif
+  printer_buffered_stop();free(row);puts("PASS startup: timer-driven head-OFF round trip, optional load at RIGHT, unchanged endpoints, no image fires");return 0;
+ }
  int rc=printer_execute_buffered_line(row,1);
  if(!mode||mode==5){
   assert(!rc&&pos==10660&&s_bidi_right&&hc_fires==1180&&s_blank_spi_columns==1180&&cache.state==PL_DONE);
@@ -110,4 +133,8 @@ int main(int argc,char**argv){
 with tempfile.TemporaryDirectory() as t:
  p=Path(t);(p/'test.c').write_text(h);(p/'driver').mkdir();(p/'driver/timer.h').write_text('/* timer API provided by deterministic test platform */\n')
  subprocess.run(['cc','-std=c99','-O1','-Wall','-Wextra','-Werror','-fsanitize=address,undefined','-I'+str(p),'-I'+str(D),'-I'+str(H),str(p/'test.c'),'-o',str(p/'test')],check=True)
- for mode in range(6):subprocess.run([str(p/'test'),str(mode)],check=True,env={**os.environ,'ASAN_OPTIONS':'detect_leaks=0'})
+ for mode in range(7):subprocess.run([str(p/'test'),str(mode)],check=True,env={**os.environ,'ASAN_OPTIONS':'detect_leaks=0'})
+
+ # Also exercise the production default: unknown initial paper offset means no feed.
+ subprocess.run(['cc','-std=c99','-O1','-Wall','-Wextra','-Werror','-DTEST_LOAD_STEPS=0','-fsanitize=address,undefined','-I'+str(p),'-I'+str(D),'-I'+str(H),str(p/'test.c'),'-o',str(p/'test-zero')],check=True)
+ subprocess.run([str(p/'test-zero'),'6'],check=True,env={**os.environ,'ASAN_OPTIONS':'detect_leaks=0'})

@@ -1,3 +1,9 @@
+#ifndef PRINTER_STARTUP_PREP
+#define PRINTER_STARTUP_PREP 0
+#endif
+#if PRINTER_PAGE_BIDIRECTIONAL && PRINTER_STARTUP_PREP
+#include "printer_startup_prepare.h"
+#endif
 #ifndef PRINTER_PAGE_BIDIRECTIONAL
 #define PRINTER_PAGE_BIDIRECTIONAL 0
 #endif
@@ -164,6 +170,13 @@ static int printer_run_full_page(const uint8_t *bin, uint32_t length) {
 #endif
 #if PRINTER_PAGE_BIDIRECTIONAL
     uint8_t scan_direction = 1U;
+#if PRINTER_STARTUP_PREP
+    if (PRINTER_PAGE_ONLY_SWATH < 0) {
+        failure_locked = true;
+        result = printer_startup_prepare();
+        if (result) goto done;
+    }
+#endif
 #endif
     for (uint32_t strip = 0; strip < bands; ++strip) {
         if (PRINTER_PAGE_ONLY_SWATH >= 0 && strip != (uint32_t)PRINTER_PAGE_ONLY_SWATH) continue;

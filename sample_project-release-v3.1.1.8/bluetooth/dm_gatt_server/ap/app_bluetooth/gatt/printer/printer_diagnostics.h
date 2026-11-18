@@ -148,6 +148,17 @@
 #ifndef PRINTER_PAGE_FEED_STEPS
 #define PRINTER_PAGE_FEED_STEPS 3170U /* measured: 11700 pulses / 30mm; 3170 pulses ~8.13mm */
 #endif
+/* Independent head-OFF preparation before image row zero. Startup paper
+ * travel is an absolute loading offset, NOT a scale or per-band feed. */
+#ifndef PRINTER_STARTUP_PREP
+#define PRINTER_STARTUP_PREP 1
+#endif
+#ifndef PRINTER_STARTUP_LOAD_STEPS
+#define PRINTER_STARTUP_LOAD_STEPS 0U /* pending measured loading offset */
+#endif
+#if PRINTER_STARTUP_LOAD_STEPS > 5000U
+#error Startup loading offset must be bounded to at most 5000 pulses
+#endif
 #ifndef PRINTER_PAGE_FEED_DIRECTION
 #define PRINTER_PAGE_FEED_DIRECTION 0 /* original forward-feed pin level LOW */
 #endif
