@@ -157,7 +157,7 @@
 #define PRINTER_STARTUP_PREP 1
 #endif
 #ifndef PRINTER_STARTUP_WIPE_STEPS
-#define PRINTER_STARTUP_WIPE_STEPS 187U /* conservative first trial: 1mm inward */
+#define PRINTER_STARTUP_WIPE_STEPS 3740U /* user: 20mm one-way, 7480 steps/40mm */
 #endif
 #ifndef PRINTER_STARTUP_WIPE_ROUNDS
 #define PRINTER_STARTUP_WIPE_ROUNDS 2U

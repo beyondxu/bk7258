@@ -752,7 +752,7 @@ bk_err_t motor_page_feed_keep_power(uint32_t steps, uint8_t direction, uint32_t 
 static bk_err_t motor_paper_move_keep_power(uint32_t steps, uint8_t direction,
                                             uint32_t *sent, uint32_t limit,
                                             uint32_t start_low, uint32_t cruise_low,
-                                            uint32_t ramp) {
+                                            uint32_t ramp, int (*keep_running)(void)) {
     if (!sent) return BK_FAIL;
     *sent=0;
     if (!steps || steps>limit || direction>1U) return BK_FAIL;
@@ -763,6 +763,10 @@ static bk_err_t motor_paper_move_keep_power(uint32_t steps, uint8_t direction,
     SET_GPIO_LEVEL(PAPER_MOT_DIR,direction);
     bk_delay_us(50);
     for (uint32_t i=0;i<steps;++i) {
+        if (keep_running && !keep_running()) {
+            bk_motor_set_state(0,0);
+            return BK_FAIL;
+        }
         uint32_t edge=i<steps-1U-i?i:steps-1U-i;
         uint32_t low=edge<ramp?start_low-(start_low-cruise_low)*edge/ramp:cruise_low;
         SET_GPIO_HIGH(PAPER_MOT_STEP); bk_delay_us(4);
@@ -775,12 +779,18 @@ static bk_err_t motor_paper_move_keep_power(uint32_t steps, uint8_t direction,
 }
 
 bk_err_t motor_page_feed_fast_keep_power(uint32_t steps, uint8_t direction, uint32_t *sent) {
-    return motor_paper_move_keep_power(steps,direction,sent,500U,800U,400U,64U);
+    return motor_paper_move_keep_power(steps,direction,sent,500U,800U,400U,64U,NULL);
 }
 /* Loading uses the conservative feed ramp; U4 retains its endpoint phase.
  * Separate from row feed so a loading offset cannot stretch the image. */
 bk_err_t motor_page_load_keep_power(uint32_t steps, uint8_t direction, uint32_t *sent) {
-    return motor_paper_move_keep_power(steps,direction,sent,5000U,3000U,1000U,250U);
+    return motor_paper_move_keep_power(steps,direction,sent,5000U,3000U,1000U,250U,NULL);
+}
+
+/* Stop U5 as soon as the concurrently running carriage reports a fault. */
+bk_err_t motor_page_load_keep_power_guarded(uint32_t steps, uint8_t direction,
+                                          uint32_t *sent, int (*keep_running)(void)) {
+    return motor_paper_move_keep_power(steps,direction,sent,5000U,3000U,1000U,250U,keep_running);
 }
 
 bk_err_t motor_carriage_service_leg(uint8_t direction, uint32_t steps, uint32_t *sent) {

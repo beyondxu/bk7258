@@ -1,3 +1,5 @@
+当前V16并行动作见 [WIPER20_PARALLEL_LOAD10_TEST.md](WIPER20_PARALLEL_LOAD10_TEST.md)。下文为已替代的V14记录。
+
 # 每次打印送纸10mm与刮刀端小范围往返
 
 按用户“每次打印前进10mm”作为准备阶段总量，只有一次10mm。

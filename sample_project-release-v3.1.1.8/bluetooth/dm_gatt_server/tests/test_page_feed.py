@@ -22,7 +22,8 @@ typedef int bk_err_t;
 #define PAPER_MOT_EN 44
 static unsigned pulses,high,boost,dir,boost_calls,inits;
 static uint64_t clock_us;
-static unsigned u4_off_calls;
+static unsigned u4_off_calls,guard_calls;
+static int allow_17_steps(void){return guard_calls++<17U;}
 static int bk_motor_gpio_config_init(void){boost=0;++inits;return 0;}
 static void bk_motor_boost_power(unsigned on){boost=on;++boost_calls;}
 static void up(unsigned pin){assert(pin==18||pin==55||pin==46||pin==47||pin==17||pin==54||pin==53);if(pin==18){assert(!high&&boost);high=1;++pulses;}if(pin==55)dir=1;}
@@ -62,6 +63,8 @@ int main(void){uint32_t sent;assert(!motor_page_feed(3170,0,&sent));assert(sent=
  assert(motor_page_load_keep_power(780,2,&sent)==-1&&!sent);
  assert(motor_page_load_keep_power(780,0,NULL)==-1);
  assert(pulses==before&&boost_calls==calls&&inits==old_inits&&boost&&u4_off_calls==old_u4_off);
+ assert(motor_page_load_keep_power_guarded(3900,0,&sent,allow_17_steps)==BK_FAIL);
+ assert(sent==17&&pulses==before+17&&!high&&boost&&u4_off_calls==old_u4_off);
 }
 '''.replace('FUNC',func)
 with tempfile.TemporaryDirectory() as tmp:

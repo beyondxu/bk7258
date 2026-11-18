@@ -1,3 +1,5 @@
+最新每页动作见 [WIPER20_PARALLEL_LOAD10_TEST.md](WIPER20_PARALLEL_LOAD10_TEST.md)。
+
 当前每页送纸与刮擦试验见 [WIPER_LOAD_10MM_TEST.md](WIPER_LOAD_10MM_TEST.md)。下文是 V13 准备动作记录，开机往返保持，默认零进纸及每页整程往返已被 V14 替代。
 
 # 打印前准备动作

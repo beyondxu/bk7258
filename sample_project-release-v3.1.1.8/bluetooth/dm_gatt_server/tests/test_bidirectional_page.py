@@ -84,11 +84,20 @@ static int tph_fire_raw_column_bytes(const uint8_t*p){
 }
 static int motor_page_feed_fast_keep_power(uint32_t,uint8_t,uint32_t*);
 #include "printer_bidirectional_print.h"
+/* Simulate preparation ending at RIGHT, before the image controller runs. */
+#define PRINTER_STARTUP_PREP 1
+#define PRINTER_STARTUP_PREPARE_H
+static int simulated_startup_prepare(unsigned for_page){
+ assert(for_page);
+ return mode==7?printer_execute_bidirectional_line(NULL,1U):0;
+}
+#define printer_startup_prepare simulated_startup_prepare
+
 /* Inspect full motion BEFORE the real page controller can proceed to feed. */
 static int execute_scan(const uint8_t*p,uint8_t direction){
  unsigned start_spi=spi_count;
  uint64_t start=us;
- assert(direction==((scans%expected_bands)%2==0?1:0));
+ assert(direction==((scans%expected_bands)%2==0?(mode==7?0U:1U):(mode==7?1U:0U)));
  int rc=printer_execute_bidirectional_line(p,direction);
  if(!rc){assert(spi_count-start_spi==(p?1180U:0U));assert(boost);assert(pos==(direction?((int32_t)PRINTER_SERVICE_SPAN_STEPS):0));assert(us-start<4200000);++scans;}
  return rc;
@@ -105,7 +114,8 @@ static int motor_page_feed_fast_keep_power(uint32_t steps,uint8_t direction,uint
 int main(int argc,char**argv){
  assert(argc==3);mode=atoi(argv[2]);FILE*f=fopen(argv[1],"rb");assert(f);fseek(f,0,SEEK_END);long n=ftell(f);rewind(f);uint8_t*b=malloc(n);assert(fread(b,1,n,f)==(size_t)n);fclose(f);
  int rc=printer_run_full_page(b,n);assert(!live&&!head&&!boost&&!step);
- if(!mode||mode==5||mode==6){assert(!rc&&scans==expected_bands&&feed_count==41&&pos==0&&powerups==1&&powerdowns==1);expected_band=0;assert(!printer_run_full_page(b,n));assert(scans==2*expected_bands&&feed_count==82&&pos==0&&powerups==2&&powerdowns==2);
+ if(!mode||mode==5||mode==6||mode==7){assert(!rc&&scans==expected_bands&&feed_count==41&&pos==0&&powerups==1&&powerdowns==1);expected_band=0;assert(!printer_run_full_page(b,n));assert(scans==2*expected_bands&&feed_count==82&&pos==0&&powerups==2&&powerdowns==2);
+ if(mode==7){free(b);puts("PASS controller starts from prepared RIGHT endpoint: reverse first row, exact physical CMY positions, two pages, final LEFT park");return 0;}
  /* Odd number of scans: the final park is one head-OFF move, zero image calls. */
  printer_map_config_t cfg={3000,-1,0,0};printer_page_t page;
  assert(!printer_page_prepare(b,n,&cfg,&page,printer_map_psram_alloc,printer_map_psram_free,printer_map_yield_cpu));
@@ -124,4 +134,4 @@ with tempfile.TemporaryDirectory() as t:
  p=Path(t);(p/'test.c').write_text(h);(p/'fixture.bin').write_bytes(blob({(ch,400+ch,y)for ch in range(3)for y in range(1476)}))
  subprocess.run(['cc','-std=c99','-O1','-Wall','-Wextra','-Werror','-fsanitize=address,undefined','-I'+str(D),str(p/'test.c'),str(D/'printer_mapper.c'),str(D/'printer_page.c'),'-o',str(p/'test')],check=True)
  (p/'sparse.bin').write_bytes(blob({(ch,400+ch,y)for ch in range(3)for y in range(1476)if (y*992//1476)//24 in [0,2,41]}))
- for mode in range(7):subprocess.run([str(p/'test'),str(p/('sparse.bin' if mode==5 else 'fixture.bin')),str(mode)],check=True,env={**os.environ,'ASAN_OPTIONS':'detect_leaks=0'})
+ for mode in range(8):subprocess.run([str(p/'test'),str(p/('sparse.bin' if mode==5 else 'fixture.bin')),str(mode)],check=True,env={**os.environ,'ASAN_OPTIONS':'detect_leaks=0'})

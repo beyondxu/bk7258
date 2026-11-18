@@ -175,6 +175,7 @@ static int printer_run_full_page(const uint8_t *bin, uint32_t length) {
         failure_locked = true;
         result = printer_startup_prepare(1U);
         if (result) goto done;
+        scan_direction=s_bidi_right?0U:1U;
     }
 #endif
 #endif

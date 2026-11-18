@@ -15,8 +15,8 @@ h=r'''
 #include <stdlib.h>
 #include <string.h>
 #define BK_OK 0
-#define PRINTER_STARTUP_LOAD_STEPS 780U
-#define PRINTER_STARTUP_WIPE_STEPS 187U
+#define PRINTER_STARTUP_LOAD_STEPS 3900U
+#define PRINTER_STARTUP_WIPE_STEPS 3740U
 #define PRINTER_STARTUP_WIPE_ROUNDS 2U
 #define PRINTER_BUFFERED_LINE 1
 #define PRINTER_PAGE_FEED_DIRECTION 0
@@ -34,13 +34,14 @@ static int printer_execute_bidirectional_line(const uint8_t*p,unsigned dir){
 static int tph_mcu_set_head_power(unsigned on){
  assert(!on&&s_bidi_right);record('H');return mode==2?-1:0;
 }
-static int motor_page_load_keep_power(unsigned steps,unsigned dir,uint32_t*sent){
- assert(!s_bidi_right&&steps==780&&!dir);record('F');
- *sent=mode==5?779:780;return mode==3?-1:0;
+static int printer_buffered_load_while_moving(unsigned steps,unsigned dir){
+ assert(!s_bidi_right&&steps==3900&&!dir&&!strcmp(trace,"PW"));record('F');
+ if(mode==3||mode==5)return -10;
+ s_bidi_right=true;return 0;
 }
 static int tph_line_probe(void){return mode==11?-1:0;}
 static int printer_buffered_wipe(unsigned steps,unsigned rounds){
- assert(!s_bidi_right&&steps==187&&rounds==2&&!strcmp(trace,"PF"));record('W');
+ assert(!s_bidi_right&&steps==3740&&rounds==2&&!strcmp(trace,"P"));record('W');
  return mode==1?-14:mode==4?-8:0;
 }
 #include "printer_startup_prepare.h"
@@ -63,11 +64,11 @@ int main(int argc,char**argv){
  }
  int rc=printer_startup_prepare((mode==8||mode==2)?0U:1U);
  if(mode==8){assert(!rc&&!strcmp(trace,"RHL")&&!s_bidi_right);return 0;}
- if(!mode)assert(!rc&&!strcmp(trace,"PFW")&&!s_bidi_right);
- else if(mode==1)assert(rc==-14&&!strcmp(trace,"PFW")&&!s_bidi_right);
+ if(!mode)assert(!rc&&!strcmp(trace,"PWF")&&s_bidi_right);
+ else if(mode==1)assert(rc==-14&&!strcmp(trace,"PW")&&!s_bidi_right);
  else if(mode==2)assert(rc==-8&&!strcmp(trace,"RH")&&s_bidi_right);
- else if(mode==3||mode==5)assert(rc==-10&&!strcmp(trace,"PF")&&!s_bidi_right);
- else if(mode==4)assert(rc==-8&&!strcmp(trace,"PFW")&&!s_bidi_right);
+ else if(mode==3||mode==5)assert(rc==-10&&!strcmp(trace,"PWF")&&!s_bidi_right);
+ else if(mode==4)assert(rc==-8&&!strcmp(trace,"PW")&&!s_bidi_right);
  else if(mode==10)assert(rc==-8&&!strcmp(trace,"P"));
  else if(mode==11)assert(rc==-13&&!n);
  else assert(rc==-7&&!n);
