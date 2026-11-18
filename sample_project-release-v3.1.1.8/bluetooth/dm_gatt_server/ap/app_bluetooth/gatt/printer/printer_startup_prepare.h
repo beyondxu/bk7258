@@ -6,12 +6,14 @@ static int printer_startup_prepare(unsigned allow_loading) {
     if (!s_bidi_known || s_bidi_right) return -7;
     os_printf("[PAGE_PREP_BEGIN] load_steps=%lu head_OFF no_image_pixels unchanged_stroke\r\n",
               (unsigned long)PRINTER_STARTUP_LOAD_STEPS);
-    int result=printer_execute_bidirectional_line(NULL,1U);
-    if (result) return result;
-    os_printf("[PAGE_PREP_STAGE] stage=RIGHT_SERVICE head_OFF counted_position_only\r\n");
-    if (tph_mcu_set_head_power(0)!=BK_OK) return -8;
+    int result=0;
 #if PRINTER_STARTUP_LOAD_STEPS > 0
     if (allow_loading) {
+#if PRINTER_BUFFERED_LINE
+    if (tph_line_probe()!=BK_OK) return -13;
+#endif
+    result=printer_bidi_power_up();
+    if (result) return result;
     uint32_t sent=0;
     result=motor_page_load_keep_power(PRINTER_STARTUP_LOAD_STEPS,
                                      PRINTER_PAGE_FEED_DIRECTION,&sent);
@@ -23,6 +25,19 @@ static int printer_startup_prepare(unsigned allow_loading) {
     (void)allow_loading;
     os_printf("[PAGE_PREP_LOAD] disabled reason=OFFSET_UNCALIBRATED pulses=0\r\n");
 #endif
+#if PRINTER_BUFFERED_LINE && PRINTER_STARTUP_WIPE_STEPS > 0
+    if (allow_loading) {
+        result=printer_buffered_wipe(PRINTER_STARTUP_WIPE_STEPS,PRINTER_STARTUP_WIPE_ROUNDS);
+        if (result) return result;
+        os_printf("[PAGE_PREP_DONE] endpoint=LEFT wipe_rounds=%u excursion_steps=%u head_OFF next=image_row_zero\r\n",
+                  PRINTER_STARTUP_WIPE_ROUNDS,PRINTER_STARTUP_WIPE_STEPS);
+        return 0;
+    }
+#endif
+    result=printer_execute_bidirectional_line(NULL,1U);
+    if (result) return result;
+    os_printf("[PAGE_PREP_STAGE] stage=RIGHT_SERVICE head_OFF counted_position_only\r\n");
+    if (tph_mcu_set_head_power(0)!=BK_OK) return -8;
     result=printer_execute_bidirectional_line(NULL,0U);
     if (result) return result;
     os_printf("[PAGE_PREP_DONE] endpoint=LEFT head_OFF next=image_row_zero mechanical_contact_unverified\r\n");

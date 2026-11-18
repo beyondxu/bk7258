@@ -6,10 +6,10 @@
 #define PL_STEP_PERIOD_US PRINTER_CANVAS_STEP_US
 #define PL_START_PERIOD_US 1000U
 #define PL_RAMP_STEPS 400U
-static volatile uint32_t s_buf_active,s_buf_steps,s_buf_sync,s_buf_error,s_buf_last_irq,s_buf_max_gap,s_buf_cruise_max_gap,s_buf_period;
+static volatile uint32_t s_buf_active,s_buf_steps,s_buf_sync,s_buf_error,s_buf_last_irq,s_buf_max_gap,s_buf_cruise_max_gap,s_buf_period,s_buf_target;
 static uint8_t s_buf_direction,s_buf_ink,s_buf_claimed;
 static volatile uint32_t s_buf_sync_us;
-static uint32_t printer_buffered_period(uint32_t i){uint32_t edge=i<PRINTER_SERVICE_SPAN_STEPS-1U-i?i:PRINTER_SERVICE_SPAN_STEPS-1U-i;return edge<PL_RAMP_STEPS?PL_START_PERIOD_US-(PL_START_PERIOD_US-PL_STEP_PERIOD_US)*edge/PL_RAMP_STEPS:PL_STEP_PERIOD_US;}
+static uint32_t printer_buffered_period(uint32_t i){uint32_t edge=i<s_buf_target-1U-i?i:s_buf_target-1U-i;return edge<PL_RAMP_STEPS?PL_START_PERIOD_US-(PL_START_PERIOD_US-PL_STEP_PERIOD_US)*edge/PL_RAMP_STEPS:PL_STEP_PERIOD_US;}
 static void printer_buffered_stop(void){
  s_buf_active=0U;
  if(s_buf_claimed){(void)bk_timer_stop(PL_MOTOR_TIMER);(void)bk_timer_cancel(PL_MOTOR_TIMER);s_buf_claimed=0U;}
@@ -21,13 +21,13 @@ static void printer_buffered_tick(timer_id_t id){
  uint32_t gap=now-s_buf_last_irq;
  if(s_buf_steps&&gap>s_buf_period*2U+96U){s_buf_error=1U;s_buf_active=0U;(void)bk_timer_stop(id);return;}
  if(gap>s_buf_max_gap)s_buf_max_gap=gap;
- if(s_buf_steps>PL_RAMP_STEPS+2U&&s_buf_steps<PRINTER_SERVICE_SPAN_STEPS-PL_RAMP_STEPS&&gap>s_buf_cruise_max_gap)s_buf_cruise_max_gap=gap;
+ if(s_buf_steps>PL_RAMP_STEPS+2U&&s_buf_target>2U*PL_RAMP_STEPS&&s_buf_steps<s_buf_target-PL_RAMP_STEPS&&gap>s_buf_cruise_max_gap)s_buf_cruise_max_gap=gap;
  s_buf_last_irq=now;
  uint32_t lead=PRINTER_CANVAS_LEAD_STEPS;
  if(s_buf_ink&&s_buf_steps==lead){s_buf_sync_us=now;s_buf_sync=1U;bk_gpio_set_output_low(PIN_BK_SYNC_OUT);}
  GPIO_UP(TPH_MOT_STEP);delay_us(4U);GPIO_DOWN(TPH_MOT_STEP);
  ++s_buf_steps;++s_blank_spi_steps[s_buf_direction?1:0];
- if(s_buf_steps==PRINTER_SERVICE_SPAN_STEPS){s_buf_active=0U;(void)bk_timer_stop(id);return;}
+ if(s_buf_steps==s_buf_target){s_buf_active=0U;(void)bk_timer_stop(id);return;}
  uint32_t next=printer_buffered_period(s_buf_steps);
  if(next!=s_buf_period){if(bk_timer_set_period_us(id,next)!=BK_OK){s_buf_error=2U;s_buf_active=0U;(void)bk_timer_stop(id);}else s_buf_period=next;}
 }
@@ -59,6 +59,7 @@ static int printer_execute_buffered_line(const uint8_t*columns,uint8_t direction
  if(direction)GPIO_UP(TPH_MOT_DIR);else GPIO_DOWN(TPH_MOT_DIR);
  delay_us(50U);
  s_buf_direction=direction;s_buf_ink=columns?1U:0U;s_buf_steps=0;s_buf_sync=0;s_buf_error=0;s_buf_max_gap=0;s_buf_cruise_max_gap=0;
+ s_buf_target=PRINTER_SERVICE_SPAN_STEPS;
  s_buf_period=printer_buffered_period(0U);s_buf_last_irq=(uint32_t)bk_aon_rtc_get_us();
  __sync_synchronize();
  uint32_t begin=s_buf_last_irq;unsigned saw_low=0;
@@ -90,5 +91,36 @@ stop:
  printer_bidirectional_abort();
  os_printf("[BUFFERED_STOP] code=%d irq_error=%lu pulses=%lu no_blind_return\r\n",result,(unsigned long)s_buf_error,(unsigned long)s_buf_steps);
  return result;
+}
+/* Two short head-OFF wipe excursions, entirely within the counted LEFT end.
+ * The motor timer is shared with normal printing; no SPI in any pulse loop. */
+static int printer_buffered_wipe(uint32_t excursion,uint32_t rounds){
+ if(!s_bidi_known||s_bidi_right||s_buf_active||!excursion||excursion>PRINTER_SERVICE_MARGIN_STEPS||!rounds||rounds>2U)return -7;
+ if(tph_mcu_set_head_power(0)!=BK_OK)return -8;
+ if(printer_buffered_claim())return -14;
+ if(printer_bidi_power_up()!=0)return -8;
+ s_bidi_known=false; /* do not expose the short-leg turnaround as an endpoint */
+ for(uint32_t leg=0;leg<rounds*2U;++leg){
+  uint32_t direction=(leg&1U)?0U:1U;
+  if(direction)GPIO_UP(TPH_MOT_DIR);else GPIO_DOWN(TPH_MOT_DIR);
+  delay_us(50U);
+  s_buf_target=excursion;s_buf_direction=direction;s_buf_ink=0;s_buf_sync=0;
+  s_buf_steps=0;s_buf_error=0;s_buf_max_gap=0;s_buf_cruise_max_gap=0;
+  s_buf_period=printer_buffered_period(0U);s_buf_last_irq=(uint32_t)bk_aon_rtc_get_us();
+  uint32_t begin=s_buf_last_irq;
+  __sync_synchronize();s_buf_active=1U;
+  if(bk_timer_start_us(PL_MOTOR_TIMER,s_buf_period,printer_buffered_tick)!=BK_OK)goto failed;
+  while(s_buf_active){
+   if((uint32_t)(bk_aon_rtc_get_us()-begin)>2000000U)goto failed;
+   rtos_delay_milliseconds(1U);
+  }
+  (void)bk_timer_stop(PL_MOTOR_TIMER);
+  if(s_buf_error||s_buf_steps!=excursion)goto failed;
+  os_printf("[WIPER_LEG] direction=%s pulses=%lu head_OFF contact_unverified\r\n",direction?"AWAY_FROM_LEFT":"BACK_TO_LEFT",(unsigned long)s_buf_steps);
+ }
+ s_bidi_known=true;s_bidi_right=false;
+ return 0;
+failed:
+ printer_buffered_stop();printer_bidirectional_abort();return -14;
 }
 #endif

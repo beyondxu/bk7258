@@ -52,6 +52,10 @@ int main(void){uint32_t sent;assert(!motor_page_feed(3170,0,&sent));assert(sent=
  assert(!motor_page_load_keep_power(780,0,&sent));
  assert(sent==780&&pulses==before+780&&boost&&!high&&dir==0);
  assert(clock_us-load_start>1000000U&&clock_us-load_start<2000000U);
+ before=pulses;load_start=clock_us;
+ assert(!motor_page_load_keep_power(3900,0,&sent));
+ assert(sent==3900&&pulses==before+3900&&boost&&!high&&dir==0);
+ assert(clock_us-load_start>4400000U&&clock_us-load_start<4800000U);
  before=pulses;
  assert(motor_page_load_keep_power(5001,0,&sent)==-1&&!sent);
  assert(motor_page_load_keep_power(0,0,&sent)==-1&&!sent);

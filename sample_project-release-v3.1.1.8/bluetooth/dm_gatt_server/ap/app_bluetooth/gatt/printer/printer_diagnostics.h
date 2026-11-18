@@ -156,8 +156,14 @@
 #ifndef PRINTER_STARTUP_PREP
 #define PRINTER_STARTUP_PREP 1
 #endif
+#ifndef PRINTER_STARTUP_WIPE_STEPS
+#define PRINTER_STARTUP_WIPE_STEPS 187U /* conservative first trial: 1mm inward */
+#endif
+#ifndef PRINTER_STARTUP_WIPE_ROUNDS
+#define PRINTER_STARTUP_WIPE_ROUNDS 2U
+#endif
 #ifndef PRINTER_STARTUP_LOAD_STEPS
-#define PRINTER_STARTUP_LOAD_STEPS 0U /* pending measured loading offset */
+#define PRINTER_STARTUP_LOAD_STEPS 3900U /* user requests 10mm; measured 11700 pulses/30mm */
 #endif
 #if PRINTER_STARTUP_LOAD_STEPS > 5000U
 #error Startup loading offset must be bounded to at most 5000 pulses

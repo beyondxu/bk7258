@@ -75,10 +75,13 @@ static void printer_bidirectional_abort(void){printer_buffered_stop();boost=0;s_
 #endif
 #define PRINTER_STARTUP_LOAD_STEPS TEST_LOAD_STEPS
 #define PRINTER_PAGE_FEED_DIRECTION 0
+#define PRINTER_BUFFERED_LINE 1
+#define PRINTER_STARTUP_WIPE_STEPS 187U
+#define PRINTER_STARTUP_WIPE_ROUNDS 2U
 #if PRINTER_STARTUP_LOAD_STEPS > 0
 static unsigned load_calls;
 static int motor_page_load_keep_power(unsigned steps,unsigned direction,uint32_t*sent){
- assert(pos==((int32_t)PRINTER_SERVICE_SPAN_STEPS)&&s_bidi_right&&boost&&!timer_enabled&&sync_high&&!hc_fires);
+ assert(pos==0&&!s_bidi_right&&boost&&!timer_enabled&&sync_high&&!hc_fires);
  assert(cache.state==PL_IDLE&&steps==TEST_LOAD_STEPS&&!direction);
  ++load_calls;*sent=steps;return 0;
 }
@@ -102,7 +105,7 @@ static void advance(unsigned us){
    if(cache.fired==1180)cache.state=PL_DONE;else next_hc+=cache.period_us;
   }else{
    uint64_t epoch=next_bk;
-   if(mode==4&&!irq_stall&&s_buf_steps==3000){irq_stall=1;next_bk+=1000;continue;}
+   if(!irq_stall&&((mode==4&&s_buf_steps==3000)||(mode==8&&s_buf_steps==60))){irq_stall=1;next_bk+=mode==8?10000U:1000U;continue;}
    callback(4);if(timer_enabled)next_bk=epoch+timer_period;
   }
  }
@@ -110,13 +113,20 @@ static void advance(unsigned us){
 }
 int main(int argc,char**argv){
  assert(argc==2);mode=atoi(argv[1]);uint8_t*row=malloc(PL_ROW_BYTES);for(unsigned i=0;i<PL_ROW_BYTES;i++)row[i]=(i*7+i/100)&63U;
+ if(mode==7||mode==8){
+  int wipe=printer_buffered_wipe(187U,2U);
+  if(mode==7)assert(!wipe&&pos==0&&s_bidi_known&&!s_bidi_right);
+  else assert(wipe==-14&&pos==60&&!s_bidi_known);
+  assert(!hc_fires&&!timer_enabled&&sync_high);printer_buffered_stop();free(row);
+  puts("PASS short timer wipe: zero fires, exact excursions, no blind return on IRQ fault");return 0;
+ }
  if(mode==6){
   assert(!printer_startup_prepare(1U));
   assert(pos==0&&!s_bidi_right&&s_bidi_known&&!hc_fires&&!timer_enabled&&sync_high);
 #if PRINTER_STARTUP_LOAD_STEPS > 0
   assert(load_calls==1);
 #endif
-  printer_buffered_stop();free(row);puts("PASS startup: timer-driven head-OFF round trip, optional load at RIGHT, unchanged endpoints, no image fires");return 0;
+  printer_buffered_stop();free(row);puts("PASS startup: timer-driven head-OFF round trip, optional load before LEFT-end wiping, unchanged endpoints, no image fires");return 0;
  }
  int rc=printer_execute_buffered_line(row,1);
  if(!mode||mode==5){
@@ -133,7 +143,7 @@ int main(int argc,char**argv){
 with tempfile.TemporaryDirectory() as t:
  p=Path(t);(p/'test.c').write_text(h);(p/'driver').mkdir();(p/'driver/timer.h').write_text('/* timer API provided by deterministic test platform */\n')
  subprocess.run(['cc','-std=c99','-O1','-Wall','-Wextra','-Werror','-fsanitize=address,undefined','-I'+str(p),'-I'+str(D),'-I'+str(H),str(p/'test.c'),'-o',str(p/'test')],check=True)
- for mode in range(7):subprocess.run([str(p/'test'),str(mode)],check=True,env={**os.environ,'ASAN_OPTIONS':'detect_leaks=0'})
+ for mode in range(9):subprocess.run([str(p/'test'),str(mode)],check=True,env={**os.environ,'ASAN_OPTIONS':'detect_leaks=0'})
 
  # Also exercise the production default: unknown initial paper offset means no feed.
  subprocess.run(['cc','-std=c99','-O1','-Wall','-Wextra','-Werror','-DTEST_LOAD_STEPS=0','-fsanitize=address,undefined','-I'+str(p),'-I'+str(D),'-I'+str(H),str(p/'test.c'),'-o',str(p/'test-zero')],check=True)
