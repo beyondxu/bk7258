@@ -1,3 +1,5 @@
+> Superseded by [V30: another6.45% carriage cruise increase](CARRIAGE_SPEED194_TEST.md). HC79ba462 remains required.
+
 # V29: another12.1% carriage cruise increase; paired HC update
 
 Pair with HC commit79ba462 on codex/printer-cached-line-timer. This revision requires updating both controllers, HC first; the old600us-minimum HC rejects542us and will not provide the new speed.
