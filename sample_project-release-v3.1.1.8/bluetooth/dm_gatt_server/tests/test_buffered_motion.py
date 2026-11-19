@@ -156,6 +156,8 @@ int main(int argc,char**argv){
   free(row);puts("PASS missing OC3: search bounded and no unreferenced full return");return 0;
  }
  if(mode==29){
+  assert(PRINTER_CANVAS_STEP_US==96U&&PRINTER_CANVAS_COLUMN_US==788U);
+  assert(PRINTER_CANVAS_STEP_US*985U==PRINTER_CANVAS_COLUMN_US*120U);
   assert(PRINTER_SERVICE_SPAN_STEPS==10473U);
   assert(PRINTER_MAINTENANCE_SPAN_STEPS==11221U);
   assert(PRINTER_MAINTENANCE_SPAN_STEPS-PRINTER_SERVICE_SPAN_STEPS==748U);

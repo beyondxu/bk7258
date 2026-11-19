@@ -1,13 +1,14 @@
 #ifndef PRINTER_CANVAS_GEOMETRY_H
 #define PRINTER_CANVAS_GEOMETRY_H
 #include "printer_service_geometry.h"
-/* Measured approximately 7480 steps / 40mm. Keep the motor cruise speed;
+/* Measured approximately 7480 steps / 40mm. Scale motor and column clocks together to preserve physical pitch;
  * use the configured print stroke independently of maintenance positioning.
  * 1180 transport columns include CMY horizontal offset compensation. At this
  * pitch the actual APP canvas is 1139 columns, approximately 50mm wide.
  * APP white margins are image pixels and must not be cropped. */
-#define PRINTER_CANVAS_STEP_US 120U
-#define PRINTER_CANVAS_COLUMN_US 985U
+/* V26:25% faster cruise;96/120 ==788/985, preserving image width. */
+#define PRINTER_CANVAS_STEP_US 96U
+#define PRINTER_CANVAS_COLUMN_US 788U
 #define PRINTER_CANVAS_X_PITCH_CENTI_UM 4389U
 #define PRINTER_CANVAS_COLUMNS 1180U
 /* Mirror the first/last timed column around the configured print-stroke midpoint.

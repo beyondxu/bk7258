@@ -1,3 +1,5 @@
+> V26 changes carriage speed only: see [25% faster carriage](CARRIAGE_SPEED125_TEST.md). Stroke lengths below remain current; its120us/985us clocks are historical.
+
 # V25: both single strokes minus1mm
 
 The user requested shortening both V24 strokes by1mm. Using the observed7480 pulses /40mm conversion, subtract187 pulses once per single stroke (not once at each end).
