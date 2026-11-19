@@ -6,7 +6,10 @@
 #endif
 #if PRINTER_BUFFERED_LINE
 static void printer_buffered_stop(void);
-static bool s_bidi_at_wiper=true; /* distinct from print LEFT */
+static bool s_bidi_at_wiper=true;
+/* Signed count relative to print LEFT when stopped at a phase's left endpoint.
+ * Keep boot/preparation/final returns independently calibratable. */
+static int32_t s_bidi_left_offset=0;
 #endif
 /* A page owns the settled boost. Counted endpoints are not encoder feedback. */
 static bool s_bidi_right=false, s_bidi_known=true, s_bidi_power=false;

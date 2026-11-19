@@ -1,3 +1,5 @@
+最新回程碰边修正与分阶段参数见 [OC3_PHASE_RETURN_CALIBRATION_TEST.md](OC3_PHASE_RETURN_CALIBRATION_TEST.md)。下文为V21记录。
+
 # ADC_OC3 / GPIO24：海绵侧正常行程终点
 
 BK分支codex/printer-startup-load-prep，启动标记APP_SERVICE_CMY_OC3_GPIO24_V21。

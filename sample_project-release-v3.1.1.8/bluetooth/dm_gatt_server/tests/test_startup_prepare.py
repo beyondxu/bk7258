@@ -14,6 +14,7 @@ h=r'''
 #include <assert.h>
 #include <stdlib.h>
 #include <string.h>
+#include "printer_service_geometry.h"
 #define BK_OK 0
 #define PRINTER_OC3_RETURNED (-15)
 #define PRINTER_STARTUP_LOAD_STEPS 702U
@@ -25,6 +26,7 @@ h=r'''
 #define os_printf printf
 static bool s_bidi_known=true,s_bidi_right=false,s_bidi_at_wiper=true;
 static unsigned mode,load_calls,total_paper,wipe_calls;
+static bool s_bidi_power;
 static char trace[32];static unsigned n;
 static void record(char c){assert(n<31);trace[n++]=c;trace[n]=0;}
 static int printer_bidi_power_up(void){record('P');return mode==10?-8:0;}
@@ -65,7 +67,8 @@ static int printer_buffered_boot_round_trip(void){
 #define PRINTER_PAGE_BIDIRECTIONAL 1
 #define PRINTER_STARTUP_PREP 1
 static bool printer_link_is_ready(void){return true;}
-static int printer_bidirectional_finish(void){assert(!s_bidi_right);record('D');return 0;}
+static void printer_buffered_stop(void){record('S');}
+static void carriage_verified_power_down(void){record('D');}
 static void printer_bidirectional_abort(void){s_bidi_known=false;}
 BOOT_WRAPPER
 int main(int argc,char**argv){
@@ -73,8 +76,8 @@ int main(int argc,char**argv){
  if(mode==6)s_bidi_known=false;
  if(mode==7)s_bidi_right=true;
  if(mode==9){
-  assert(!printer_run_boot_carriage_prepare()&&!strcmp(trace,"RHLD")&&!s_bidi_right);
-  assert(printer_run_boot_carriage_prepare()==-7&&!strcmp(trace,"RHLD"));
+  assert(!printer_run_boot_carriage_prepare()&&!strcmp(trace,"RHLSD")&&!s_bidi_right);
+  assert(printer_run_boot_carriage_prepare()==-7&&!strcmp(trace,"RHLSD"));
   puts("PASS boot wrapper: once before BLE, zero feed even with configured loading offset");return 0;
  }
  int rc=printer_startup_prepare((mode==8||mode==2)?0U:1U);
