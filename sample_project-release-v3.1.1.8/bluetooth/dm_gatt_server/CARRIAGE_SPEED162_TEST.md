@@ -1,3 +1,5 @@
+> Superseded by [V29 paired BK/HC speed trial](CARRIAGE_SPEED182_TEST.md).
+
 # V28: another8.1% carriage cruise increase
 
 Requested another speed trial with the same gear train, without changing microstepping, REF or travel geometry.
