@@ -1,3 +1,5 @@
+> Superseded by [V28: another8.1% cruise increase](CARRIAGE_SPEED162_TEST.md).
+
 # V27: another20% carriage cruise increase
 
 User request: continue increasing carriage speed, without changing REF or maintenance geometry.

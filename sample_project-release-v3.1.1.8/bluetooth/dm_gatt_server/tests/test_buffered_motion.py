@@ -156,9 +156,11 @@ int main(int argc,char**argv){
   free(row);puts("PASS missing OC3: search bounded and no unreferenced full return");return 0;
  }
  if(mode==29){
-  assert(PRINTER_CANVAS_STEP_US==80U&&PRINTER_CANVAS_COLUMN_US==657U);
+  assert(PRINTER_CANVAS_STEP_US==74U&&PRINTER_CANVAS_COLUMN_US==607U);
   /* Whole-microsecond column rounding stays within0.1% of the old pitch. */
-  assert(PRINTER_CANVAS_COLUMN_US*120U-PRINTER_CANVAS_STEP_US*985U<PRINTER_CANVAS_STEP_US);
+  int32_t pitch_error=(int32_t)(PRINTER_CANVAS_COLUMN_US*120U)-(int32_t)(PRINTER_CANVAS_STEP_US*985U);
+  assert(pitch_error>-(int32_t)PRINTER_CANVAS_STEP_US&&pitch_error<(int32_t)PRINTER_CANVAS_STEP_US);
+  assert(PRINTER_CANVAS_COLUMN_US>=PL_MIN_PERIOD_US);
   assert(PRINTER_SERVICE_SPAN_STEPS==10473U);
   assert(PRINTER_MAINTENANCE_SPAN_STEPS==11221U);
   assert(PRINTER_MAINTENANCE_SPAN_STEPS-PRINTER_SERVICE_SPAN_STEPS==748U);
