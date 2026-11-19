@@ -52,10 +52,10 @@ static void up(unsigned p){
  if(p==50){assert(!timer_enabled&&!step);dir=1;return;}
  assert(p==19&&boost&&!step);step=1;pos+=dir?1:-1;
  if(pos>max_pos)max_pos=pos;
- assert(pos>=-23&&pos<=(int32_t)PRINTER_OC3_TRAVEL_LIMIT_STEPS);
+ assert(pos>=(int32_t)PRINTER_SERVICE_SPAN_STEPS-11034-23&&pos<=(int32_t)PRINTER_OC3_TRAVEL_LIMIT_STEPS);
  if(dir){
   ++oc3_right_pulses;
-  unsigned trip=mode==15?3001U:mode==22?10801U:mode==16?10001U:mode==17?61U:101U;
+  unsigned trip=mode==15?3001U:mode==22?10401U:mode==16?10001U:mode==17?61U:101U;
   if(((mode==13||mode==15||mode==16||mode==17||mode==18||mode==21||mode==22)&&!oc3_events&&oc3_right_pulses==trip)||((mode==6||mode==11||mode==23||mode==29||mode==30)&&oc3_level&&pos==(int32_t)PRINTER_SERVICE_SPAN_STEPS)){
    /* An optical edge fixes RIGHT even if the previous counted origin was wrong. */
    ++oc3_events;oc3_level=0;pos=PRINTER_SERVICE_SPAN_STEPS;
@@ -148,18 +148,18 @@ static void advance(unsigned us){
  if(now_us<target)now_us=target;
 }
 int main(int argc,char**argv){
- assert(argc==2);mode=atoi(argv[1]);if(mode>=6){pos=-(int32_t)PRINTER_MAINTENANCE_EXTRA_STEPS;s_bidi_at_wiper=true;}
+ assert(argc==2);mode=atoi(argv[1]);if(mode>=6){pos=-(int32_t)PRINTER_MAINTENANCE_EXTRA_STEPS;s_bidi_left_offset=pos;s_bidi_at_wiper=true;}
  uint8_t*row=malloc(PL_ROW_BYTES);for(unsigned i=0;i<PL_ROW_BYTES;i++)row[i]=(i*7+i/100)&63U;
  if(mode==28){
   assert(printer_buffered_boot_round_trip()==PRINTER_OC3_NOT_FOUND&&!s_bidi_known);
-  assert(pos==(int32_t)PRINTER_OC3_BOOT_SEARCH_STEPS&&!timer_enabled&&!load_calls&&!hc_fires);
+  assert(pos==(int32_t)PRINTER_OC3_BOOT_SEARCH_STEPS-(int32_t)PRINTER_MAINTENANCE_EXTRA_STEPS&&!timer_enabled&&!load_calls&&!hc_fires);
   free(row);puts("PASS missing OC3: search bounded and no unreferenced full return");return 0;
  }
  if(mode==29){
   /* Exact hardware log: from the old safe starting point to OC3 is11057 pulses. */
-  pos=-23;s_bidi_left_offset=-23;
+  pos=(int32_t)PRINTER_SERVICE_SPAN_STEPS-11057;s_bidi_left_offset=pos;
   assert(!printer_buffered_boot_round_trip());
-  assert(oc3_right_pulses==11057&&s_buf_steps==11034&&pos==0&&s_bidi_known&&s_bidi_at_wiper);
+  assert(oc3_right_pulses==11057&&s_buf_steps==11034&&pos==(int32_t)PRINTER_SERVICE_SPAN_STEPS-11034&&s_bidi_known&&s_bidi_at_wiper);
   assert(!load_calls&&!hc_fires);printer_buffered_stop();free(row);
   puts("PASS actual11057-outward log:11034 return, no351-pulse overrun");return 0;
  }
@@ -210,22 +210,24 @@ int main(int argc,char**argv){
   if(mode==24){
    pos=PRINTER_SERVICE_SPAN_STEPS;s_bidi_at_wiper=false;s_bidi_right=true;oc3_level=0;
    assert(printer_execute_buffered_line(row,0U)==PRINTER_OC3_STUCK&&!s_bidi_known);
-   assert(pos==-(int32_t)PRINTER_MAINTENANCE_EXTRA_STEPS&&!timer_enabled);
+   assert(pos==0&&!timer_enabled);
   }
   if(mode==22){
    pos=0;s_bidi_at_wiper=false;
    assert(!printer_execute_buffered_line(row,1U)&&s_bidi_right&&hc_fires==1180);
-   assert(!printer_execute_buffered_line(row,0U)&&s_bidi_at_wiper&&hc_fires==1180);
-   assert(pos==-(int32_t)PRINTER_MAINTENANCE_EXTRA_STEPS&&oc3_level);
+   assert(!printer_execute_buffered_line(row,0U)&&!s_bidi_right&&hc_fires==1180);
+   assert(pos==0&&oc3_level);
+   assert(!printer_bidirectional_finish()&&pos==-(int32_t)PRINTER_MAINTENANCE_EXTRA_STEPS);
   }
   if(mode==23){
    assert(!printer_startup_prepare(1U)&&load_calls==6&&total_paper==4212&&oc3_events==3&&pos==0);
    for(unsigned pair=0;pair<2;pair++){
     assert(!printer_execute_buffered_line(row,1U)&&s_bidi_right&&hc_fires==1180);
-    assert(!printer_execute_buffered_line(row,0U)&&s_bidi_at_wiper&&hc_fires==1180);
-    assert(pos==-(int32_t)PRINTER_MAINTENANCE_EXTRA_STEPS&&oc3_level);
+    assert(!printer_execute_buffered_line(row,0U)&&!s_bidi_right&&hc_fires==1180);
+    assert(pos==0&&oc3_level);
    }
    assert(oc3_events==5&&total_paper==4212);
+   assert(!printer_bidirectional_finish()&&pos==-(int32_t)PRINTER_MAINTENANCE_EXTRA_STEPS);
   }
   printer_buffered_stop();free(row);puts("PASS OC3: edge/poll/initial-LOW stop, fixed LEFT return, no retrigger on LEFT, partial-print abort, late/early feed handling, stuck/input-init failure");return 0;
  }
@@ -266,12 +268,12 @@ int main(int argc,char**argv){
   assert(load_calls==6&&total_paper==4212&&pos==0&&!s_bidi_right&&!s_bidi_at_wiper);
   assert(!printer_execute_buffered_line(row,1));
   assert(pos==(int32_t)PRINTER_SERVICE_SPAN_STEPS);
-  assert(!printer_execute_buffered_line(NULL,0)&&pos==-(int32_t)PRINTER_MAINTENANCE_EXTRA_STEPS);
+  assert(!printer_execute_buffered_line(NULL,0)&&pos==0);
 #else
   assert(!load_calls&&pos==0&&!s_bidi_right&&!s_bidi_at_wiper);
   assert(!printer_execute_buffered_line(row,1));
   assert(pos==(int32_t)PRINTER_SERVICE_SPAN_STEPS);
-  assert(!printer_execute_buffered_line(NULL,0)&&pos==-(int32_t)PRINTER_MAINTENANCE_EXTRA_STEPS);
+  assert(!printer_execute_buffered_line(NULL,0)&&pos==0);
 #endif
   assert(hc_fires==1180&&cache.state==PL_DONE);
   assert(!printer_bidirectional_finish()&&pos==-(int32_t)PRINTER_MAINTENANCE_EXTRA_STEPS&&s_bidi_at_wiper&&!boost);
@@ -281,10 +283,10 @@ int main(int argc,char**argv){
  if(!mode||mode==5){
   assert(!rc&&pos==((int32_t)PRINTER_SERVICE_SPAN_STEPS)&&s_bidi_right&&hc_fires==1180&&s_blank_spi_columns==1180&&cache.state==PL_DONE);
   assert(!memcmp(cache.data,row,PL_ROW_BYTES));
-  assert(!printer_execute_buffered_line(row,0));assert(pos==-(int32_t)PRINTER_MAINTENANCE_EXTRA_STEPS&&!s_bidi_right&&hc_fires==1180);
+  assert(!printer_execute_buffered_line(row,0));assert(pos==0&&!s_bidi_right&&hc_fires==1180);
   assert(!printer_execute_buffered_line(NULL,1));assert(pos==((int32_t)PRINTER_SERVICE_SPAN_STEPS)&&s_blank_spi_columns==0);
-  assert(!printer_execute_buffered_line(NULL,0));assert(pos==-(int32_t)PRINTER_MAINTENANCE_EXTRA_STEPS);
-  assert(!printer_buffered_park_at_wiper()&&pos==-(int32_t)PRINTER_MAINTENANCE_EXTRA_STEPS&&s_buf_steps==PRINTER_MAINTENANCE_SPAN_STEPS);
+  assert(!printer_execute_buffered_line(NULL,0));assert(pos==0);
+  assert(!printer_buffered_park_at_wiper()&&pos==-(int32_t)PRINTER_MAINTENANCE_EXTRA_STEPS&&s_buf_steps==PRINTER_MAINTENANCE_EXTRA_STEPS);
   assert(!printer_buffered_leave_wiper()&&pos==0);
   assert(!printer_execute_buffered_line(NULL,1)&&pos==(int32_t)PRINTER_SERVICE_SPAN_STEPS);
   assert(!printer_bidirectional_finish()&&pos==-(int32_t)PRINTER_MAINTENANCE_EXTRA_STEPS&&s_buf_steps==PRINTER_MAINTENANCE_SPAN_STEPS&&!boost);

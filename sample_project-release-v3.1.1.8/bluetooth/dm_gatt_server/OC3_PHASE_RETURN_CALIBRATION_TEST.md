@@ -1,3 +1,5 @@
+最新喷墨段缩2mm、最后追加2mm退刀的分配见 [PRINT_SHORT2_FINAL_RETREAT2_TEST.md](PRINT_SHORT2_FINAL_RETREAT2_TEST.md)。开机及第二阶段参数保持本页V22值。
+
 # V22：以光耦触发点校准回程，分开三阶段与最终停放参数
 
 BK分支codex/printer-startup-load-prep；启动标记APP_SERVICE_CMY_OC3_RETURN11034_V22。

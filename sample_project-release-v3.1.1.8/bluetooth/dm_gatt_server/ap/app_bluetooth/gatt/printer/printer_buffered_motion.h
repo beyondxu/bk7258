@@ -114,8 +114,9 @@ static int printer_execute_buffered_line(const uint8_t*columns,uint8_t direction
   s_blank_spi_columns=PL_COLUMNS;armed=0;
  }
  if(!direction&&motor_oc3_active()){s_bidi_known=false;result=PRINTER_OC3_STUCK;goto stop;}
- s_bidi_right=direction?true:false;s_bidi_at_wiper=!direction;
+ s_bidi_right=direction?true:false;
  if(!direction)s_bidi_left_offset=0;
+ s_bidi_at_wiper=!direction&&s_bidi_left_offset==(int32_t)PRINTER_SERVICE_SPAN_STEPS-(int32_t)PRINTER_OC3_FINAL_RETURN_STEPS;
  if(optical_end){s_oc3_hit=0U;s_buf_error=0U;os_printf("[OC3_ENDPOINT] gpio=24 print_row_complete next=LEFT no_page_failure\r\n");}
  os_printf("[BUFFERED_SCAN] direction=%s blank=%u code=0 pulses=%lu columns=%lu prepare_us=%lu motion_us=%lu cruise_step_us=%u max_irq_gap_us=%lu cruise_max_gap_us=%lu one_start_SYNC ink_position_unverified\r\n",direction?"RIGHT":"LEFT",columns?0U:1U,(unsigned long)s_buf_steps,(unsigned long)s_blank_spi_columns,(unsigned long)prepare_us,(unsigned long)(bk_aon_rtc_get_us()-begin),PL_STEP_PERIOD_US,(unsigned long)s_buf_max_gap,(unsigned long)s_buf_cruise_max_gap);
  return 0;

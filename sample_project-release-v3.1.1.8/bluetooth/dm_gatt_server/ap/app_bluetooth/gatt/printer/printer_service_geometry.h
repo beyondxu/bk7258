@@ -1,9 +1,9 @@
 #ifndef PRINTER_SERVICE_GEOMETRY_H
 #define PRINTER_SERVICE_GEOMETRY_H
-/* Keep the proven print envelope and pixel timing fixed. Boot, preparation
- * and final park distances below are separate calibrated phase parameters. */
+/* V23: shorten only print scanning by374 pulses (~2mm). Leave boot/prep
+ * return calibration unchanged; the final374-pulse tail returns to the wiper. */
 #define PRINTER_SERVICE_BASE_STEPS 7480U
-#define PRINTER_SERVICE_MARGIN_STEPS 1777U
+#define PRINTER_SERVICE_MARGIN_STEPS 1590U
 #define PRINTER_SERVICE_SPAN_STEPS (PRINTER_SERVICE_BASE_STEPS+2U*PRINTER_SERVICE_MARGIN_STEPS)
 /* Separate phase budgets. Measured OC3 outward count=11057; the old11408
  * reverse overran by351 pulses. Return11034 leaves23 pulses (~0.12mm) inward.
@@ -31,8 +31,8 @@
 #error Search distance exceeds the bounded travel budget
 #endif
 /* Compatibility names denote the return/print envelope, not outward search. */
-#define PRINTER_MAINTENANCE_EXTRA_STEPS 0U
-#define PRINTER_MAINTENANCE_SPAN_STEPS PRINTER_SERVICE_SPAN_STEPS
+#define PRINTER_MAINTENANCE_EXTRA_STEPS (PRINTER_OC3_FINAL_RETURN_STEPS>PRINTER_SERVICE_SPAN_STEPS?PRINTER_OC3_FINAL_RETURN_STEPS-PRINTER_SERVICE_SPAN_STEPS:0U)
+#define PRINTER_MAINTENANCE_SPAN_STEPS PRINTER_OC3_FINAL_RETURN_STEPS
 /* Only the head-OFF service trial uses these speed parameters. */
 #define PRINTER_SERVICE_START_LOW_US 3000U
 #define PRINTER_SERVICE_CRUISE_LOW_US 600U

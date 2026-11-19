@@ -355,7 +355,7 @@ static void app_printer_task_entry(void *arg) {
         os_printf("[SYS] APP_SERVICE_BLACK_YELLOW_V1 margin_each=%lu print_steps=%lu span=%lu service_head_OFF black_then_yellow\r\n",
                   (unsigned long)PRINTER_SERVICE_MARGIN_STEPS, (unsigned long)PRINTER_SERVICE_BASE_STEPS, (unsigned long)PRINTER_SERVICE_SPAN_STEPS);
 #else
-        os_printf("[SYS] APP_SERVICE_CMY_OC3_RETURN11034_V22 margin_each=%lu print_steps=%lu span=%lu actual_APP_CMY bands_24 alternating_direction HC_LBUFv1_required timer4_step_us120 line_period_us985 canvas_width_mm50_same_endpoints OC3_gpio24_active_LOW_irq_endpoint_step_cap_fallback boot_head_OFF_round_trip_1 print_span11034_boot_seek11408_return11034_prep_seek11408_return11034_final_return11034 page_wipe_2x20mm_then_parallel_load_3rounds_1p8mm_each_leg_total10p8mm_head_OFF page_load_6legs_702steps no_column_waits blank_band_scans page_power_session U4_hold_phase_MS111 service_head_OFF\r\n",
+        os_printf("[SYS] APP_SERVICE_CMY_PRINT10660_PARK2MM_V23 margin_each=%lu print_steps=%lu span=%lu actual_APP_CMY bands_24 alternating_direction HC_LBUFv1_required timer4_step_us120 line_period_us985 canvas_width_mm50_same_image_scale OC3_gpio24_active_LOW_irq_endpoint_step_cap_fallback boot_head_OFF_round_trip_1 print_span10660_boot_seek11408_return11034_prep_seek11408_return11034_final_return11034_extra_retreat374 page_wipe_2x20mm_then_parallel_load_3rounds_1p8mm_each_leg_total10p8mm_head_OFF page_load_6legs_702steps no_column_waits blank_band_scans page_power_session U4_hold_phase_MS111 service_head_OFF\r\n",
                   (unsigned long)PRINTER_SERVICE_MARGIN_STEPS, (unsigned long)PRINTER_SERVICE_BASE_STEPS, (unsigned long)PRINTER_SERVICE_SPAN_STEPS);
 #endif
 #elif PRINTER_BLACK_PREFIX
