@@ -22,7 +22,8 @@ static volatile uint32_t s_buf_active,s_buf_steps,s_buf_sync,s_buf_error,s_buf_l
 static volatile uint8_t s_buf_direction;
 static uint8_t s_buf_ink,s_buf_claimed;
 static volatile uint32_t s_buf_sync_us;
-static uint32_t printer_buffered_period(uint32_t i){uint32_t edge=i<s_buf_target-1U-i?i:s_buf_target-1U-i;return edge<PL_RAMP_STEPS?PL_START_PERIOD_US-(PL_START_PERIOD_US-PL_STEP_PERIOD_US)*edge/PL_RAMP_STEPS:PL_STEP_PERIOD_US;}
+static uint32_t printer_buffered_ramp_steps(void){return s_buf_ink?PRINTER_CANVAS_RAMP_STEPS:PL_RAMP_STEPS;}
+static uint32_t printer_buffered_period(uint32_t i){uint32_t ramp=printer_buffered_ramp_steps();uint32_t edge=i<s_buf_target-1U-i?i:s_buf_target-1U-i;return edge<ramp?PL_START_PERIOD_US-(PL_START_PERIOD_US-PL_STEP_PERIOD_US)*edge/ramp:PL_STEP_PERIOD_US;}
 static void printer_buffered_stop(void){
  s_buf_active=0U;
  if(s_buf_claimed){(void)bk_timer_stop(PL_MOTOR_TIMER);(void)bk_timer_cancel(PL_MOTOR_TIMER);s_buf_claimed=0U;}
@@ -43,7 +44,7 @@ static void printer_buffered_tick(timer_id_t id){
  uint32_t gap=now-s_buf_last_irq;
  if(s_buf_steps&&gap>s_buf_period*2U+96U){s_buf_error=1U;s_buf_active=0U;(void)bk_timer_stop(id);return;}
  if(gap>s_buf_max_gap)s_buf_max_gap=gap;
- if(s_buf_steps>PL_RAMP_STEPS+2U&&s_buf_target>2U*PL_RAMP_STEPS&&s_buf_steps<s_buf_target-PL_RAMP_STEPS&&gap>s_buf_cruise_max_gap)s_buf_cruise_max_gap=gap;
+ if(s_buf_steps>printer_buffered_ramp_steps()+2U&&s_buf_target>2U*printer_buffered_ramp_steps()&&s_buf_steps<s_buf_target-printer_buffered_ramp_steps()&&gap>s_buf_cruise_max_gap)s_buf_cruise_max_gap=gap;
  s_buf_last_irq=now;
  uint32_t lead=PRINTER_CANVAS_LEAD_STEPS;
  if(s_buf_ink&&s_buf_steps==lead){s_buf_sync_us=now;s_buf_sync=1U;bk_gpio_set_output_low(PIN_BK_SYNC_OUT);}

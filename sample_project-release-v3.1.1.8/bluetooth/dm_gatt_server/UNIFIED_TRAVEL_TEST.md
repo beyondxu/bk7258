@@ -1,3 +1,5 @@
+> V25 shortens both single strokes by1mm: see [current travel and dry-ink investigation](TRAVEL_MINUS1MM_DRY_INK_TEST.md).
+
 # V24 unified carriage travel
 
 User-approved geometry: print stroke is the previous11034-pulse stroke minus374 pulses (~2mm total); boot and paper-loading preparation share a stroke748 pulses (~4mm) longer than printing. Final parking uses the same service endpoint, without an additional retreat beyond it.

@@ -55,7 +55,7 @@ static void up(unsigned p){
  assert(pos>=(int32_t)PRINTER_OC3_REFERENCE_STEPS-(int32_t)PRINTER_MAINTENANCE_SPAN_STEPS-23&&pos<=(int32_t)PRINTER_OC3_TRAVEL_LIMIT_STEPS);
  if(dir){
   ++oc3_right_pulses;
-  unsigned trip=mode==15?3001U:mode==22?10401U:mode==16?10001U:mode==17?61U:101U;
+  unsigned trip=mode==15?3001U:mode==22?10301U:mode==16?10001U:mode==17?61U:101U;
   if(((mode==13||mode==15||mode==16||mode==17||mode==18||mode==21||mode==22)&&!oc3_events&&oc3_right_pulses==trip)||((mode==6||mode==11||mode==23||mode==29||mode==30)&&oc3_level&&pos==(int32_t)PRINTER_OC3_REFERENCE_STEPS)){
    /* An optical edge fixes RIGHT even if the previous counted origin was wrong. */
    ++oc3_events;oc3_level=0;pos=PRINTER_OC3_REFERENCE_STEPS;
@@ -135,7 +135,7 @@ static void advance(unsigned us){
     int32_t delta=(cache.fired*PRINTER_CANVAS_COLUMN_US+PRINTER_CANVAS_STEP_US-1U)/PRINTER_CANVAS_STEP_US;
     assert(pos==(dir?(int32_t)PRINTER_CANVAS_LEAD_STEPS+delta:((int32_t)PRINTER_SERVICE_SPAN_STEPS)-(int32_t)PRINTER_CANVAS_LEAD_STEPS-delta));
     /* Every column occurs after acceleration and before deceleration. */
-    assert(pos>450&&pos<((int32_t)PRINTER_SERVICE_SPAN_STEPS)-450);
+    assert(pos>(int32_t)PRINTER_CANVAS_RAMP_STEPS&&pos<((int32_t)PRINTER_SERVICE_SPAN_STEPS)-(int32_t)PRINTER_CANVAS_RAMP_STEPS);
    }
    ++cache.fired;++hc_fires;
    if(cache.fired==1180)cache.state=PL_DONE;else next_hc+=cache.period_us;
@@ -156,18 +156,18 @@ int main(int argc,char**argv){
   free(row);puts("PASS missing OC3: search bounded and no unreferenced full return");return 0;
  }
  if(mode==29){
-  assert(PRINTER_SERVICE_SPAN_STEPS==10660U);
-  assert(PRINTER_MAINTENANCE_SPAN_STEPS==11408U);
+  assert(PRINTER_SERVICE_SPAN_STEPS==10473U);
+  assert(PRINTER_MAINTENANCE_SPAN_STEPS==11221U);
   assert(PRINTER_MAINTENANCE_SPAN_STEPS-PRINTER_SERVICE_SPAN_STEPS==748U);
   assert(PRINTER_OC3_BOOT_RETURN_STEPS==PRINTER_OC3_PREP_RETURN_STEPS);
   assert(PRINTER_OC3_FINAL_RETURN_STEPS==PRINTER_OC3_BOOT_RETURN_STEPS);
   assert(!printer_buffered_boot_round_trip());
-  assert(s_buf_steps==11408U&&pos==-374&&s_bidi_at_wiper);
+  assert(s_buf_steps==11221U&&pos==-374&&s_bidi_at_wiper);
   assert(!printer_startup_prepare(1U)&&pos==0&&total_paper==4212);
-  assert(!printer_execute_buffered_line(row,1)&&pos==10660);
+  assert(!printer_execute_buffered_line(row,1)&&pos==10473);
   assert(!printer_execute_buffered_line(row,0)&&pos==0);
   assert(!printer_bidirectional_finish()&&pos==-374);
-  free(row);puts("PASS unified service11408, print10660, each endpoint inset374, feed unchanged");return 0;
+  free(row);puts("PASS unified service11221, print10473, each endpoint inset374, feed unchanged");return 0;
  }
  if(mode>=13){
   if(mode==14){pos=PRINTER_OC3_REFERENCE_STEPS;oc3_level=0;}

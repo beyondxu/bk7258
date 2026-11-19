@@ -53,10 +53,11 @@ static bool printer_bidi_move(uint8_t direction,const uint8_t *columns) {
     const uint32_t start_low=direction?PRINTER_BIDI_START_LOW_US:PRINTER_BIDI_REVERSE_START_LOW_US;
     const uint32_t cruise_low=direction?PRINTER_BIDI_CRUISE_LOW_US:PRINTER_BIDI_REVERSE_CRUISE_LOW_US;
     const uint32_t ramp=direction?PRINTER_BIDI_RAMP_STEPS:PRINTER_BIDI_REVERSE_RAMP_STEPS;
-    const uint32_t lead=PRINTER_SERVICE_MARGIN_STEPS+(direction?200U:206U);
-    const uint32_t image_end=PRINTER_SERVICE_MARGIN_STEPS+PRINTER_SERVICE_BASE_STEPS;
+    const uint32_t margin=direction?PRINTER_SERVICE_MARGIN_STEPS:PRINTER_SERVICE_RIGHT_MARGIN_STEPS;
+    const uint32_t lead=margin+(direction?200U:206U);
+    const uint32_t image_end=margin+PRINTER_SERVICE_BASE_STEPS;
     for (uint32_t i=0;i<PRINTER_SERVICE_SPAN_STEPS;++i) {
-        if (columns && i==PRINTER_SERVICE_MARGIN_STEPS && tph_mcu_set_head_power(1)!=BK_OK) {s_bidi_move_error=-8;return false;}
+        if (columns && i==margin && tph_mcu_set_head_power(1)!=BK_OK) {s_bidi_move_error=-8;return false;}
         if (columns && i==image_end && tph_mcu_set_head_power(0)!=BK_OK) {s_bidi_move_error=-8;return false;}
         if (columns && i>=lead && (i-lead)%6U==0U && (i-lead)/6U<1180U) {
             uint64_t tx=bk_aon_rtc_get_us();
