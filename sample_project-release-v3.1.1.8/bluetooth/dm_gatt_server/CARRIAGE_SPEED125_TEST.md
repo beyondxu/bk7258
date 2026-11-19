@@ -1,3 +1,5 @@
+> Superseded by [V27: another20% cruise increase](CARRIAGE_SPEED150_TEST.md).
+
 # V26: increase carriage cruise speed25%
 
 The user requested a faster carriage before continuing the faint-print investigation.
