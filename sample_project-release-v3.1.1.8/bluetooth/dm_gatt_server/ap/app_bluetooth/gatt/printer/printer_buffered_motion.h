@@ -9,10 +9,13 @@
 #define PRINTER_OC3_RETURNED (-15)
 #define PRINTER_OC3_STUCK (-16)
 #define PRINTER_OC3_NOT_FOUND (-18)
+/* RIGHT may be the optical service endpoint or the inset print endpoint. */
+static int32_t s_bidi_right_offset;
 static uint32_t s_oc3_reposition_return=PRINTER_OC3_FINAL_RETURN_STEPS;
 static volatile uint32_t s_oc3_hit;
 static volatile unsigned s_oc3_returning;
 static int printer_buffered_oc3_return(uint32_t return_steps);
+static int printer_buffered_reposition(uint8_t direction,uint32_t steps);
 static int printer_buffered_leave_wiper(void);
 static int printer_buffered_park_at_wiper(void);
 static volatile uint32_t s_buf_active,s_buf_steps,s_buf_sync,s_buf_error,s_buf_last_irq,s_buf_max_gap,s_buf_cruise_max_gap,s_buf_period,s_buf_target;
@@ -71,6 +74,12 @@ static int printer_execute_buffered_line(const uint8_t*columns,uint8_t direction
   if(!direction)return -7;
   result=printer_buffered_leave_wiper();if(result)return result;
  }
+ if(!direction&&s_bidi_right_offset){
+  int32_t offset=s_bidi_right_offset;
+  result=printer_buffered_reposition(0U,(uint32_t)offset);
+  if(result)return result;
+  s_bidi_right_offset=0;
+ }
  if(s_buf_active)return -14;
  s_oc3_hit=0U;s_buf_steps=0;s_buf_sync=0;s_buf_error=0;s_buf_max_gap=0;s_buf_cruise_max_gap=0;
  if(!s_bidi_power&&(tph_mcu_set_head_power(0)!=BK_OK||tph_line_probe()!=BK_OK))return -13;
@@ -115,8 +124,9 @@ static int printer_execute_buffered_line(const uint8_t*columns,uint8_t direction
  }
  if(!direction&&motor_oc3_active()){s_bidi_known=false;result=PRINTER_OC3_STUCK;goto stop;}
  s_bidi_right=direction?true:false;
+ s_bidi_right_offset=optical_end?(int32_t)PRINTER_PRINT_ENDPOINT_INSET_STEPS:0;
  if(!direction)s_bidi_left_offset=0;
- s_bidi_at_wiper=!direction&&s_bidi_left_offset==(int32_t)PRINTER_SERVICE_SPAN_STEPS-(int32_t)PRINTER_OC3_FINAL_RETURN_STEPS;
+ s_bidi_at_wiper=!direction&&s_bidi_left_offset==(int32_t)PRINTER_OC3_REFERENCE_STEPS-(int32_t)PRINTER_OC3_FINAL_RETURN_STEPS;
  if(optical_end){s_oc3_hit=0U;s_buf_error=0U;os_printf("[OC3_ENDPOINT] gpio=24 print_row_complete next=LEFT no_page_failure\r\n");}
  os_printf("[BUFFERED_SCAN] direction=%s blank=%u code=0 pulses=%lu columns=%lu prepare_us=%lu motion_us=%lu cruise_step_us=%u max_irq_gap_us=%lu cruise_max_gap_us=%lu one_start_SYNC ink_position_unverified\r\n",direction?"RIGHT":"LEFT",columns?0U:1U,(unsigned long)s_buf_steps,(unsigned long)s_blank_spi_columns,(unsigned long)prepare_us,(unsigned long)(bk_aon_rtc_get_us()-begin),PL_STEP_PERIOD_US,(unsigned long)s_buf_max_gap,(unsigned long)s_buf_cruise_max_gap);
  return 0;
@@ -170,9 +180,9 @@ static int printer_buffered_leave_wiper(void){
 }
 static int printer_buffered_park_at_wiper(void){
  if(!s_bidi_known)return -7;
- const int32_t target=(int32_t)PRINTER_SERVICE_SPAN_STEPS-(int32_t)PRINTER_OC3_FINAL_RETURN_STEPS;
+ const int32_t target=(int32_t)PRINTER_OC3_REFERENCE_STEPS-(int32_t)PRINTER_OC3_FINAL_RETURN_STEPS;
  if(s_bidi_at_wiper&&!s_bidi_right&&s_bidi_left_offset==target)return 0;
- int32_t current=s_bidi_right?(int32_t)PRINTER_SERVICE_SPAN_STEPS:s_bidi_left_offset;
+ int32_t current=s_bidi_right?(int32_t)PRINTER_SERVICE_SPAN_STEPS+s_bidi_right_offset:s_bidi_left_offset;
  int32_t delta=current-target;
  s_oc3_reposition_return=PRINTER_OC3_FINAL_RETURN_STEPS;
  if(delta){
@@ -261,7 +271,8 @@ static int printer_buffered_load_while_moving(uint32_t paper_steps,uint8_t paper
  }else if(carriage_direction){result=PRINTER_OC3_NOT_FOUND;goto failed;}
  else if(s_buf_error||s_buf_steps!=PRINTER_OC3_PREP_RETURN_STEPS)goto failed;
  s_bidi_known=true;s_bidi_right=carriage_direction?true:false;s_bidi_at_wiper=!s_bidi_right;
- if(!carriage_direction)s_bidi_left_offset=(int32_t)PRINTER_SERVICE_SPAN_STEPS-(int32_t)PRINTER_OC3_PREP_RETURN_STEPS;
+ s_bidi_right_offset=carriage_direction?(int32_t)PRINTER_PRINT_ENDPOINT_INSET_STEPS:0;
+ if(!carriage_direction)s_bidi_left_offset=(int32_t)PRINTER_OC3_REFERENCE_STEPS-(int32_t)PRINTER_OC3_PREP_RETURN_STEPS;
  if(!carriage_direction&&motor_oc3_active()){result=PRINTER_OC3_STUCK;goto failed;}
  os_printf("[PAGE_PREP_LOAD] pulses=%lu/%lu code=0 parallel_carriage_steps=%lu endpoint=%s head_OFF distance_unverified\r\n",(unsigned long)sent,(unsigned long)paper_steps,(unsigned long)s_buf_steps,s_bidi_right?"RIGHT":"LEFT");
  return 0;
@@ -277,12 +288,12 @@ static int printer_buffered_oc3_return(uint32_t return_steps){
  printer_buffered_stop();
  if(tph_mcu_set_head_power(0)!=BK_OK){printer_bidirectional_abort();return -8;}
  s_oc3_returning=1U;s_oc3_hit=0U;
- s_bidi_known=true;s_bidi_right=true;s_bidi_at_wiper=false;
+ s_bidi_known=true;s_bidi_right=true;s_bidi_right_offset=PRINTER_PRINT_ENDPOINT_INSET_STEPS;s_bidi_at_wiper=false;
  os_printf("[OC3_RETURN_BEGIN] stopped_steps=%lu gpio=24 LOW reverse=LEFT fixed_steps=%u head_OFF\r\n",(unsigned long)stopped,return_steps);
  int result=printer_buffered_reposition(0U,return_steps);
  if(!result){
-  s_bidi_left_offset=(int32_t)PRINTER_SERVICE_SPAN_STEPS-(int32_t)return_steps;
-  s_bidi_right=false;s_bidi_at_wiper=true;
+  s_bidi_left_offset=(int32_t)PRINTER_OC3_REFERENCE_STEPS-(int32_t)return_steps;
+  s_bidi_right=false;s_bidi_right_offset=0;s_bidi_at_wiper=true;
  }
  s_oc3_returning=0U;
  if(!result&&motor_oc3_active()){s_bidi_known=false;result=PRINTER_OC3_STUCK;}

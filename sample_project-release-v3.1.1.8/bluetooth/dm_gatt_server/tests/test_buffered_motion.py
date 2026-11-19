@@ -52,13 +52,13 @@ static void up(unsigned p){
  if(p==50){assert(!timer_enabled&&!step);dir=1;return;}
  assert(p==19&&boost&&!step);step=1;pos+=dir?1:-1;
  if(pos>max_pos)max_pos=pos;
- assert(pos>=(int32_t)PRINTER_SERVICE_SPAN_STEPS-11034-23&&pos<=(int32_t)PRINTER_OC3_TRAVEL_LIMIT_STEPS);
+ assert(pos>=(int32_t)PRINTER_OC3_REFERENCE_STEPS-(int32_t)PRINTER_MAINTENANCE_SPAN_STEPS-23&&pos<=(int32_t)PRINTER_OC3_TRAVEL_LIMIT_STEPS);
  if(dir){
   ++oc3_right_pulses;
   unsigned trip=mode==15?3001U:mode==22?10401U:mode==16?10001U:mode==17?61U:101U;
-  if(((mode==13||mode==15||mode==16||mode==17||mode==18||mode==21||mode==22)&&!oc3_events&&oc3_right_pulses==trip)||((mode==6||mode==11||mode==23||mode==29||mode==30)&&oc3_level&&pos==(int32_t)PRINTER_SERVICE_SPAN_STEPS)){
+  if(((mode==13||mode==15||mode==16||mode==17||mode==18||mode==21||mode==22)&&!oc3_events&&oc3_right_pulses==trip)||((mode==6||mode==11||mode==23||mode==29||mode==30)&&oc3_level&&pos==(int32_t)PRINTER_OC3_REFERENCE_STEPS)){
    /* An optical edge fixes RIGHT even if the previous counted origin was wrong. */
-   ++oc3_events;oc3_level=0;pos=PRINTER_SERVICE_SPAN_STEPS;
+   ++oc3_events;oc3_level=0;pos=PRINTER_OC3_REFERENCE_STEPS;
    if(mode!=21){assert(oc3_handler);oc3_handler();} /* mode21 tests level fallback */
   }
  }else if(!oc3_level){
@@ -108,7 +108,7 @@ static void printer_bidirectional_abort(void){printer_buffered_stop();boost=0;s_
 #define PRINTER_STARTUP_WIPE_ROUNDS 2U
 static unsigned load_calls,total_paper;
 static int motor_page_load_keep_power_guarded(uint32_t steps,uint8_t direction,uint32_t*sent,int(*keep_running)(void)){
- assert(pos==(dir?s_bidi_left_offset:(int32_t)PRINTER_SERVICE_SPAN_STEPS)&&s_bidi_right==!dir&&boost&&timer_enabled&&sync_high&&!hc_fires);
+ assert(pos==(dir?s_bidi_left_offset:(int32_t)PRINTER_OC3_REFERENCE_STEPS)&&s_bidi_right==!dir&&boost&&timer_enabled&&sync_high&&!hc_fires);
  assert(cache.state==PL_IDLE&&steps==702&&!direction&&keep_running);
  int32_t start_pos=pos;++load_calls;*sent=0;
  for(unsigned i=0;i<steps;i++){
@@ -156,26 +156,21 @@ int main(int argc,char**argv){
   free(row);puts("PASS missing OC3: search bounded and no unreferenced full return");return 0;
  }
  if(mode==29){
-  /* Exact hardware log: from the old safe starting point to OC3 is11057 pulses. */
-  pos=(int32_t)PRINTER_SERVICE_SPAN_STEPS-11057;s_bidi_left_offset=pos;
+  assert(PRINTER_SERVICE_SPAN_STEPS==10660U);
+  assert(PRINTER_MAINTENANCE_SPAN_STEPS==11408U);
+  assert(PRINTER_MAINTENANCE_SPAN_STEPS-PRINTER_SERVICE_SPAN_STEPS==748U);
+  assert(PRINTER_OC3_BOOT_RETURN_STEPS==PRINTER_OC3_PREP_RETURN_STEPS);
+  assert(PRINTER_OC3_FINAL_RETURN_STEPS==PRINTER_OC3_BOOT_RETURN_STEPS);
   assert(!printer_buffered_boot_round_trip());
-  assert(oc3_right_pulses==11057&&s_buf_steps==11034&&pos==(int32_t)PRINTER_SERVICE_SPAN_STEPS-11034&&s_bidi_known&&s_bidi_at_wiper);
-  assert(!load_calls&&!hc_fires);printer_buffered_stop();free(row);
-  puts("PASS actual11057-outward log:11034 return, no351-pulse overrun");return 0;
- }
- if(mode==30){
-  assert(!printer_buffered_boot_round_trip());
-  assert(pos==(int32_t)PRINTER_SERVICE_SPAN_STEPS-(int32_t)PRINTER_OC3_BOOT_RETURN_STEPS);
-  assert(s_bidi_left_offset==pos);
-  assert(!printer_startup_prepare(1U)&&pos==0&&s_bidi_left_offset==0&&total_paper==4212);
-  assert(!printer_execute_buffered_line(row,1)&&!printer_execute_buffered_line(row,0));
-  assert(pos==0&&hc_fires==1180);
-  assert(!printer_bidirectional_finish());
-  assert(pos==(int32_t)PRINTER_SERVICE_SPAN_STEPS-(int32_t)PRINTER_OC3_FINAL_RETURN_STEPS);
-  assert(s_bidi_left_offset==pos);free(row);puts("PASS independent boot/prep/final returns normalize to unchanged image anchors");return 0;
+  assert(s_buf_steps==11408U&&pos==-374&&s_bidi_at_wiper);
+  assert(!printer_startup_prepare(1U)&&pos==0&&total_paper==4212);
+  assert(!printer_execute_buffered_line(row,1)&&pos==10660);
+  assert(!printer_execute_buffered_line(row,0)&&pos==0);
+  assert(!printer_bidirectional_finish()&&pos==-374);
+  free(row);puts("PASS unified service11408, print10660, each endpoint inset374, feed unchanged");return 0;
  }
  if(mode>=13){
-  if(mode==14){pos=PRINTER_SERVICE_SPAN_STEPS;oc3_level=0;}
+  if(mode==14){pos=PRINTER_OC3_REFERENCE_STEPS;oc3_level=0;}
   if(mode==13||mode==14||mode==18||mode==21){
    int result=printer_buffered_boot_round_trip();
    assert(result==(mode==18?PRINTER_OC3_STUCK:0));
@@ -226,7 +221,7 @@ int main(int argc,char**argv){
     assert(!printer_execute_buffered_line(row,0U)&&!s_bidi_right&&hc_fires==1180);
     assert(pos==0&&oc3_level);
    }
-   assert(oc3_events==5&&total_paper==4212);
+   assert(oc3_events==3&&total_paper==4212);
    assert(!printer_bidirectional_finish()&&pos==-(int32_t)PRINTER_MAINTENANCE_EXTRA_STEPS);
   }
   printer_buffered_stop();free(row);puts("PASS OC3: edge/poll/initial-LOW stop, fixed LEFT return, no retrigger on LEFT, partial-print abort, late/early feed handling, stuck/input-init failure");return 0;
@@ -289,7 +284,7 @@ int main(int argc,char**argv){
   assert(!printer_buffered_park_at_wiper()&&pos==-(int32_t)PRINTER_MAINTENANCE_EXTRA_STEPS&&s_buf_steps==PRINTER_MAINTENANCE_EXTRA_STEPS);
   assert(!printer_buffered_leave_wiper()&&pos==0);
   assert(!printer_execute_buffered_line(NULL,1)&&pos==(int32_t)PRINTER_SERVICE_SPAN_STEPS);
-  assert(!printer_bidirectional_finish()&&pos==-(int32_t)PRINTER_MAINTENANCE_EXTRA_STEPS&&s_buf_steps==PRINTER_MAINTENANCE_SPAN_STEPS&&!boost);
+  assert(!printer_bidirectional_finish()&&pos==-(int32_t)PRINTER_MAINTENANCE_EXTRA_STEPS&&s_buf_steps==PRINTER_SERVICE_SPAN_STEPS+PRINTER_MAINTENANCE_EXTRA_STEPS&&!boost);
   assert(!printer_buffered_leave_wiper()&&pos==0);printer_buffered_stop();
  }else if(mode==4){assert(rc==-14&&!s_bidi_known&&s_buf_steps==3000&&!timer_enabled&&pos==3000);}
  else {assert(rc==(mode==3?-14:-13));assert(pos==0&&!s_blank_spi_steps[0]&&!s_blank_spi_steps[1]&&!timer_enabled&&!hc_fires);}
@@ -304,6 +299,3 @@ with tempfile.TemporaryDirectory() as t:
  # Also exercise the explicitly disabled loading configuration.
  subprocess.run(['cc','-std=c99','-O1','-Wall','-Wextra','-Werror','-DTEST_LOAD_STEPS=0','-fsanitize=address,undefined','-I'+str(p),'-I'+str(D),'-I'+str(H),str(p/'test.c'),'-o',str(p/'test-zero')],check=True)
  subprocess.run([str(p/'test-zero'),'6'],check=True,env={**os.environ,'ASAN_OPTIONS':'detect_leaks=0'})
-
- subprocess.run(['cc','-std=c99','-O1','-Wall','-Wextra','-Werror','-DPRINTER_OC3_BOOT_RETURN_STEPS=11020U','-DPRINTER_OC3_PREP_RETURN_STEPS=11010U','-DPRINTER_OC3_FINAL_RETURN_STEPS=11000U','-fsanitize=address,undefined','-I'+str(p),'-I'+str(D),'-I'+str(H),str(p/'test.c'),'-o',str(p/'test-independent')],check=True)
- subprocess.run([str(p/'test-independent'),'30'],check=True,env={**os.environ,'ASAN_OPTIONS':'detect_leaks=0'})

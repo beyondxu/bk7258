@@ -945,7 +945,7 @@ int printer_run_boot_carriage_prepare(void) {
     if (attempted || !printer_link_is_ready()) return -7;
     attempted=true;
     os_printf("[BOOT_CARRIAGE_BEGIN] round_trips=1 head_OFF feed=0 counted_LEFT_origin_required\r\n");
-    os_printf("[TRAVEL_PLAN] boot_seek=%u boot_return=%u prep_seek=%u prep_return=%u print=%u final_return=%u final_extra_retreat=%u\r\n",PRINTER_OC3_BOOT_SEARCH_STEPS,PRINTER_OC3_BOOT_RETURN_STEPS,PRINTER_OC3_PREP_SEARCH_STEPS,PRINTER_OC3_PREP_RETURN_STEPS,PRINTER_SERVICE_SPAN_STEPS,PRINTER_OC3_FINAL_RETURN_STEPS,PRINTER_MAINTENANCE_EXTRA_STEPS);
+    os_printf("[TRAVEL_PLAN] boot_seek=%u boot_return=%u prep_seek=%u prep_return=%u print=%u final_return=%u print_endpoint_inset_each=%u\r\n",PRINTER_OC3_BOOT_SEARCH_STEPS,PRINTER_OC3_BOOT_RETURN_STEPS,PRINTER_OC3_PREP_SEARCH_STEPS,PRINTER_OC3_PREP_RETURN_STEPS,PRINTER_SERVICE_SPAN_STEPS,PRINTER_OC3_FINAL_RETURN_STEPS,PRINTER_MAINTENANCE_EXTRA_STEPS);
     int result=printer_startup_prepare(0U);
 #if PRINTER_BUFFERED_LINE
     /* Boot has its own left endpoint; do not apply the page-final park offset. */

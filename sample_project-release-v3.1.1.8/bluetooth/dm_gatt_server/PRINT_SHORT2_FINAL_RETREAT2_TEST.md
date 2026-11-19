@@ -1,3 +1,5 @@
+> Superseded by [V24 unified travel](UNIFIED_TRAVEL_TEST.md).
+
 # V23：喷墨扫描缩短2mm，最后无喷墨退刀追加2mm
 
 启动标记APP_SERVICE_CMY_PRINT10660_PARK2MM_V23。BK分支codex/printer-startup-load-prep，
