@@ -106,14 +106,13 @@
 #ifndef PRINTER_PAGE_BIDIRECTIONAL
 #define PRINTER_PAGE_BIDIRECTIONAL 1
 #endif
-/* Narrow-band experiment: 24 rows (~1.016mm) per paper advance.
- * PAGE_FEED_STEPS remains the calibration for192 rows, not for one narrow band.
+/* Direct full-band trial:192 physical nozzle rows, including S1..S4.
+ * Advance one matching192-row band between scans; no interlace/repeated dots.
  */
 #ifndef PRINTER_PAGE_BAND_ROWS
-#define PRINTER_PAGE_BAND_ROWS 24U
+#define PRINTER_PAGE_BAND_ROWS 192U
 #endif
-/* Comparison baseline: normal pages use physical rows0..23 (S1 only).
- * Keep interlacing available as an opt-in trial; automatic boot cleaning stays OFF. */
+/* Direct mapping uses rows0..191. Interlacing and boot cleaning remain OFF. */
 #ifndef PRINTER_PAGE_INTERLACE
 #define PRINTER_PAGE_INTERLACE 0
 #endif

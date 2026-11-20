@@ -15,7 +15,10 @@ h=r'''
 #include "printer_interlace_mask.h"
 #include "printer_service_geometry.h"
 #define BK_OK 0
+#ifndef PRINTER_PAGE_BAND_ROWS
 #define PRINTER_PAGE_BAND_ROWS 24U
+#endif
+#define EXPECTED_BANDS ((992U+PRINTER_PAGE_BAND_ROWS-1U)/PRINTER_PAGE_BAND_ROWS)
 #define PRINTER_PAGE_BIDIRECTIONAL 1
 #define PRINTER_PAGE_COLOR_MODE 1
 #define PRINTER_PAGE_TRANSFORM 0
@@ -34,7 +37,7 @@ static uint64_t us,last_column_start,last_pulse_fall;
 static unsigned leg_index,last_tx_us;
 static int32_t pos;
 static unsigned dir,step,head,boost,commands,scans,feed_count,spi_count,mode;
-static unsigned expected_band, expected_bands=42;
+static unsigned expected_band, expected_bands=EXPECTED_BANDS;
 static unsigned live,powerups,powerdowns;
 static void*printer_map_psram_alloc(size_t n){void*p=malloc(n);if(p)++live;return p;}
 static void printer_map_psram_free(void*p){if(p){assert(live);--live;free(p);}}
@@ -70,20 +73,21 @@ static int tph_fire_raw_column_bytes(const uint8_t*p){
  assert(pos>=((int32_t)PRINTER_SERVICE_MARGIN_STEPS+200)&&pos<=((int32_t)PRINTER_SERVICE_MARGIN_STEPS+7274)&&(pos-((int32_t)PRINTER_SERVICE_MARGIN_STEPS+200))%6==0);
  unsigned physical_col=(pos-((int32_t)PRINTER_SERVICE_MARGIN_STEPS+200))/6;
  uint8_t expected[100]={0};
- unsigned rows=992U-expected_band*24U;
+ unsigned rows=992U-expected_band*PRINTER_PAGE_BAND_ROWS;
 #if PRINTER_PAGE_INTERLACE
  if(rows>192)rows=192;
 #else
- if(rows>24)rows=24;
+ if(rows>PRINTER_PAGE_BAND_ROWS)rows=PRINTER_PAGE_BAND_ROWS;
 #endif
  printer_map_config_t cfg={3000,-1,0,0};
  for(unsigned ch=0;ch<3;ch++)for(unsigned row=0;row<rows;row++){
   printer_map_route_t route;assert(!printer_map_route(ch,row,&cfg,&route));
   unsigned source_x=(400U+ch)*1119U/1180U;
+  unsigned source_band=(expected_band*PRINTER_PAGE_BAND_ROWS+row)/24U;
+  if(mode==5 && source_band!=0U && source_band!=2U && source_band!=41U)continue;
 #if PRINTER_PAGE_INTERLACE
-  unsigned y=expected_band*24U+row,choices=y/24U+1U;if(choices>8U)choices=8U;
+  unsigned y=expected_band*PRINTER_PAGE_BAND_ROWS+row,choices=y/24U+1U;if(choices>8U)choices=8U;
   if(row/24U!=printer_interlace_block(source_x,y,choices))continue;
-  if(mode==5 && y/24U!=0U && y/24U!=2U && y/24U!=41U)continue;
 #endif
   unsigned x=source_x+route.delay_columns;
   if(x==physical_col)expected[route.slot]|=route.mask;
@@ -117,16 +121,16 @@ static int execute_scan(const uint8_t*p,uint8_t direction){
 #define printer_execute_bidirectional_line execute_scan
 static int motor_page_feed_fast_keep_power(uint32_t steps,uint8_t direction,uint32_t*sent){
  assert(!head&&!step&&boost&&direction==0);
- unsigned i=feed_count%41;
- assert(steps==((i+1)*3170U)/8U-(i*3170U)/8U);
+ unsigned i=feed_count%(EXPECTED_BANDS-1U);
+ assert(steps==((i+1)*PRINTER_PAGE_BAND_ROWS*3170U)/192U-(i*PRINTER_PAGE_BAND_ROWS*3170U)/192U);
  if(mode==4){*sent=10;return -1;}
- ++feed_count;expected_band=(feed_count-1)%41+1;*sent=steps;return 0;
+ ++feed_count;expected_band=(feed_count-1)%(EXPECTED_BANDS-1U)+1;*sent=steps;return 0;
 }
 #include "printer_page_job.h"
 int main(int argc,char**argv){
  assert(argc==3);mode=atoi(argv[2]);FILE*f=fopen(argv[1],"rb");assert(f);fseek(f,0,SEEK_END);long n=ftell(f);rewind(f);uint8_t*b=malloc(n);assert(fread(b,1,n,f)==(size_t)n);fclose(f);
  int rc=printer_run_full_page(b,n);assert(!live&&!head&&!boost&&!step);
- if(!mode||mode==5||mode==6||mode==7){assert(!rc&&scans==expected_bands&&feed_count==41&&pos==0&&powerups==1&&powerdowns==1);expected_band=0;assert(!printer_run_full_page(b,n));assert(scans==2*expected_bands&&feed_count==82&&pos==0&&powerups==2&&powerdowns==2);
+ if(!mode||mode==5||mode==6||mode==7){assert(!rc&&scans==expected_bands&&feed_count==EXPECTED_BANDS-1U&&pos==0&&powerups==1&&powerdowns==1);expected_band=0;assert(!printer_run_full_page(b,n));assert(scans==2*expected_bands&&feed_count==2*(EXPECTED_BANDS-1U)&&pos==0&&powerups==2&&powerdowns==2);
  if(mode==7){free(b);puts("PASS controller starts from prepared RIGHT endpoint: reverse first row, exact physical CMY positions, two pages, final LEFT park");return 0;}
  /* Odd number of scans: the final park is one head-OFF move, zero image calls. */
  printer_map_config_t cfg={3000,-1,0,0};printer_page_t page;
@@ -135,7 +139,7 @@ int main(int argc,char**argv){
 #if PRINTER_PAGE_INTERLACE
  assert(!printer_page_render_interlaced_band(&page,0,24,0,columns,118000,scratch,page.width*72U,dots,NULL));
 #else
- assert(!printer_page_render_band(&page,0,24,columns,118000,scratch,page.width*72U,dots,NULL));
+ assert(!printer_page_render_band(&page,0,PRINTER_PAGE_BAND_ROWS,columns,118000,scratch,page.width*72U,dots,NULL));
 #endif
  expected_band=0;assert(!execute_scan(columns,1));assert(pos==((int32_t)PRINTER_SERVICE_SPAN_STEPS));
  unsigned old_spi=spi_count;assert(!printer_bidirectional_finish());assert(pos==0&&spi_count==old_spi&&!head&&!boost);
@@ -143,11 +147,11 @@ int main(int argc,char**argv){
  free(columns);free(scratch);printer_page_release(&page,printer_map_psram_free);assert(!live);
  }
  else{assert(rc==(mode==1?-9:mode==4?-10:-8));unsigned pulses=s_blank_spi_steps[0]+s_blank_spi_steps[1];assert(printer_run_full_page(b,n)==-7);assert(pulses==s_blank_spi_steps[0]+s_blank_spi_steps[1]);if(mode==4)assert(pos==((int32_t)PRINTER_SERVICE_SPAN_STEPS)&&scans==1);else assert(!scans&&!feed_count);}
- free(b);puts("PASS: alternating directions, exact physical CMY positions, 24-row/final-band routing, fractional feeds, stop/lock after failure");
+ free(b);puts("PASS: alternating directions, exact physical CMY positions, full/final-band routing, fractional feeds, stop/lock after failure");
 }
 '''
 with tempfile.TemporaryDirectory() as t:
  p=Path(t);(p/'test.c').write_text(h);(p/'fixture.bin').write_bytes(blob({(ch,400+ch,y)for ch in range(3)for y in range(1476)}))
- subprocess.run(['cc','-DPRINTER_PAGE_INTERLACE='+os.environ.get('TEST_INTERLACE','0'),'-std=c99','-O1','-Wall','-Wextra','-Werror','-fsanitize=address,undefined','-I'+str(D),str(p/'test.c'),str(D/'printer_mapper.c'),str(D/'printer_page.c'),'-o',str(p/'test')],check=True)
+ subprocess.run(['cc','-DPRINTER_PAGE_INTERLACE='+os.environ.get('TEST_INTERLACE','0'),'-DPRINTER_PAGE_BAND_ROWS='+os.environ.get('TEST_BAND_ROWS','24'),'-std=c99','-O1','-Wall','-Wextra','-Werror','-fsanitize=address,undefined','-I'+str(D),str(p/'test.c'),str(D/'printer_mapper.c'),str(D/'printer_page.c'),'-o',str(p/'test')],check=True)
  (p/'sparse.bin').write_bytes(blob({(ch,400+ch,y)for ch in range(3)for y in range(1476)if (y*992//1476)//24 in [0,2,41]}))
  for mode in range(8):subprocess.run([str(p/'test'),str(p/('sparse.bin' if mode==5 else 'fixture.bin')),str(mode)],check=True,env={**os.environ,'ASAN_OPTIONS':'detect_leaks=0'})
