@@ -1,3 +1,9 @@
+> Current default: automatic boot cleaning is temporarily disabled
+> (`PRINTER_BOOT_WASTE_CLEAN=0`) at the user's request because of startup delay
+> and no clear improvement. Head-OFF boot homing, normal print preparation,
+> S1–S4 interlacing and explicit maintenance commands remain available.
+> The instructions below document the optional enabled profile.
+
 # V36 开机自动执行一次废墨垫清洗
 
 用户当前APP没有清洗按钮，要求直接在开机流程执行。现在不依赖APP：在HC32通信自检成功、原字车无喷墨定位成功之后，直接调用既有废墨清洗任务一次，完成后才启动BLE／打印worker。没有在BLE回调里执行维护，也没有为开机动作伪造APP任务或BIN。
