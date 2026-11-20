@@ -41,12 +41,21 @@ static int printer_execute_cyan_line(const uint8_t *columns){
  uint8_t expected[118000]={0};
  unsigned band=(moves/GROUPS)%BANDS;
  unsigned rows=992U-band*PRINTER_PAGE_BAND_ROWS;
+#if PRINTER_PAGE_INTERLACE
+ if(rows>192U)rows=192U;
+#else
  if(rows>PRINTER_PAGE_BAND_ROWS)rows=PRINTER_PAGE_BAND_ROWS;
+#endif
  printer_map_config_t cfg={3000,-1,0,0};
  for(unsigned ch=0;ch<3;ch++)if(allowed&(3U<<(2*ch)))
   for(unsigned row=0;row<rows;row++){
    printer_map_route_t route;assert(!printer_map_route(ch,row,&cfg,&route));
-   unsigned x=(400U+ch)*1119U/1180U+route.delay_columns;
+   unsigned source_x=(400U+ch)*1119U/1180U;
+#if PRINTER_PAGE_INTERLACE
+   unsigned y=band*24U+row, choices=y/24U+1U;if(choices>8U)choices=8U;
+   if(row/24U!=(source_x+y)%choices)continue;
+#endif
+   unsigned x=source_x+route.delay_columns;
    expected[x*100U+route.slot]|=route.mask;
   }
  assert(!memcmp(columns,expected,sizeof(expected)));
@@ -70,7 +79,7 @@ int main(int argc,char**argv){
 '''
 with tempfile.TemporaryDirectory() as tmp:
  p=Path(tmp);(p/'test.c').write_text(h);(p/'fixture.bin').write_bytes(blob({(ch,400+ch,y) for ch in range(3) for y in range(1476)}))
- for band_rows in [192,48,24]:
+ for band_rows,interlace in [(192,0),(48,0),(24,0),(24,1)]:
   for color_mode in [1,2]:
-   subprocess.run(['cc','-std=c99','-O2','-Wall','-Wextra','-Werror',f'-DPRINTER_PAGE_COLOR_MODE={color_mode}',f'-DPRINTER_PAGE_BAND_ROWS={band_rows}','-I',str(src),str(p/'test.c'),str(src/'printer_mapper.c'),str(src/'printer_page.c'),'-o',str(p/'test')],check=True)
+   subprocess.run(['cc','-std=c99','-O2','-Wall','-Wextra','-Werror',f'-DPRINTER_PAGE_COLOR_MODE={color_mode}',f'-DPRINTER_PAGE_INTERLACE={interlace}',f'-DPRINTER_PAGE_BAND_ROWS={band_rows}','-I',str(src),str(p/'test.c'),str(src/'printer_mapper.c'),str(src/'printer_page.c'),'-o',str(p/'test')],check=True)
    for mode in range(5):subprocess.run([str(p/'test'),str(p/'fixture.bin'),str(mode)],check=True)

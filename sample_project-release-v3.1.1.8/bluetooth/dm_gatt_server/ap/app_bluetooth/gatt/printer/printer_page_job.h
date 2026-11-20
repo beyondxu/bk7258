@@ -1,3 +1,9 @@
+#ifndef PRINTER_PAGE_INTERLACE
+#define PRINTER_PAGE_INTERLACE 0
+#endif
+#if PRINTER_PAGE_INTERLACE && (PRINTER_PAGE_BAND_ROWS != 24 || PRINTER_MAP_REVERSE_Y != 0)
+#error Interlaced trial requires24-row feed and forward nozzle Y
+#endif
 #ifndef PRINTER_STARTUP_PREP
 #define PRINTER_STARTUP_PREP 0
 #endif
@@ -141,6 +147,9 @@ static int printer_run_full_page(const uint8_t *bin, uint32_t length) {
     const uint32_t bands = (page.height + PRINTER_PAGE_BAND_ROWS - 1U) / PRINTER_PAGE_BAND_ROWS;
     os_printf("[PAGE_BAND_PLAN] rows=%u bands=%lu base_feed_192=%u cumulative_fractional_feed no_duplicate_pixels\r\n",
               (unsigned)PRINTER_PAGE_BAND_ROWS, (unsigned long)bands, (unsigned)PRINTER_PAGE_FEED_STEPS);
+#if PRINTER_PAGE_INTERLACE
+    os_printf("[PAGE_INTERLACE] v1 window=192 blocks=8 S1_S4 exact_once leading_edge_adaptive unchanged_feed_and_pulses\r\n");
+#endif
     os_printf("[PAGE_PLAN] source=1180x1476 output=%lux%lu swaths=%lu columns=1180 max_delay=%lu pitch=%lu y_pitch=4233 direction=%ld feed_steps=%u transform=%u color_mode=%u CANDIDATE_FEED aspect_fit\r\n",
               (unsigned long)page.width, (unsigned long)page.height, (unsigned long)bands,
               (unsigned long)page.max_delay, (unsigned long)cfg.x_pitch_centi_um,
@@ -182,6 +191,16 @@ static int printer_run_full_page(const uint8_t *bin, uint32_t length) {
     for (uint32_t strip = 0; strip < bands; ++strip) {
         if (PRINTER_PAGE_ONLY_SWATH >= 0 && strip != (uint32_t)PRINTER_PAGE_ONLY_SWATH) continue;
         uint32_t dots[3];
+#if PRINTER_PAGE_INTERLACE
+        result = printer_page_render_interlaced_band(&page, strip * PRINTER_PAGE_BAND_ROWS,
+                     PRINTER_PAGE_BAND_ROWS,
+#if PRINTER_PAGE_BIDIRECTIONAL
+                     !scan_direction,
+#else
+                     0U,
+#endif
+                     columns, PRINTER_PAGE_COLUMNS * 100U, scratch, page.width * 72U, dots, printer_map_yield_cpu);
+#else
 #if PRINTER_PAGE_BIDIRECTIONAL
         if (!scan_direction)
             result = printer_page_render_band_reverse(&page, strip * PRINTER_PAGE_BAND_ROWS, PRINTER_PAGE_BAND_ROWS, columns,
@@ -190,6 +209,7 @@ static int printer_run_full_page(const uint8_t *bin, uint32_t length) {
 #endif
         result = printer_page_render_band(&page, strip * PRINTER_PAGE_BAND_ROWS, PRINTER_PAGE_BAND_ROWS, columns, PRINTER_PAGE_COLUMNS * 100U,
                                     scratch, page.width * 72U, dots, printer_map_yield_cpu);
+#endif
         if (result) goto done;
 #if PRINTER_APP_YELLOW_ONLY
         for (uint32_t i = 0; i < PRINTER_PAGE_COLUMNS * 100U; ++i) columns[i] &= 0x30U;

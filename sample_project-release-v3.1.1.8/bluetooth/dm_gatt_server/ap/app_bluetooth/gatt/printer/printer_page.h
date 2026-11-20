@@ -36,6 +36,14 @@ int printer_page_render_band_reverse(const printer_page_t *page, uint32_t first_
                         uint8_t *columns, uint32_t column_bytes,
                         uint8_t *scratch, uint32_t scratch_bytes,
                         uint32_t dots[3], void (*yield_cpu)(void));
+/* Interlaced trial: feed rows per scan, distribute each pixel exactly once
+ * across a192-row nozzle window. rows must divide192; reverse_y unsupported.
+ * first_row is paper origin, not the complete source range for this scan.
+ */
+int printer_page_render_interlaced_band(const printer_page_t *page, uint32_t first_row, uint32_t rows,
+                        unsigned reverse, uint8_t *columns, uint32_t column_bytes,
+                        uint8_t *scratch, uint32_t scratch_bytes,
+                        uint32_t dots[3], void (*yield_cpu)(void));
 int printer_page_render(const printer_page_t *page, uint32_t swath,
                         uint8_t *columns, uint32_t column_bytes,
                         uint8_t *scratch, uint32_t scratch_bytes,

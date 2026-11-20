@@ -69,11 +69,22 @@ static int tph_fire_raw_column_bytes(const uint8_t*p){
  assert(pos>=((int32_t)PRINTER_SERVICE_MARGIN_STEPS+200)&&pos<=((int32_t)PRINTER_SERVICE_MARGIN_STEPS+7274)&&(pos-((int32_t)PRINTER_SERVICE_MARGIN_STEPS+200))%6==0);
  unsigned physical_col=(pos-((int32_t)PRINTER_SERVICE_MARGIN_STEPS+200))/6;
  uint8_t expected[100]={0};
- unsigned rows=992U-expected_band*24U;if(rows>24)rows=24;
+ unsigned rows=992U-expected_band*24U;
+#if PRINTER_PAGE_INTERLACE
+ if(rows>192)rows=192;
+#else
+ if(rows>24)rows=24;
+#endif
  printer_map_config_t cfg={3000,-1,0,0};
  for(unsigned ch=0;ch<3;ch++)for(unsigned row=0;row<rows;row++){
   printer_map_route_t route;assert(!printer_map_route(ch,row,&cfg,&route));
-  unsigned x=(400U+ch)*1119U/1180U+route.delay_columns;
+  unsigned source_x=(400U+ch)*1119U/1180U;
+#if PRINTER_PAGE_INTERLACE
+  unsigned y=expected_band*24U+row,choices=y/24U+1U;if(choices>8U)choices=8U;
+  if(row/24U!=(source_x+y)%choices)continue;
+  if(mode==5 && y/24U!=0U && y/24U!=2U && y/24U!=41U)continue;
+#endif
+  unsigned x=source_x+route.delay_columns;
   if(x==physical_col)expected[route.slot]|=route.mask;
  }
  if(s_blank_spi_columns)assert(us-last_column_start==6U*(dir?234U:264U)+last_tx_us);
@@ -120,7 +131,11 @@ int main(int argc,char**argv){
  printer_map_config_t cfg={3000,-1,0,0};printer_page_t page;
  assert(!printer_page_prepare(b,n,&cfg,&page,printer_map_psram_alloc,printer_map_psram_free,printer_map_yield_cpu));
  uint8_t *columns=malloc(118000),*scratch=malloc(page.width*72U);uint32_t dots[3];
+#if PRINTER_PAGE_INTERLACE
+ assert(!printer_page_render_interlaced_band(&page,0,24,0,columns,118000,scratch,page.width*72U,dots,NULL));
+#else
  assert(!printer_page_render_band(&page,0,24,columns,118000,scratch,page.width*72U,dots,NULL));
+#endif
  expected_band=0;assert(!execute_scan(columns,1));assert(pos==((int32_t)PRINTER_SERVICE_SPAN_STEPS));
  unsigned old_spi=spi_count;assert(!printer_bidirectional_finish());assert(pos==0&&spi_count==old_spi&&!head&&!boost);
  assert(!printer_bidirectional_finish());assert(pos==0&&spi_count==old_spi);
@@ -132,6 +147,6 @@ int main(int argc,char**argv){
 '''
 with tempfile.TemporaryDirectory() as t:
  p=Path(t);(p/'test.c').write_text(h);(p/'fixture.bin').write_bytes(blob({(ch,400+ch,y)for ch in range(3)for y in range(1476)}))
- subprocess.run(['cc','-std=c99','-O1','-Wall','-Wextra','-Werror','-fsanitize=address,undefined','-I'+str(D),str(p/'test.c'),str(D/'printer_mapper.c'),str(D/'printer_page.c'),'-o',str(p/'test')],check=True)
+ subprocess.run(['cc','-DPRINTER_PAGE_INTERLACE='+os.environ.get('TEST_INTERLACE','0'),'-std=c99','-O1','-Wall','-Wextra','-Werror','-fsanitize=address,undefined','-I'+str(D),str(p/'test.c'),str(D/'printer_mapper.c'),str(D/'printer_page.c'),'-o',str(p/'test')],check=True)
  (p/'sparse.bin').write_bytes(blob({(ch,400+ch,y)for ch in range(3)for y in range(1476)if (y*992//1476)//24 in [0,2,41]}))
  for mode in range(8):subprocess.run([str(p/'test'),str(p/('sparse.bin' if mode==5 else 'fixture.bin')),str(mode)],check=True,env={**os.environ,'ASAN_OPTIONS':'detect_leaks=0'})

@@ -80,28 +80,37 @@ done:
     if (result) printer_page_release(page, release);
     return result;
 }
-static int render_band(const printer_page_t *page, uint32_t first_row, uint32_t rows, unsigned reverse,
+static int render_band(const printer_page_t *page, uint32_t first_row, uint32_t rows, unsigned reverse, unsigned interlace,
                         uint8_t *columns, uint32_t column_bytes,
                         uint8_t *scratch, uint32_t scratch_bytes,
                         uint32_t dots[3], void (*yield_cpu)(void)) {
     if (!page || !page->planes || !page->width || !columns || !scratch || !dots || first_row >= page->height || !rows || rows > 192U ||
         column_bytes < PRINTER_PAGE_COLUMNS * 100U || scratch_bytes < page->width * 72U) return -1;
+    if (interlace && (192U % rows || first_row % rows || page->cfg.reverse_y)) return -1;
+    const uint32_t nozzle_rows = interlace ? 192U : rows;
     printer_map_config_t cfg = page->cfg;
     if (reverse) cfg.x_direction = -cfg.x_direction;
     /* Scatter only the requested rows instead of visiting192 rows for every
      * output column. Route validation completes before mutating the output. */
-    for (uint32_t ch=0;ch<3;++ch) for (uint32_t row=0;row<rows;++row) {
+    for (uint32_t ch=0;ch<3;++ch) for (uint32_t row=0;row<nozzle_rows;++row) {
         printer_map_route_t route;
         if (printer_map_route(ch,row,&cfg,&route) || page->width+route.delay_columns>PRINTER_PAGE_COLUMNS) return -1;
     }
     memset(columns,0,PRINTER_PAGE_COLUMNS*100U); memset(dots,0,3U*sizeof(*dots));
-    for (uint32_t ch=0;ch<3;++ch) for (uint32_t row=0;row<rows;++row) {
+    for (uint32_t ch=0;ch<3;++ch) for (uint32_t row=0;row<nozzle_rows;++row) {
         uint32_t y=first_row+row;
         if (y>=page->height) continue;
         printer_map_route_t route;
         if (printer_map_route(ch,row,&cfg,&route)) return -1;
+        uint32_t choices = y / rows + 1U;
+        if (choices > 192U / rows) choices = 192U / rows;
         for (uint32_t x=0;x<page->width;++x) {
             const uint8_t *p=page->planes+ch*page->width*page->stride+x*page->stride;
+            /* Assign each source pixel to one eligible nozzle block, shared
+             * by CMY and both scan directions. y = paper_origin + nozzle_row.
+             * Leading rows have fewer eligible blocks; no extra feed/margin.
+             */
+            if (interlace && row / rows != (x + y) % choices) continue;
             if (bit(p,y)) {
                 uint32_t dx=(reverse?page->width-1U-x:x)+route.delay_columns;
                 columns[dx*100U+route.slot]|=(uint8_t)route.mask;
@@ -117,13 +126,21 @@ int printer_page_render_band(const printer_page_t *page, uint32_t first_row, uin
                         uint8_t *columns, uint32_t column_bytes,
                         uint8_t *scratch, uint32_t scratch_bytes,
                         uint32_t dots[3], void (*yield_cpu)(void)) {
-    return render_band(page,first_row,rows,0U,columns,column_bytes,scratch,scratch_bytes,dots,yield_cpu);
+    return render_band(page,first_row,rows,0U,0U,columns,column_bytes,scratch,scratch_bytes,dots,yield_cpu);
 }
 int printer_page_render_band_reverse(const printer_page_t *page, uint32_t first_row, uint32_t rows,
                         uint8_t *columns, uint32_t column_bytes,
                         uint8_t *scratch, uint32_t scratch_bytes,
                         uint32_t dots[3], void (*yield_cpu)(void)) {
-    return render_band(page,first_row,rows,1U,columns,column_bytes,scratch,scratch_bytes,dots,yield_cpu);
+    return render_band(page,first_row,rows,1U,0U,columns,column_bytes,scratch,scratch_bytes,dots,yield_cpu);
+}
+
+int printer_page_render_interlaced_band(const printer_page_t *page, uint32_t first_row, uint32_t rows,
+                        unsigned reverse, uint8_t *columns, uint32_t column_bytes,
+                        uint8_t *scratch, uint32_t scratch_bytes,
+                        uint32_t dots[3], void (*yield_cpu)(void)) {
+    if (reverse > 1U) return -1;
+    return render_band(page,first_row,rows,reverse,1U,columns,column_bytes,scratch,scratch_bytes,dots,yield_cpu);
 }
 
 int printer_page_render(const printer_page_t *page, uint32_t swath,

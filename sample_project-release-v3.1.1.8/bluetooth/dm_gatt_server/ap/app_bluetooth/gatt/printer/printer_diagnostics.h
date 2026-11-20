@@ -112,6 +112,10 @@
 #ifndef PRINTER_PAGE_BAND_ROWS
 #define PRINTER_PAGE_BAND_ROWS 24U
 #endif
+/* V37 trial: spread normal-page firing across S1..S4, without extra dots. */
+#ifndef PRINTER_PAGE_INTERLACE
+#define PRINTER_PAGE_INTERLACE 1
+#endif
 #ifndef PRINTER_PAGE_ONLY_SWATH
 #define PRINTER_PAGE_ONLY_SWATH (-1) /* diagnostic covers all physical rows */
 #endif
