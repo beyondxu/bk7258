@@ -1,7 +1,3 @@
-> Current default is now the direct192-row band trial; see
-> DIRECT_FULL_BAND_TEST.md. Interlacing and automatic boot cleaning remain OFF.
-> The S1 configuration below is a saved comparison baseline.
-
 > Current default: interlacing is temporarily disabled
 > (`PRINTER_PAGE_INTERLACE=0`) for the user's S1 comparison. Normal images use
 > the original first24 physical nozzle rows, all S1. Automatic boot cleaning

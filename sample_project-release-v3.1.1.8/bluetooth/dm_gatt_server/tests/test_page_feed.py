@@ -43,13 +43,8 @@ int main(void){uint32_t sent;assert(!motor_page_feed(3170,0,&sent));assert(sent=
   assert(sent==count&&pulses==before+count&&boost&&!high);
   assert(clock_us-start>200000&&clock_us-start<230000);
  }
- unsigned full_before=pulses;uint64_t full_start=clock_us;
- assert(!motor_page_feed_fast_keep_power(3170,0,&sent));
- assert(sent==3170&&pulses==full_before+3170&&boost&&!high);
- assert(clock_us-full_start>1300000U&&clock_us-full_start<1500000U);
- assert(boost_calls==calls&&inits==old_inits&&u4_off_calls==old_u4_off);
  unsigned before=pulses;
- assert(motor_page_feed_fast_keep_power(3171,0,&sent)==-1&&!sent);
+ assert(motor_page_feed_fast_keep_power(501,0,&sent)==-1&&!sent);
  assert(motor_page_feed_fast_keep_power(0,0,&sent)==-1&&!sent);
  assert(motor_page_feed_fast_keep_power(396,2,&sent)==-1&&!sent);
  assert(motor_page_feed_fast_keep_power(396,0,NULL)==-1);

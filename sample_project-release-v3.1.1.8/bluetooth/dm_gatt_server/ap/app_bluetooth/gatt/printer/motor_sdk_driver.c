@@ -781,7 +781,7 @@ bk_err_t motor_page_feed_keep_power(uint32_t steps, uint8_t direction, uint32_t 
 
 /* Head-OFF service-travel diagnostic. Explicit bounded geometry, no SPI. */
 #include "printer_service_geometry.h"
-/* Bounded band feed while the page owns an already settled boost.
+/* Bounded small-band feed while the page owns an already settled boost.
  * U4 stays enabled at its counted endpoint; do not reset/sleep its translator.
  * No U4 GPIO, reclaim or boost cycling is performed here. */
 static bk_err_t motor_paper_move_keep_power(uint32_t steps, uint8_t direction,
@@ -814,7 +814,7 @@ static bk_err_t motor_paper_move_keep_power(uint32_t steps, uint8_t direction,
 }
 
 bk_err_t motor_page_feed_fast_keep_power(uint32_t steps, uint8_t direction, uint32_t *sent) {
-    return motor_paper_move_keep_power(steps,direction,sent,3170U,800U,400U,64U,NULL);
+    return motor_paper_move_keep_power(steps,direction,sent,500U,800U,400U,64U,NULL);
 }
 /* Loading uses the conservative feed ramp; U4 retains its endpoint phase.
  * Separate from row feed so a loading offset cannot stretch the image. */
