@@ -1,3 +1,5 @@
+> V33 keeps this normal motion profile and slows only short wiping moves: see [slower wipe and idle-color analysis](SLOW_WIPE_IDLE_COLOR_ANALYSIS.md).
+
 # V32: short endpoint ramps, retain sample cruise waveform
 
 The user's scope captures show two STEP patterns: approximately82us period /27us HIGH in the dense capture, and approximately1ms rising-edge spacing in the sparse capture. V31 firmware explicitly used1000us initial/final periods with400-step service ramps and348-step image ramps, so endpoint motion is a plausible explanation of the sparse capture; the screenshots alone do not locate that capture within the stroke. The user reports that sample-machine acceleration/deceleration is not visually obvious and requests the shortest practical transition for this trial.

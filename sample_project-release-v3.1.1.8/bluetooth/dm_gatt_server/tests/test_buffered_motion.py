@@ -31,7 +31,7 @@ typedef int bk_err_t;typedef int timer_id_t;typedef void(*timer_isr_t)(timer_id_
 #define os_printf printf
 static printer_line_cache_t cache;
 static uint64_t now_us,next_bk,next_hc,step_rise_us;
-static unsigned prior_step_period,have_step_rise;
+static unsigned prior_step_period,have_step_rise,slow_wipe_edges,fast_edges;
 static unsigned timer_enabled,timer_period,timer_reserved,boost,step,dir,sync_high=1,mode,hc_fires,irq_stall;
 static int32_t pos,max_pos;
 static unsigned oc3_level=1,oc3_events,oc3_left_edges,oc3_right_pulses;
@@ -52,14 +52,15 @@ static void delay_us(unsigned n){assert(n==PRINTER_CANVAS_STEP_HIGH_US||n==50);n
 static void up(unsigned p){
  if(p==50){assert(!timer_enabled&&!step);dir=1;have_step_rise=0;return;}
  assert(p==19&&boost&&!step);
- if(have_step_rise&&prior_step_period==82U&&timer_period==82U)assert(now_us-step_rise_us==82U);
+ if(have_step_rise&&prior_step_period==82U&&timer_period==82U){assert(now_us-step_rise_us==82U);++fast_edges;}
+ if(have_step_rise&&prior_step_period==164U&&timer_period==164U){assert(now_us-step_rise_us==164U);++slow_wipe_edges;}
  prior_step_period=timer_period;have_step_rise=1;step_rise_us=now_us;step=1;pos+=dir?1:-1;
  if(pos>max_pos)max_pos=pos;
  assert(pos>=(int32_t)PRINTER_OC3_REFERENCE_STEPS-(int32_t)PRINTER_MAINTENANCE_SPAN_STEPS-23&&pos<=(int32_t)PRINTER_OC3_TRAVEL_LIMIT_STEPS);
  if(dir){
   ++oc3_right_pulses;
   unsigned trip=mode==15?3001U:mode==22?10301U:mode==16?10001U:mode==17?61U:101U;
-  if(((mode==13||mode==15||mode==16||mode==17||mode==18||mode==21||mode==22)&&!oc3_events&&oc3_right_pulses==trip)||((mode==6||mode==11||mode==23||mode==29||mode==30)&&oc3_level&&pos==(int32_t)PRINTER_OC3_REFERENCE_STEPS)){
+  if(((mode==13||mode==15||mode==16||mode==17||mode==18||mode==21||mode==22||mode==31)&&!oc3_events&&oc3_right_pulses==trip)||((mode==6||mode==11||mode==23||mode==29||mode==30)&&oc3_level&&pos==(int32_t)PRINTER_OC3_REFERENCE_STEPS)){
    /* An optical edge fixes RIGHT even if the previous counted origin was wrong. */
    ++oc3_events;oc3_level=0;pos=PRINTER_OC3_REFERENCE_STEPS;
    if(mode!=21){assert(oc3_handler);oc3_handler();} /* mode21 tests level fallback */
@@ -112,6 +113,7 @@ static void printer_bidirectional_abort(void){printer_buffered_stop();boost=0;s_
 static unsigned load_calls,total_paper;
 static int motor_page_load_keep_power_guarded(uint32_t steps,uint8_t direction,uint32_t*sent,int(*keep_running)(void)){
  assert(pos==(dir?s_bidi_left_offset:(int32_t)PRINTER_OC3_REFERENCE_STEPS)&&s_bidi_right==!dir&&boost&&timer_enabled&&sync_high&&!hc_fires);
+ assert(!s_buf_wipe_profile);
  assert(cache.state==PL_IDLE&&steps==702&&!direction&&keep_running);
  int32_t start_pos=pos;++load_calls;*sent=0;
  for(unsigned i=0;i<steps;i++){
@@ -157,6 +159,12 @@ int main(int argc,char**argv){
   assert(printer_buffered_boot_round_trip()==PRINTER_OC3_NOT_FOUND&&!s_bidi_known);
   assert(pos==(int32_t)PRINTER_OC3_BOOT_SEARCH_STEPS-(int32_t)PRINTER_MAINTENANCE_EXTRA_STEPS&&!timer_enabled&&!load_calls&&!hc_fires);
   free(row);puts("PASS missing OC3: search bounded and no unreferenced full return");return 0;
+ }
+ if(mode==31){
+  assert(printer_buffered_wipe(3740U,2U)==PRINTER_OC3_RETURNED);
+  assert(!s_buf_wipe_profile&&s_bidi_known&&s_bidi_at_wiper&&!s_bidi_right);
+  assert(pos==-(int32_t)PRINTER_MAINTENANCE_EXTRA_STEPS&&fast_edges>10000U&&!hc_fires);
+  printer_buffered_stop();free(row);puts("PASS wipe optical recovery restores fast positioning profile");return 0;
  }
  if(mode==29){
   assert(PRINTER_CANVAS_STEP_US==82U&&PRINTER_CANVAS_COLUMN_US==673U);
@@ -241,8 +249,10 @@ int main(int argc,char**argv){
   assert(printer_buffered_wipe(PRINTER_MAINTENANCE_SPAN_STEPS,2U)==-7&&pos==-(int32_t)PRINTER_MAINTENANCE_EXTRA_STEPS);
   assert(printer_buffered_wipe(3740U,3U)==-7&&pos==-(int32_t)PRINTER_MAINTENANCE_EXTRA_STEPS);
   int wipe=printer_buffered_wipe(3740U,2U);
+  assert(!s_buf_wipe_profile);
   if(mode==7){
    assert(!wipe&&pos==-(int32_t)PRINTER_MAINTENANCE_EXTRA_STEPS&&s_bidi_known&&!s_bidi_right&&max_pos==3740-(int32_t)PRINTER_MAINTENANCE_EXTRA_STEPS);
+   assert(slow_wipe_edges>14000U);
    assert(s_blank_spi_steps[0]==7480&&s_blank_spi_steps[1]==7480);
   }
   else assert(wipe==-14&&pos==-(int32_t)PRINTER_MAINTENANCE_EXTRA_STEPS+60&&!s_bidi_known);
@@ -304,7 +314,7 @@ int main(int argc,char**argv){
 with tempfile.TemporaryDirectory() as t:
  p=Path(t);(p/'test.c').write_text(h);(p/'driver').mkdir();(p/'driver/timer.h').write_text('/* timer API provided by deterministic test platform */\n')
  subprocess.run(['cc','-std=c99','-O1','-Wall','-Wextra','-Werror','-fsanitize=address,undefined','-I'+str(p),'-I'+str(D),'-I'+str(H),str(p/'test.c'),'-o',str(p/'test')],check=True)
- for mode in list(range(25))+[28,29]:subprocess.run([str(p/'test'),str(mode)],check=True,env={**os.environ,'ASAN_OPTIONS':'detect_leaks=0'})
+ for mode in list(range(25))+[28,29,31]:subprocess.run([str(p/'test'),str(mode)],check=True,env={**os.environ,'ASAN_OPTIONS':'detect_leaks=0'})
 
  # Also exercise the explicitly disabled loading configuration.
  subprocess.run(['cc','-std=c99','-O1','-Wall','-Wextra','-Werror','-DTEST_LOAD_STEPS=0','-fsanitize=address,undefined','-I'+str(p),'-I'+str(D),'-I'+str(H),str(p/'test.c'),'-o',str(p/'test-zero')],check=True)
