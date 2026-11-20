@@ -49,9 +49,9 @@ static void printer_buffered_tick(timer_id_t id){
  uint32_t lead=PRINTER_CANVAS_LEAD_STEPS;
  if(s_buf_ink&&s_buf_steps==lead){s_buf_sync_us=now;s_buf_sync=1U;bk_gpio_set_output_low(PIN_BK_SYNC_OUT);}
  if(!s_buf_active)return;
- GPIO_UP(TPH_MOT_STEP);delay_us(4U);GPIO_DOWN(TPH_MOT_STEP);
+ GPIO_UP(TPH_MOT_STEP);delay_us(PRINTER_CANVAS_STEP_HIGH_US);GPIO_DOWN(TPH_MOT_STEP);
  ++s_buf_steps;++s_blank_spi_steps[s_buf_direction?1:0];
- if(!s_buf_active)return; /* OC3 may interrupt an already-started 4us pulse */
+ if(!s_buf_active)return; /* OC3 may interrupt an already-started STEP high pulse */
  if(s_buf_steps==s_buf_target){s_buf_active=0U;(void)bk_timer_stop(id);return;}
  uint32_t next=printer_buffered_period(s_buf_steps);
  if(next!=s_buf_period){if(bk_timer_set_period_us(id,next)!=BK_OK){s_buf_error=2U;s_buf_active=0U;(void)bk_timer_stop(id);}else s_buf_period=next;}
@@ -129,7 +129,7 @@ static int printer_execute_buffered_line(const uint8_t*columns,uint8_t direction
  if(!direction)s_bidi_left_offset=0;
  s_bidi_at_wiper=!direction&&s_bidi_left_offset==(int32_t)PRINTER_OC3_REFERENCE_STEPS-(int32_t)PRINTER_OC3_FINAL_RETURN_STEPS;
  if(optical_end){s_oc3_hit=0U;s_buf_error=0U;os_printf("[OC3_ENDPOINT] gpio=24 print_row_complete next=LEFT no_page_failure\r\n");}
- os_printf("[BUFFERED_SCAN] direction=%s blank=%u code=0 pulses=%lu columns=%lu prepare_us=%lu motion_us=%lu cruise_step_us=%u max_irq_gap_us=%lu cruise_max_gap_us=%lu one_start_SYNC ink_position_unverified\r\n",direction?"RIGHT":"LEFT",columns?0U:1U,(unsigned long)s_buf_steps,(unsigned long)s_blank_spi_columns,(unsigned long)prepare_us,(unsigned long)(bk_aon_rtc_get_us()-begin),PL_STEP_PERIOD_US,(unsigned long)s_buf_max_gap,(unsigned long)s_buf_cruise_max_gap);
+ os_printf("[BUFFERED_SCAN] direction=%s blank=%u code=0 pulses=%lu columns=%lu prepare_us=%lu motion_us=%lu cruise_step_us=%u step_high_us=%u max_irq_gap_us=%lu cruise_max_gap_us=%lu one_start_SYNC ink_position_unverified\r\n",direction?"RIGHT":"LEFT",columns?0U:1U,(unsigned long)s_buf_steps,(unsigned long)s_blank_spi_columns,(unsigned long)prepare_us,(unsigned long)(bk_aon_rtc_get_us()-begin),PL_STEP_PERIOD_US,PRINTER_CANVAS_STEP_HIGH_US,(unsigned long)s_buf_max_gap,(unsigned long)s_buf_cruise_max_gap);
  return 0;
 stop:
  printer_buffered_stop();

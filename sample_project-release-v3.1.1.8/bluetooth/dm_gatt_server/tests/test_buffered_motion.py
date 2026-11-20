@@ -30,7 +30,8 @@ typedef int bk_err_t;typedef int timer_id_t;typedef void(*timer_isr_t)(timer_id_
 #define TPH_LOGE printf
 #define os_printf printf
 static printer_line_cache_t cache;
-static uint64_t now_us,next_bk,next_hc;
+static uint64_t now_us,next_bk,next_hc,step_rise_us;
+static unsigned prior_step_period,have_step_rise;
 static unsigned timer_enabled,timer_period,timer_reserved,boost,step,dir,sync_high=1,mode,hc_fires,irq_stall;
 static int32_t pos,max_pos;
 static unsigned oc3_level=1,oc3_events,oc3_left_edges,oc3_right_pulses;
@@ -47,10 +48,12 @@ static bool s_bidi_right=false,s_bidi_known=true,s_bidi_power=false;
 typedef struct {uint32_t token,period_us,crc;}tph_line_ticket_t;
 static void advance(unsigned us);
 static uint64_t bk_aon_rtc_get_us(void){return now_us/32U*32U;}
-static void delay_us(unsigned n){assert(n==4||n==50);now_us+=n;}
+static void delay_us(unsigned n){assert(n==PRINTER_CANVAS_STEP_HIGH_US||n==50);now_us+=n;}
 static void up(unsigned p){
- if(p==50){assert(!timer_enabled&&!step);dir=1;return;}
- assert(p==19&&boost&&!step);step=1;pos+=dir?1:-1;
+ if(p==50){assert(!timer_enabled&&!step);dir=1;have_step_rise=0;return;}
+ assert(p==19&&boost&&!step);
+ if(have_step_rise&&prior_step_period==82U&&timer_period==82U)assert(now_us-step_rise_us==82U);
+ prior_step_period=timer_period;have_step_rise=1;step_rise_us=now_us;step=1;pos+=dir?1:-1;
  if(pos>max_pos)max_pos=pos;
  assert(pos>=(int32_t)PRINTER_OC3_REFERENCE_STEPS-(int32_t)PRINTER_MAINTENANCE_SPAN_STEPS-23&&pos<=(int32_t)PRINTER_OC3_TRAVEL_LIMIT_STEPS);
  if(dir){
@@ -65,7 +68,7 @@ static void up(unsigned p){
   if(++oc3_left_edges>=8&&mode!=18&&mode!=24)oc3_level=1;
  }
 }
-static void down(unsigned p){if(p==50){assert(!timer_enabled&&!step);dir=0;return;}assert(p==19&&step);step=0;}
+static void down(unsigned p){if(p==50){assert(!timer_enabled&&!step);dir=0;have_step_rise=0;return;}assert(p==19&&step);assert(now_us-step_rise_us==27U);step=0;}
 #define GPIO_UP(p) up(p)
 #define GPIO_DOWN(p) down(p)
 static void bk_gpio_set_output_low(unsigned pin){
@@ -156,7 +159,8 @@ int main(int argc,char**argv){
   free(row);puts("PASS missing OC3: search bounded and no unreferenced full return");return 0;
  }
  if(mode==29){
-  assert(PRINTER_CANVAS_STEP_US==62U&&PRINTER_CANVAS_COLUMN_US==509U);
+  assert(PRINTER_CANVAS_STEP_US==82U&&PRINTER_CANVAS_COLUMN_US==673U);
+  assert(PRINTER_CANVAS_STEP_HIGH_US==27U&&PRINTER_CANVAS_STEP_US-PRINTER_CANVAS_STEP_HIGH_US==55U);
   /* Whole-microsecond column rounding stays within0.1% of the old pitch. */
   int32_t pitch_error=(int32_t)(PRINTER_CANVAS_COLUMN_US*120U)-(int32_t)(PRINTER_CANVAS_STEP_US*985U);
   assert(pitch_error>-(int32_t)PRINTER_CANVAS_STEP_US&&pitch_error<(int32_t)PRINTER_CANVAS_STEP_US);

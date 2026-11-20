@@ -1,3 +1,5 @@
+> Superseded by [V31 sample STEP waveform matching](CARRIAGE_SAMPLE_STEP_TEST.md).
+
 # V30: another6.45% carriage cruise increase
 
 Requested another small speed increase to approach the sample machine.
