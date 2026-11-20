@@ -1,4 +1,5 @@
 #include "printer_page.h"
+#include "printer_interlace_mask.h"
 #include <string.h>
 #define SRC_STRIDE (PRINTER_PAGE_SOURCE_PADDED / 8U)
 #define SRC_PLANE (PRINTER_PAGE_SOURCE_WIDTH * SRC_STRIDE)
@@ -110,7 +111,7 @@ static int render_band(const printer_page_t *page, uint32_t first_row, uint32_t 
              * by CMY and both scan directions. y = paper_origin + nozzle_row.
              * Leading rows have fewer eligible blocks; no extra feed/margin.
              */
-            if (interlace && row / rows != (x + y) % choices) continue;
+            if (interlace && row / rows != printer_interlace_block(x, y, choices)) continue;
             if (bit(p,y)) {
                 uint32_t dx=(reverse?page->width-1U-x:x)+route.delay_columns;
                 columns[dx*100U+route.slot]|=(uint8_t)route.mask;

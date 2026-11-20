@@ -25,7 +25,7 @@ class Interlace(unittest.TestCase):
   cfg=Config(4388,-1,first,0)
   page=Page();page.planes=data;page.width=width;page.height=height;page.stride=stride;page.cfg=cfg
   out=(C.c_uint8*118000)(); scratch=(C.c_uint8*(width*72))(); dots=(C.c_uint32*3)()
-  seen=set();sections=set(); counts=[0]*3
+  seen=set();sections=set(); counts=[0]*3; assignments={}
   for origin in range(0,height,24):
    reverse=(origin//24)%2
    self.assertEqual(self.fn(C.byref(page),origin,24,reverse,out,len(out),scratch,len(scratch),dots,YIELD(0)),0)
@@ -40,12 +40,25 @@ class Interlace(unittest.TestCase):
        y=origin+row;point=(ch,x,y)
        self.assertIn(point,expected);self.assertNotIn(point,seen)
        seen.add(point);scan[ch]+=1;decoded+=1;sections.add(rt.slot%4)
+       if ch==0:assignments[x,y]=row//24
+       elif (0,x,y) in expected:self.assertEqual(row//24,assignments[x,y])
    self.assertEqual(scan,list(dots))
    self.assertEqual(decoded,sum(int(v).bit_count() for v in out))
    counts=[a+b for a,b in zip(counts,scan)]
   self.assertEqual(seen,expected)
   self.assertEqual(counts,[sum(c==ch for c,x,y in expected) for ch in range(3)])
   if height>=192:self.assertEqual(sections,{0,1,2,3})
+  if dense and height>192:
+   # Old (x+y)%8 mask is100% identical along a down-left diagonal.
+   # Decode actual output to check absence of that coherent grating.
+   pairs=[assignments[x,y]==assignments[x+1,y-1]
+          for x in range(width-1) for y in range(169,height)]
+   self.assertGreater(sum(pairs)/len(pairs),0.06)
+   self.assertLess(sum(pairs)/len(pairs),0.22)
+   distribution=[sum(assignments[x,y]==j for x in range(width)
+                     for y in range(168,height)) for j in range(8)]
+   mean=sum(distribution)/8
+   for n in distribution:self.assertLess(abs(n-mean)/mean,0.2)
  def test_boundaries_sparse_and_both_scan_directions(self):
   for height in [1,23,24,25,167,168,169,192,217,401]:
    with self.subTest(height=height):self.check_image(height)

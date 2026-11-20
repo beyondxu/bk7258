@@ -5,6 +5,13 @@ scan, all in S1. This trial keeps24-row paper advances and uses a192-row physica
 nozzle window, covering S1/S2/S3/S4. Maintenance retains its existing600-nozzle
 mapping and doses. HC32 source and firmware are unchanged (79ba462).
 
+V2 uses a deterministic coordinate hash for selecting the eligible block.
+The previous `(x+y)%blocks` mask created coherent diagonal pass patterns;
+nozzle variation or registration errors could make them visible. Hashing
+spreads that variation without a diagonal grating, but does not repair absent
+drops or calibrate mechanical registration. It is statistically distributed,
+not an exactly equal quota for every short line. Total image dots stay exact.
+
 Each source pixel is allocated to exactly one scan/nozzle pair. It is never
 printed eight times. If a source pixel has Y coordinate y and a selected nozzle
 block j (24 rows per block), it prints on scan floor(y/24)-j using nozzle
@@ -22,7 +29,7 @@ scans because they also print some future image rows; page totals are identical.
 Unchanged: STEP timing, stroke distances, paper calibration, page resizing,
 image transforms, S pulse width, tFire, power sequence and boot cleaning.
 Rendering completes before each line starts; the full118000-byte HC32 line
-buffer remains unchanged. The trial is enabled by PRINTER_PAGE_INTERLACE=1;
+buffer remains unchanged. The trial requires combined CMY mode and is enabled by PRINTER_PAGE_INTERLACE=1;
 setting it to0 restores the previous normal-page renderer.
 
 ## Verification and device comparison
@@ -55,3 +62,8 @@ switch back to codex/printer-startup-load-prep (BK) or
 codex/printer-cached-line-timer (HC32). Older Git may use checkout -b instead
 of switch -c. No HC32 rebuild is needed for this BK-only trial if79ba462 is
 already flashed.
+
+V2 additional host check: decode the dense printed output and measure selected
+blocks along down-left diagonals; equality must be near1/8 rather than the
+previous mask's1.0. Also check approximate eight-block load distribution and
+identical block choices for CMY. Device comparison is still required.
