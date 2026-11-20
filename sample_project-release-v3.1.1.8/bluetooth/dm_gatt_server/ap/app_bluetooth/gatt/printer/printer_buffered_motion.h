@@ -4,8 +4,9 @@
 #include "printer_canvas_geometry.h"
 #define PL_MOTOR_TIMER TIMER_ID4
 #define PL_STEP_PERIOD_US PRINTER_CANVAS_STEP_US
-#define PL_START_PERIOD_US 1000U
-#define PL_RAMP_STEPS 400U
+/* V32: shorten the measured slow endpoint phase; keep cruise and ramps. */
+#define PL_START_PERIOD_US 400U
+#define PL_RAMP_STEPS 64U
 #define PRINTER_OC3_RETURNED (-15)
 #define PRINTER_OC3_STUCK (-16)
 #define PRINTER_OC3_NOT_FOUND (-18)

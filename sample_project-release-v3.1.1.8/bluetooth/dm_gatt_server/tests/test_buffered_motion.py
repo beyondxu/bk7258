@@ -92,8 +92,8 @@ static uint32_t bk_timer_get_enable_status(void){return mode==3?(1U<<4):timer_en
 static uint32_t bk_timer_get_period(timer_id_t id){assert(id==4);return timer_reserved;}
 static int bk_timer_stop(timer_id_t id){assert(id==4);timer_enabled=0;return 0;}
 static int bk_timer_cancel(timer_id_t id){assert(id==4&&!timer_enabled);timer_reserved=0;return 0;}
-static int bk_timer_start_us(timer_id_t id,unsigned period,timer_isr_t cb){assert(id==4&&!timer_enabled);timer_period=period;timer_reserved=period;callback=cb;timer_enabled=1;next_bk=now_us+period;return 0;}
-static int bk_timer_set_period_us(timer_id_t id,unsigned period){assert(id==4&&timer_enabled);timer_period=period;timer_reserved=period;return 0;}
+static int bk_timer_start_us(timer_id_t id,unsigned period,timer_isr_t cb){assert(id==4&&!timer_enabled);assert(period==400U);timer_period=period;timer_reserved=period;callback=cb;timer_enabled=1;next_bk=now_us+period;return 0;}
+static int bk_timer_set_period_us(timer_id_t id,unsigned period){assert(id==4&&timer_enabled);assert(period>=82U&&period<=400U);timer_period=period;timer_reserved=period;return 0;}
 static void rtos_delay_milliseconds(unsigned n){assert(n==1);advance(mode==5?7000U:1000U);}
 static int printer_bidi_power_up(void){boost=1;s_bidi_power=true;return 0;}
 static void printer_bidirectional_abort(void);
@@ -160,6 +160,7 @@ int main(int argc,char**argv){
  }
  if(mode==29){
   assert(PRINTER_CANVAS_STEP_US==82U&&PRINTER_CANVAS_COLUMN_US==673U);
+  assert(PL_START_PERIOD_US==400U&&PL_RAMP_STEPS==64U&&PRINTER_CANVAS_RAMP_STEPS==64U);
   assert(PRINTER_CANVAS_STEP_HIGH_US==27U&&PRINTER_CANVAS_STEP_US-PRINTER_CANVAS_STEP_HIGH_US==55U);
   /* Whole-microsecond column rounding stays within0.1% of the old pitch. */
   int32_t pitch_error=(int32_t)(PRINTER_CANVAS_COLUMN_US*120U)-(int32_t)(PRINTER_CANVAS_STEP_US*985U);

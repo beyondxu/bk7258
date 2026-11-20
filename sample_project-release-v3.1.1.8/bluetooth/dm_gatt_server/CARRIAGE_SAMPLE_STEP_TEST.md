@@ -1,3 +1,5 @@
+> V32 keeps the82us/27us cruise waveform and shortens endpoint ramps: see [current short-ramp trial](CARRIAGE_SHORT_RAMP_TEST.md).
+
 # V31: match the sample STEP waveform estimate
 
 The user requested matching the sample after supplying its oscilloscope screenshot. At50us/div, successive rising edges are approximately82us apart; HIGH is approximately27us and LOW55us. These are screenshot estimates, not exported scope measurements.
