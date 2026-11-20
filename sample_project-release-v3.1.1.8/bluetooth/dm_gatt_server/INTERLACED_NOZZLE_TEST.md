@@ -1,3 +1,9 @@
+> Current default: interlacing is temporarily disabled
+> (`PRINTER_PAGE_INTERLACE=0`) for the user's S1 comparison. Normal images use
+> the original first24 physical nozzle rows, all S1. Automatic boot cleaning
+> remains OFF; current motion, feed, resizing and HC32 timings are unchanged.
+> The following describes the optional interlaced trial, not the default build.
+
 # S1–S4 interlaced nozzle trial
 
 The baseline used the same first24 physical nozzle rows on every normal-page

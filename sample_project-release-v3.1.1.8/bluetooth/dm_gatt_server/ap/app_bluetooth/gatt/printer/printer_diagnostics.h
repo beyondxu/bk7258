@@ -112,9 +112,10 @@
 #ifndef PRINTER_PAGE_BAND_ROWS
 #define PRINTER_PAGE_BAND_ROWS 24U
 #endif
-/* V37 trial: spread normal-page firing across S1..S4, without extra dots. */
+/* Comparison baseline: normal pages use physical rows0..23 (S1 only).
+ * Keep interlacing available as an opt-in trial; automatic boot cleaning stays OFF. */
 #ifndef PRINTER_PAGE_INTERLACE
-#define PRINTER_PAGE_INTERLACE 1
+#define PRINTER_PAGE_INTERLACE 0
 #endif
 #ifndef PRINTER_PAGE_ONLY_SWATH
 #define PRINTER_PAGE_ONLY_SWATH (-1) /* diagnostic covers all physical rows */
