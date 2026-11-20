@@ -295,4 +295,10 @@ void printer_run_carriage_diagnostic(void);
 #define PRINTER_WASTE_MAINTENANCE PRINTER_MAINTENANCE
 #endif
 
+/* Explicitly requested boot maintenance, after link test and head-OFF homing. */
+#ifndef PRINTER_BOOT_WASTE_CLEAN
+#define PRINTER_BOOT_WASTE_CLEAN (PRINTER_BOOT_CARRIAGE_PREP && PRINTER_WASTE_MAINTENANCE)
+#endif
+int printer_run_boot_waste_clean(void);
+
 #endif

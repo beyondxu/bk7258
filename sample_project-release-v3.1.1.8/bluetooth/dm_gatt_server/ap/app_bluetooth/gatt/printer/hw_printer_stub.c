@@ -992,3 +992,18 @@ int printer_run_boot_carriage_prepare(void) {
     return 0;
 #endif
 }
+
+/* Before BLE/worker creation: one direct, finite clean per power-up. */
+int printer_run_boot_waste_clean(void) {
+#if PRINTER_BOOT_WASTE_CLEAN && PRINTER_MAINTENANCE && PRINTER_WASTE_MAINTENANCE
+    static bool attempted=false;
+    if (attempted || !printer_link_is_ready()) return -7;
+    attempted=true; /* failures are not automatically retried */
+    os_printf("[BOOT_WASTE_BEGIN] once_per_boot pad=PRINT_RIGHT no_paper_feed\r\n");
+    int result=printer_run_maintenance(PRINTER_MAINT_WASTE);
+    os_printf("[BOOT_WASTE_DONE] code=%d no_retry recovery_unverified\r\n",result);
+    return result;
+#else
+    return 0;
+#endif
+}
