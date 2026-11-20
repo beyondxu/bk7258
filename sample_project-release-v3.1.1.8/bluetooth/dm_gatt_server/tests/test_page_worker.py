@@ -7,7 +7,7 @@ import tempfile
 base=Path(__file__).resolve().parents[1]/'ap/app_bluetooth/gatt/printer'
 s=(base/'hw_printer_stub.c').read_text()
 buffers=s[s.index('bool hw_printer_prepare_buffer'):s.index('static int decode_packbits_full')]
-worker=s[s.index('static void printer_worker_thread'):s.index('void hw_printer_start_job_async')]
+worker=s[s.index('#if PRINTER_MAINTENANCE\nstatic volatile uint8_t s_maintenance_request'):s.index('void hw_printer_start_job_async')]
 harness=r'''
 #include <assert.h>
 #include <stdint.h>
@@ -18,6 +18,7 @@ harness=r'''
 #include <setjmp.h>
 #include "DIAGNOSTICS"
 #include "UTILS"
+#include "MAINTENANCE"
 #define os_printf printf
 #define psram_malloc malloc
 #define psram_free free
@@ -25,6 +26,11 @@ harness=r'''
 static uint8_t *s_print_buffer;
 static uint32_t s_max_buffer_size,s_buffer_len;
 static void *s_print_sem;
+static void *s_print_task_handle=(void*)1;
+#define BK_OK 0
+static int rtos_set_semaphore(void**s){(void)s;abort();}
+static int printer_run_maintenance(uint8_t mode){(void)mode;abort();}
+void printer_protocol_maintenance_complete(uint8_t mode,int result){(void)mode;(void)result;abort();}
 static jmp_buf done;
 static unsigned sem_calls, physical_calls, completed, mapping_calls, page_calls;
 static bool printer_protocol_job_buffer_valid(uint32_t n,uint32_t crc){return n==9&&crc==0xCBF43926;}
@@ -54,7 +60,7 @@ int main(void) {
  assert(completed==1 && physical_calls==0 && mapping_calls==0 && page_calls==1);
  puts("PASS: full-page worker passes complete stored BIN, frees before final response, and never falls into diagnostics/legacy parser");
 }
-'''.replace('DIAGNOSTICS',str(base/'printer_diagnostics.h')).replace('UTILS',str(base/'printer_audit_utils.h')).replace('BUFFERS',buffers).replace('WORKER',worker)
+'''.replace('DIAGNOSTICS',str(base/'printer_diagnostics.h')).replace('UTILS',str(base/'printer_audit_utils.h')).replace('MAINTENANCE',str(base/'printer_maintenance.h')).replace('BUFFERS',buffers).replace('WORKER',worker)
 with tempfile.TemporaryDirectory() as tmp:
  p=Path(tmp);(p/'test.c').write_text(harness)
  subprocess.run(['cc','-std=c99','-DPRINTER_BOUNDED_PRINT=0','-DPRINTER_FULL_PAGE=1','-DPRINTER_MAP_AUDIT=1','-DPRINTER_AUDIT_DUMP_MAX_BYTES=65536','-fsanitize=address,undefined',str(p/'test.c'),'-o',str(p/'test')],check=True)

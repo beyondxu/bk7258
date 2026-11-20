@@ -29,6 +29,22 @@ static void audit_command(const uint8_t *frame, uint32_t len)
     }
     uint16_t count = audit_u16(frame + 7);
     const uint8_t *p = frame + 9;
+    if(frame[4]==6 && frame[5]==8){
+        uint8_t mode=count==0?PRINTER_MAINT_CLEAN:p[0];
+        uint8_t reply=PRINTER_MAINT_ACCEPTED;
+        if(count>1U||mode>PRINTER_MAINT_WASTE)reply=PRINTER_MAINT_INVALID;
+        else if(mode==PRINTER_MAINT_WASTE || !PRINTER_MAINTENANCE)reply=PRINTER_MAINT_UNAVAILABLE;
+        else if(s_job.state!=JOB_STATE_IDLE)reply=PRINTER_MAINT_BUSY;
+        else if(s_status.paper||s_status.cover||s_status.cartridge||s_status.fault)reply=PRINTER_MAINT_PRECONDITION;
+        if(reply==PRINTER_MAINT_ACCEPTED){
+            s_job.state=JOB_STATE_MAINTAINING;s_job.maintenance_mode=mode;s_status.work=1;
+            if(!hw_printer_start_maintenance_async(mode)){s_job.state=JOB_STATE_IDLE;s_status.work=0;reply=PRINTER_MAINT_UNAVAILABLE;}
+        }
+        send_dn20_response(6,8,2,&reply,1);
+        if(reply==PRINTER_MAINT_ACCEPTED)printer_report_status();
+        os_printf("[MAINT_REQUEST] mode=%u reply=%u paper_required=1\r\n",mode,reply);
+        return;
+    }
     if (frame[4] == 6 && frame[5] == 3) {
         uint32_t off = 0, length = 0, crc = 0;
         uint16_t id = 0;
@@ -73,6 +89,7 @@ static void audit_command(const uint8_t *frame, uint32_t len)
         return;
     }
     if (frame[4] == 6 && frame[5] == 4) {
+        if(s_job.state==JOB_STATE_MAINTAINING){audit_send_finish(count==2?audit_u16(p):0,1);return;}
         uint16_t id = count == 2 ? audit_u16(p) : s_job.task_id;
         if (s_job.state == JOB_STATE_PRINTING) {
             audit_send_finish(id, count == 2 && id == s_job.task_id ? 2 : 1);

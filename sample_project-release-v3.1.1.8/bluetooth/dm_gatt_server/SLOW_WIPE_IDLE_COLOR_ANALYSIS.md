@@ -1,3 +1,5 @@
+> V34 adds independent paper nozzle-check and bounded recovery via06/08: see [current maintenance test](PAPER_MAINTENANCE_TEST.md). Normal printing/wipe settings below remain unchanged.
+
 # V33: slower short wiping moves and idle-color investigation
 
 ## Motion change

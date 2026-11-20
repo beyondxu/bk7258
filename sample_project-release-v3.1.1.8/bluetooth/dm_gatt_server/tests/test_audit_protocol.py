@@ -13,7 +13,8 @@ harness = r'''
 #define os_printf printf
 static uint8_t storage[4096], rsp[128];
 static uint32_t stored;
-static int starts, fail_append;
+static int starts, fail_append, maintenance_starts, fail_maintenance;
+static uint8_t maintenance_mode;
 int printer_ntf_data(uint8_t *p, uint16_t n) {memcpy(rsp,p,n); return 0;}
 void hw_printer_create_task(void) {}
 bool hw_printer_prepare_buffer(uint32_t n) {stored=0; return n<=sizeof(storage);}
@@ -23,6 +24,7 @@ bool hw_printer_append_data(const uint8_t *p,uint32_t n) {
 }
 void hw_printer_clear_buffer(void) {stored=0;}
 void hw_printer_start_job_async(void) {++starts;}
+bool hw_printer_start_maintenance_async(uint8_t mode){if(fail_maintenance)return false;maintenance_mode=mode;++maintenance_starts;return true;}
 #include "SOURCE"
 static unsigned frame(uint8_t *p, uint8_t sub, const uint8_t *params,unsigned n) {
  uint8_t h[]={0x1d,0,(uint8_t)(5+n),0,6,sub,1,(uint8_t)n,0};
@@ -35,7 +37,7 @@ static unsigned start(uint8_t *p, const uint8_t *bin,unsigned n,uint32_t crc) {
 }
 int main(void) {
  uint8_t f[128],finish[32],id[]={0x22,0x11};
- uint8_t bin[]={0x1d,0,5,0,6,1,1,0,0,0,0,0,0,0x1e,0x1b,0x25,0x36,0x80};
+ uint8_t bin[]={0x1d,0,5,0,6,8,1,0,0,0,0,0,0,0x1e,0x1b,0x25,0x36,0x80};
  uint32_t crc=printer_crc32(bin,sizeof(bin));
  assert(printer_crc32((const uint8_t*)"123456789",9)==0xCBF43926);
  printer_protocol_init();
@@ -106,6 +108,33 @@ int main(void) {
  printer_process_data(bin,sizeof(bin));printer_process_data(finish,m);
  saved=stored;hw_printer_clear_buffer();printer_protocol_payload_complete(saved,crc^1,0);
  assert(s_status.fault==8&&rsp[17]==1&&s_job.state==JOB_STATE_IDLE);
+
+ /* Maintenance reserves the same worker: fragmented request, duplicate/busy,
+  * stale finish, disconnect, malformed/unavailable command and real completion. */
+ s_status.fault=0;uint8_t clean[]={1},check[]={0},waste[]={2},badmode[]={3},extra[]={0,0};
+ n=frame(f,8,NULL,0);printer_process_data(f,5);assert(!maintenance_starts);printer_process_data(f+5,n-5);
+ assert(maintenance_starts==1&&maintenance_mode==1&&s_job.state==JOB_STATE_MAINTAINING&&s_status.work);
+ n=frame(f,8,check,1);printer_process_data(f,n);assert(rsp[9]==2&&maintenance_starts==1);
+ printer_protocol_reset();assert(s_job.state==JOB_STATE_MAINTAINING&&s_status.work);
+ n=start(f,bin,sizeof(bin),crc);printer_process_data(f,n);assert(rsp[9]==1&&s_job.state==JOB_STATE_MAINTAINING);
+ m=frame(finish,4,id,2);printer_process_data(finish,m);assert(s_job.state==JOB_STATE_MAINTAINING&&s_status.work);
+ printer_protocol_maintenance_complete(0,0);assert(s_job.state==JOB_STATE_MAINTAINING);
+ printer_protocol_maintenance_complete(1,0);assert(s_job.state==JOB_STATE_IDLE&&!s_status.work&&!s_status.fault);
+ n=frame(f,8,waste,1);printer_process_data(f,n);assert(rsp[9]==4&&maintenance_starts==1);
+ n=frame(f,8,badmode,1);printer_process_data(f,n);assert(rsp[9]==3);
+ n=frame(f,8,extra,2);printer_process_data(f,n);assert(rsp[9]==3);
+ s_status.paper=1;n=frame(f,8,check,1);printer_process_data(f,n);assert(rsp[9]==5&&!s_status.work);s_status.paper=0;
+ fail_maintenance=1;printer_process_data(f,n);assert(rsp[9]==4&&s_job.state==JOB_STATE_IDLE&&!s_status.work);fail_maintenance=0;
+ printer_process_data(f,n);assert(maintenance_starts==2&&maintenance_mode==0);
+ printer_protocol_maintenance_complete(0,-10);assert(!s_status.fault&&s_job.state==JOB_STATE_IDLE&&!s_status.work);
+ s_status.fault=0;printer_process_data(f,n);assert(maintenance_starts==3);printer_protocol_maintenance_complete(0,-2);assert(!s_status.fault);
+ /* A valid clean frame cannot steal a completed BIN awaiting its finish. */
+ n=start(f,bin,sizeof(bin),crc);printer_process_data(f,n);printer_process_data(bin,sizeof(bin));
+ unsigned old_maintenance=maintenance_starts;n=frame(f,8,clean,1);printer_process_data(f,n);
+ assert(rsp[9]==2&&maintenance_starts==old_maintenance&&stored==sizeof(bin)&&s_job.state==JOB_STATE_RECEIVING_BIN);
+ m=frame(finish,4,id,2);printer_process_data(finish,m);assert(s_job.state==JOB_STATE_PRINTING);
+ saved=stored;hw_printer_clear_buffer();printer_protocol_page_complete(saved,crc,0);
+ puts("PASS: maintenance async acceptance, worker ownership, busy/stale-finish/disconnect handling, errors, paper and waste-station guards");
  puts("PASS: execution errors preserve failed finish; real data faults retain bit3");
  puts("PASS: fragmented/coalesced frames, binary frame signatures, CRC, TLV bounds, storage failure, worker ownership");
 }

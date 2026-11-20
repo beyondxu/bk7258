@@ -3,6 +3,7 @@
 
 #include <stdint.h>
 #include <stdbool.h>
+#include "printer_maintenance.h"
 
 #ifdef __cplusplus
 extern "C" {

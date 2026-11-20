@@ -455,9 +455,24 @@ done:
 #include "printer_app_payload_audit.h"
 #endif
 
+#if PRINTER_MAINTENANCE
+static volatile uint8_t s_maintenance_request; /* mode+1; only one worker owns motors */
+static int printer_run_maintenance(uint8_t mode);
+#endif
+
 static void printer_worker_thread(void *arg) {
+    (void)arg;
     while (1) {
         rtos_get_semaphore(&s_print_sem, BEKEN_WAIT_FOREVER);
+#if PRINTER_MAINTENANCE
+        if(s_maintenance_request){
+            uint8_t mode=s_maintenance_request-1U;
+            int maintenance_result=printer_run_maintenance(mode);
+            s_maintenance_request=0U;
+            printer_protocol_maintenance_complete(mode,maintenance_result);
+            continue;
+        }
+#endif
 #if PRINTER_APP_PAYLOAD_AUDIT
         uint32_t audit_length = s_buffer_len;
         uint32_t audit_crc = printer_crc32(s_print_buffer, audit_length);
@@ -507,6 +522,17 @@ static void printer_worker_thread(void *arg) {
         }
         hw_printer_clear_buffer();
     }
+}
+
+bool hw_printer_start_maintenance_async(uint8_t mode){
+#if PRINTER_MAINTENANCE
+    if(mode>PRINTER_MAINT_CLEAN||!s_print_sem||!s_print_task_handle||s_maintenance_request||s_print_buffer)return false;
+    s_maintenance_request=mode+1U;__sync_synchronize();
+    if(rtos_set_semaphore(&s_print_sem)!=BK_OK){s_maintenance_request=0U;return false;}
+    return true;
+#else
+    (void)mode;return false;
+#endif
 }
 
 void hw_printer_start_job_async(void) {
@@ -936,6 +962,9 @@ stop:
 #include "printer_domain_pair_job.h"
 #endif
 #include "printer_page_job.h"
+#if PRINTER_MAINTENANCE
+#include "printer_maintenance_job.h"
+#endif
 #endif
 
 /* Run only before BLE/worker creation; reuse the verified timer-only path. */

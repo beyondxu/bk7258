@@ -37,11 +37,13 @@ typedef enum {
     JOB_STATE_IDLE = 0,
     JOB_STATE_RECEIVING_BIN,
     JOB_STATE_PRINTING,
+    JOB_STATE_MAINTAINING,
 } job_state_t;
 
 static struct {
     job_state_t state;
     uint16_t task_id;
+    uint8_t maintenance_mode;
     uint32_t total_bin_len;
     uint32_t received_bin_len;
     uint32_t packet_count;
@@ -111,7 +113,7 @@ void printer_protocol_init(void)
 void printer_protocol_reset(void)
 {
     audit_frame_used = 0;
-    if (PRINTER_DATA_AUDIT && s_job.state == JOB_STATE_PRINTING) return;
+    if ((PRINTER_DATA_AUDIT && s_job.state == JOB_STATE_PRINTING) || s_job.state == JOB_STATE_MAINTAINING) return;
     memset(&s_job, 0, sizeof(s_job));
     s_job.state = JOB_STATE_IDLE;
     s_status.work = 0x00;
@@ -142,6 +144,9 @@ static void printer_process_data_legacy(const uint8_t *data, uint32_t len)
 
         os_printf("[PROTO] Received Command: Cat=0x%02X, Sub=0x%02X, ParamLen=%d\r\n", 
                   category, sub_class, param_len);
+
+        /* Keep disabled legacy builds explicit: no empty success for cleaning. */
+        if(category==6 && sub_class==8){audit_command(data,len);return;}
 
         // -------------------------------------------------------------
         // 第 2 章 1: 查询 SN (Cat 0x01, Sub 0x02) -> 应答带字符串截止符 0x00
@@ -378,4 +383,12 @@ void printer_protocol_page_complete(uint32_t saved_len, uint32_t saved_crc, int 
 bool printer_protocol_job_buffer_valid(uint32_t saved_len, uint32_t saved_crc)
 {
     return s_job.state == JOB_STATE_PRINTING && saved_len == s_job.total_bin_len && saved_crc == s_job.expected_crc;
+}
+
+void printer_protocol_maintenance_complete(uint8_t mode,int result){
+ if(s_job.state!=JOB_STATE_MAINTAINING||s_job.maintenance_mode!=mode)return;
+ s_status.work=0;s_status.fault=printer_execution_fault(result,true);s_job.state=JOB_STATE_IDLE;
+ uint8_t report[2]={mode,result?1U:0U};
+ os_printf("[MAINT_RESULT] mode=%u code=%d recovery_unverified\r\n",mode,result);
+ send_dn20_response(6,8,1,report,sizeof(report));printer_report_status();
 }

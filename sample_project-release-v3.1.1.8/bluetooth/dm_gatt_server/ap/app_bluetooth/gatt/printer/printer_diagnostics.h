@@ -285,4 +285,9 @@ void printer_run_startup_diagnostic(void);
 int printer_run_boot_carriage_prepare(void);
 void printer_run_carriage_diagnostic(void);
 
+/* Paper-only maintenance shares the buffered page worker and motion path. */
+#ifndef PRINTER_MAINTENANCE
+#define PRINTER_MAINTENANCE (PRINTER_DATA_AUDIT && PRINTER_FULL_PAGE && PRINTER_PAGE_BIDIRECTIONAL && PRINTER_BUFFERED_LINE && PRINTER_STARTUP_PREP && !PRINTER_APP_PAYLOAD_AUDIT)
+#endif
+
 #endif
