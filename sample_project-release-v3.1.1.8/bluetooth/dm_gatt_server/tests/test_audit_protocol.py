@@ -109,25 +109,29 @@ int main(void) {
  saved=stored;hw_printer_clear_buffer();printer_protocol_payload_complete(saved,crc^1,0);
  assert(s_status.fault==8&&rsp[17]==1&&s_job.state==JOB_STATE_IDLE);
 
- /* Maintenance reserves the same worker: fragmented request, duplicate/busy,
-  * stale finish, disconnect, malformed/unavailable command and real completion. */
+ /* Maintenance reserves the worker; default now cleans the confirmed waste pad. */
  s_status.fault=0;uint8_t clean[]={1},check[]={0},waste[]={2},badmode[]={3},extra[]={0,0};
  n=frame(f,8,NULL,0);printer_process_data(f,5);assert(!maintenance_starts);printer_process_data(f+5,n-5);
- assert(maintenance_starts==1&&maintenance_mode==1&&s_job.state==JOB_STATE_MAINTAINING&&s_status.work);
+ assert(maintenance_starts==1&&maintenance_mode==2&&s_job.state==JOB_STATE_MAINTAINING&&s_status.work);
  n=frame(f,8,check,1);printer_process_data(f,n);assert(rsp[9]==2&&maintenance_starts==1);
  printer_protocol_reset();assert(s_job.state==JOB_STATE_MAINTAINING&&s_status.work);
  n=start(f,bin,sizeof(bin),crc);printer_process_data(f,n);assert(rsp[9]==1&&s_job.state==JOB_STATE_MAINTAINING);
  m=frame(finish,4,id,2);printer_process_data(finish,m);assert(s_job.state==JOB_STATE_MAINTAINING&&s_status.work);
  printer_protocol_maintenance_complete(0,0);assert(s_job.state==JOB_STATE_MAINTAINING);
- printer_protocol_maintenance_complete(1,0);assert(s_job.state==JOB_STATE_IDLE&&!s_status.work&&!s_status.fault);
- n=frame(f,8,waste,1);printer_process_data(f,n);assert(rsp[9]==4&&maintenance_starts==1);
+ printer_protocol_maintenance_complete(2,0);assert(s_job.state==JOB_STATE_IDLE&&!s_status.work&&!s_status.fault);
+ /* Waste cleaning accepts absent paper and must not load/feed it. */
+ s_status.paper=1;n=frame(f,8,waste,1);printer_process_data(f,n);
+ assert(maintenance_starts==2&&maintenance_mode==2&&s_job.state==JOB_STATE_MAINTAINING);
+ printer_protocol_maintenance_complete(2,0);s_status.paper=0;
  n=frame(f,8,badmode,1);printer_process_data(f,n);assert(rsp[9]==3);
  n=frame(f,8,extra,2);printer_process_data(f,n);assert(rsp[9]==3);
  s_status.paper=1;n=frame(f,8,check,1);printer_process_data(f,n);assert(rsp[9]==5&&!s_status.work);s_status.paper=0;
  fail_maintenance=1;printer_process_data(f,n);assert(rsp[9]==4&&s_job.state==JOB_STATE_IDLE&&!s_status.work);fail_maintenance=0;
- printer_process_data(f,n);assert(maintenance_starts==2&&maintenance_mode==0);
+ printer_process_data(f,n);assert(maintenance_starts==3&&maintenance_mode==0);
  printer_protocol_maintenance_complete(0,-10);assert(!s_status.fault&&s_job.state==JOB_STATE_IDLE&&!s_status.work);
- s_status.fault=0;printer_process_data(f,n);assert(maintenance_starts==3);printer_protocol_maintenance_complete(0,-2);assert(!s_status.fault);
+ s_status.fault=0;printer_process_data(f,n);assert(maintenance_starts==4);printer_protocol_maintenance_complete(0,-2);assert(!s_status.fault);
+ n=frame(f,8,clean,1);printer_process_data(f,n);assert(maintenance_mode==1&&s_job.state==JOB_STATE_MAINTAINING);
+ printer_protocol_maintenance_complete(1,0);
  /* A valid clean frame cannot steal a completed BIN awaiting its finish. */
  n=start(f,bin,sizeof(bin),crc);printer_process_data(f,n);printer_process_data(bin,sizeof(bin));
  unsigned old_maintenance=maintenance_starts;n=frame(f,8,clean,1);printer_process_data(f,n);
@@ -146,3 +150,24 @@ with tempfile.TemporaryDirectory() as tmp:
  (root/'test.c').write_text(harness)
  subprocess.run(['cc','-std=c99','-fsanitize=address,undefined','-g','-I',tmp,str(root/'test.c'),'-o',str(root/'test')],check=True)
  subprocess.run([str(root/'test')],check=True,env={**os.environ,"ASAN_OPTIONS":"detect_leaks=0"})
+ # Disabled waste builds refuse both default/explicit requests, without silently
+ # falling back to paper ink; the original legacy parser also refuses safely.
+ disabled=harness[:harness.index('int main(void)')]+r'''
+int main(void){
+ uint8_t f[128],waste[]={2},check[]={0},paper[]={1};
+ printer_protocol_init();unsigned n=frame(f,8,NULL,0);printer_process_data(f,n);
+ assert(rsp[9]==4&&!maintenance_starts&&s_job.state==JOB_STATE_IDLE);
+ n=frame(f,8,waste,1);printer_process_data(f,n);assert(rsp[9]==4&&!maintenance_starts);
+#if PRINTER_MAINTENANCE
+ n=frame(f,8,check,1);printer_process_data(f,n);assert(maintenance_mode==0&&maintenance_starts==1);
+ printer_protocol_maintenance_complete(0,0);
+ n=frame(f,8,paper,1);printer_process_data(f,n);assert(maintenance_mode==1&&maintenance_starts==2);
+ printer_protocol_maintenance_complete(1,0);
+#endif
+ puts("PASS disabled waste/legacy build: explicit refusal, no default paper fallback");
+}
+'''
+ (root/'disabled.c').write_text(disabled)
+ for flags in [[],['-DPRINTER_DATA_AUDIT=0','-DPRINTER_MAINTENANCE=0','-DPRINTER_BOUNDED_PRINT=0','-DPRINTER_BOUNDED_LINE=0','-DPRINTER_MAP_AUDIT=0']]:
+  subprocess.run(['cc','-std=c99','-DPRINTER_WASTE_MAINTENANCE=0',*flags,'-fsanitize=address,undefined','-I',tmp,str(root/'disabled.c'),'-o',str(root/'disabled')],check=True)
+  subprocess.run([str(root/'disabled')],check=True,env={**os.environ,"ASAN_OPTIONS":"detect_leaks=0"})

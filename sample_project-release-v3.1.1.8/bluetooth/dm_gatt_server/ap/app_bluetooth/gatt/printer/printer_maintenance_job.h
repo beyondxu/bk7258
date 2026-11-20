@@ -1,9 +1,15 @@
 #ifndef PRINTER_MAINTENANCE_JOB_H
 #define PRINTER_MAINTENANCE_JOB_H
 #include "printer_maintenance_pattern.h"
+#if PRINTER_WASTE_MAINTENANCE
+#include "printer_waste_clean_job.h"
+#endif
 /* Runs only in the existing worker. Paper must be loaded by the operator:
  * the current status field is not a calibrated paper-presence interlock. */
 static int printer_run_maintenance(uint8_t mode){
+#if PRINTER_WASTE_MAINTENANCE
+ if(mode==PRINTER_MAINT_WASTE)return printer_run_waste_clean();
+#endif
  if(mode>PRINTER_MAINT_CLEAN)return -19;
  if(!printer_link_is_ready()||!s_bidi_known||s_bidi_right||!s_bidi_at_wiper)return -7;
  printer_map_config_t cfg;printer_map_default_config(&cfg);

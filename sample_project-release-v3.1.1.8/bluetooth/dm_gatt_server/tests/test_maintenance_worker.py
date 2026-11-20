@@ -13,6 +13,7 @@ h=r'''
 #include "printer_maintenance.h"
 #include "printer_audit_utils.h"
 #define PRINTER_MAINTENANCE 1
+#define PRINTER_WASTE_MAINTENANCE 1
 #define PRINTER_FULL_PAGE 1
 #define PRINTER_APP_PAYLOAD_AUDIT 0
 #define PRINTER_DATA_AUDIT 0
@@ -46,11 +47,11 @@ static void parse_and_execute_stream_perfect(const uint8_t*p,uint32_t n){(void)p
 WORKER
 static void printer_protocol_maintenance_complete(uint8_t mode,int result){assert(mode==expected_mode&&result==run_result&&!s_maintenance_request);++completions;}
 int main(void){
- assert(!hw_printer_start_maintenance_async(2));
+ assert(!hw_printer_start_maintenance_async(3));
  s_print_sem=NULL;assert(!hw_printer_start_maintenance_async(0));s_print_sem=(void*)1;
  s_print_buffer=(void*)1;assert(!hw_printer_start_maintenance_async(0));s_print_buffer=NULL;
  sem_fail=1;assert(!hw_printer_start_maintenance_async(1)&&!s_maintenance_request&&!runs&&!queued);sem_fail=0;
- for(unsigned mode=0;mode<2;++mode){
+ for(unsigned mode=0;mode<3;++mode){
   expected_mode=mode;run_result=mode?-10:0;sem_calls=0;
   assert(hw_printer_start_maintenance_async(mode)&&s_maintenance_request==mode+1&&queued==1);
   assert(runs==mode&&!hw_printer_start_maintenance_async(mode));

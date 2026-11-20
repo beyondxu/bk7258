@@ -290,4 +290,9 @@ void printer_run_carriage_diagnostic(void);
 #define PRINTER_MAINTENANCE (PRINTER_DATA_AUDIT && PRINTER_FULL_PAGE && PRINTER_PAGE_BIDIRECTIONAL && PRINTER_BUFFERED_LINE && PRINTER_STARTUP_PREP && !PRINTER_APP_PAYLOAD_AUDIT)
 #endif
 
+/* User confirmed the print-stroke right endpoint is over the waste pad. */
+#ifndef PRINTER_WASTE_MAINTENANCE
+#define PRINTER_WASTE_MAINTENANCE PRINTER_MAINTENANCE
+#endif
+
 #endif

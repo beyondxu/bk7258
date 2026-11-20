@@ -526,7 +526,10 @@ static void printer_worker_thread(void *arg) {
 
 bool hw_printer_start_maintenance_async(uint8_t mode){
 #if PRINTER_MAINTENANCE
-    if(mode>PRINTER_MAINT_CLEAN||!s_print_sem||!s_print_task_handle||s_maintenance_request||s_print_buffer)return false;
+#if !PRINTER_WASTE_MAINTENANCE
+    if(mode==PRINTER_MAINT_WASTE)return false;
+#endif
+    if(mode>PRINTER_MAINT_WASTE||!s_print_sem||!s_print_task_handle||s_maintenance_request||s_print_buffer)return false;
     s_maintenance_request=mode+1U;__sync_synchronize();
     if(rtos_set_semaphore(&s_print_sem)!=BK_OK){s_maintenance_request=0U;return false;}
     return true;
