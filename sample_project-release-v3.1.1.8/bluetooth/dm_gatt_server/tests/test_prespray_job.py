@@ -33,7 +33,8 @@ static int printer_waste_position(void){
 static int printer_waste_fire(const uint8_t*p){
  assert(positioned==1&&s_waste_station_ready&&s_bidi_right&&!s_bidi_at_wiper);++fired;
  unsigned bits=0;for(unsigned i=0;i<118000;++i)for(unsigned b=0;b<6;++b)bits+=(p[i]>>b)&1U;
- unsigned plan=fault==10?5U:fault==11?50U:200U;unsigned done=(fired-1U)*40U;unsigned chunk=plan-done;if(chunk>40U)chunk=40U;assert(bits==600U*chunk);return fault==3?-13:0;
+ unsigned plan=fault==10?5U:fault==11?50U:200U;unsigned done=(fired-1U)*20U;unsigned chunk=plan-done;if(chunk>20U)chunk=20U;assert(bits==600U*chunk);
+ for(unsigned x=0;x<1180;++x){unsigned mask=0,sections=0;for(unsigned a=0;a<100;++a){unsigned v=p[x*100+a];mask|=v;if(v)sections|=1U<<(a%4);}assert((mask&(mask-1U))==0&&(sections&(sections-1U))==0);}return fault==3?-13:0;
 }
 static int tph_mcu_set_head_power(unsigned on){assert(!on&&fired>=1);++off;return fault==4?-1:0;}
 static int printer_bidirectional_finish(void){assert(!s_waste_station_ready&&off==1);++finished;if(fault==9)return -14;s_bidi_right=false;s_bidi_at_wiper=true;return 0;}
@@ -43,7 +44,7 @@ int main(int argc,char**argv){
  assert(argc==2);fault=atoi(argv[1]);if(fault==8)s_bidi_known=false;
  if(fault>=10){s_prespray_have_ink=1;s_prespray_last_ink_us=bk_aon_rtc_get_us()-(fault==10?0U:fault==11?UINT64_C(180000000):UINT64_C(900000000));}
  int rc=printer_run_prespray("TEST");assert(!allocs&&!s_waste_station_ready);
- if(!fault||fault>=10)assert(pauses==fired-1U&&!rc&&positioned==1&&fired==(fault==10?1U:fault==11?2U:5U)&&finished==1&&!aborted&&s_bidi_at_wiper&&!s_bidi_right);
+ if(!fault||fault>=10)assert(pauses==fired-1U&&!rc&&positioned==1&&fired==(fault==10?1U:fault==11?3U:10U)&&finished==1&&!aborted&&s_bidi_at_wiper&&!s_bidi_right);
  else if(fault>=5&&fault<=8)assert(rc<0&&!positioned&&!fired&&!finished&&!aborted);
  else {assert(rc<0&&aborted==1);if(fault==2)assert(!fired);if(fault==3)assert(!off&&!finished);}
  puts("PASS prespray:validate->pad->bounded finite rows->OFF->park;failures stop,no paper/no extra wipe");

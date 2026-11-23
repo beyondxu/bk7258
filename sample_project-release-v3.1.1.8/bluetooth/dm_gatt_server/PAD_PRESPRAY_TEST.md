@@ -1,102 +1,88 @@
-# RTC-based sponge-pad prespray
+# RTC-based sponge-pad prespray: V46 single Domain/Section comparison
 
 Normal branch: codex/printer-startup-load-prep. Image printing stays24-row S1,
 with original size, feed, carriage speed/stroke and HC32 firmware unchanged.
-This adds ordinary-drive spit before each validated full-page job and at boot.
-It does not read TSR, preheat, shorten CE, raise VP or select a2.2us drive.
-The old twelve-row long boot clean remains OFF and cannot be enabled together
-with this policy. There is no background idle spit or new low-power resume hook;
-a print after wake/idle runs the same pre-page policy.
+Prespray runs at boot and before each validated full-page job, over the
+user-confirmed sponge-pad coverage. No TSR, preheat, short-CE mode, voltage
+change, or2.1/2.2us timing change is introduced. The legacy long boot cleaning
+routine remains disabled. No background idle firing/new resume callback is added;
+a print following wake uses the ordinary pre-page policy.
 
-## Dose and clock
+## RTC dose
 
-Time since the latest successfully completed ink-request scan/flash is tracked
-with64-bit BK AON RTC microseconds, in serialized worker/boot context:
+The last successfully completed ink-request scan/flash is tracked with64-bit
+AON RTC microseconds in the serialized worker/boot context. This is requested
+firing, not measured droplets. Successful nonblank image scans, prespray batches
+and manual maintenance update it; blank carriage scans do not. No timestamp is
+persisted over power loss. Unknown time or RTC rollback selects the long dose.
 
-| Idle interval | Requests per physical nozzle | Total requests | Cache rows |
-| --- | ---: | ---: | ---: |
-| Under3minutes |5|3000|1|
-|3minutes to under15minutes |50|30000|2|
-|15minutes or longer |200|120000|5|
-| Unknown after boot or RTC rollback |200|120000|5|
+| Idle | Requests/nozzle | Total requests | Cache rows | Playback + OFF pauses |
+| --- | ---: | ---: | ---: | ---: |
+| <3minutes |5|3000|1|~0.8s|
+|3..<15minutes |50|30000|3|~2.6s|
+|>=15minutes / unknown boot |200|120000|10|~8.8s|
 
-The clock is updated after successful nonblank image scans, completed prespray
-batches, paper maintenance scans and manual waste-clean batches. Blank carriage
-scans do not update it. It records requested firing, not measured ink drops.
-No last-ink timestamp is persisted across power loss; unknown uses the long dose.
-The selected dose is captured before pad positioning and is not reduced midway
-when a successful batch updates the clock. Failed/partial batches are not retried.
+Transfer, positioning and return times are additional. A captured dose is not
+reduced midway when successful batches update the clock. Partial/failed batches
+are never retried automatically.
 
-## Placement and sequence
+## V46 pattern versus V45
+
+V45 did NOT set D1..D6 all HIGH. Its24-request groups used at most4 Domains in
+one transport column and at most1 request for any address. Therefore a1.8A
+VP droop cannot be inferred from the old pattern; voltage remains unmeasured.
+
+V46 explicitly assigns every nonempty transport column to ONE Domain and ONE
+Section. For D1 through D6, it visits S1 through S4. Each25-address section is
+split into24+1 requests, making48 groups/round.20 rounds fit a1180-column row.
+No data byte has more than one Domain bit; all occupied slots in a column have
+the same section; each address has at most one request. At most24 requests are
+spread over addresses in the whole column, not fired600 simultaneously.
+This isolates Domains/Sections without claiming a particular current reduction
+ratio or stable15V. It does not substitute for probing VP at the connector.
+
+Each group receives at most8 consecutive-column shots (673us apart,~1.49kHz)
+then the next group runs. Existing HC32 address/S sequencing,25+1 zero stop,
+Ax/Dx reset and minimum60us completed-column idle guard remain unchanged. The
+per-nozzle repeat interval exceeds the user-cited55.56us minimum. The next
+cache row is uploaded only after100ms of head-OFF recovery, except after the
+last row.20-round chunks give5,20+20+10, or20*10. Total dose is unchanged.
+
+## Position, ownership and fault handling
 
 Use the established wiper-side starting position and connected active-LOW
-GPIO24 reference. Move head-OFF to the sponge-side optical reference, retract
-374 steps into the previously user-confirmed pad coverage (PRINT_RIGHT), stop
-and release TIMER4, and only then allow stationary cached firing. No paper feed
-or image data is sent during positioning. A missing/early/stuck optical signal
-or motion fault rejects firing. Cached-row CRC, READY, finite count and timeout
-checks remain active. Any fault stops and blocks the image job; there is no
-blind return or automatic repeat after an uncertain/partial firing operation.
+GPIO24 reference. Head-OFF seek to the sponge-side optical reference, retract
+374steps to PRINT_RIGHT (previously confirmed inside pad coverage), stop and
+release TIMER4, then fire the finite stationary row(s). No image or paper feed
+runs while positioning. Missing/early/stuck optical input or motion errors reject
+firing; this revision does not change the intermittent GPIO24 issue.
 
-After all batches, command head OFF and return/park at the wiper. At boot this
-replaces the previous head-OFF-only reference round trip, before BLE starts.
-For image jobs it runs in the existing worker after parsing/allocations and
-before the unchanged wipe and six-leg10.8mm paper-loading preparation. That
-preparation then runs once. No extra wipe is added by prespray itself.
+CRC, READY, finite count and timeout checks remain. Faults stop and block the
+image job, without blind return or retry. Afterwards command head OFF, park at
+the wiper, and proceed. At boot this replaces the old reference-only round trip,
+before BLE. On pages it follows parsing/allocation and precedes the unchanged
+wipe and six-leg10.8mm loading. No extra wiping is added by prespray itself.
 
-## Timing and limits
+## Checks and first comparison
 
-V45 changes only the request order and recovery pauses;5/50/200 doses and
-per-shot waveform are unchanged. V44's same-nozzle spacing was25 columns;
-V45 places at most8 successive requests for one24-nozzle group in consecutive
-columns before moving to the next group. Partial bursts handle5/10-round tails.
-The instantaneous requested bit limit remains24; page image mapping is unchanged.
-This tests whether closer ordinary-drive bursts improve recovery, without
-assuming a measured temperature or guaranteed blockage removal.
+Host tests compare all600 routes against the independent nozzle CSV, exact
+doses and burst ordering; assert single Domain/Section and one bit/address;
+exercise RTC boundaries/rollback, pauses, failure cleanup, boot and page ordering.
+ARM SDK object checks cover actual integration. These do not establish real
+voltage, pulse width, ink delivery or recovery from dried ink.
 
-Each round covers all600 physical nozzles (S1..S4, all CMY), not just the image's
-first24 rows.24 requests are distributed per transport column;25 columns cover
-600 nozzles. This is an upper bound of24 requested bits over the whole column,
-not a command to fire600 simultaneously. Within a column the existing HC32
-25-address/S1..S4 sequence remains unchanged.
+Keep the current head condition and print the same CMY frame after one boot
+prespray. Capture PRESPRAY_BEGIN/BATCH/DONE and HC32 logs. BEGIN identifies
+domain_mode=D1_to_D6 one_D_one_S_per_column row_rounds=20; boot identifies
+APP_SERVICE_CMY_PAD_DOMAIN_PRESPRAY_V46. STOP means the spit did not complete;
+DONE confirms protocol requests, not actual ink flow. Do not simultaneously
+change tFire/VP or wet the head for this comparison.
 
-Within a burst a nozzle repeats after673us (~1.49kHz), below the18kHz limit
-cited by the user. There are at most8 consecutive requests before other groups
-run. After each completed cache row except the last, wait100ms with the head
-already OFF (HC32 shuts down before returning line DONE), then upload the next
-row. No additional burst follows any protocol or motion fault. Every existing column retains its25+1 zero-data stop, Ax/Dx reset and
-minimum60us completed-column idle guard. There is no faster sampling path.
-Up to40 rounds fit one1180-column row; doses split as5,40+10,or40*5.
-Playback plus deliberate pauses is~0.8/1.7/4.4seconds, plus cache transfer and motion/parking time.
-No temperature or recovery claim follows from these limits.
+## Restore points
 
-## Verification and first hardware test
-
-Host checks independently compare nozzle routes against the600-row CSV and
-verify exact dose, peak requests, repeat gaps and bad-input rejection. Tests
-exercise3/15minute boundaries, zero timestamp,64-bit values and RTC rollback;
-job failures and allocation cleanup; actual boot glue; page-before-preparation
-ordering and consecutive jobs; actual optical positioning and stationary SPI
-playback with zero U4/U5 pulses. SDK ARM object compilation checks integration.
-Hardware must still establish pad coverage, actual drive timing, power and ink.
-
-First test: after a long idle, power ON and inspect the BOOT prespray log, then
-print the same CMY frame once. BOOT normally selects200; a prompt PAGE selects5.
-Capture PRESPRAY_BEGIN/BATCH/DONE (or STOP) and the print result/photo. Logs
-identify APP_SERVICE_CMY_PAD_BURST_PRESPRAY_V45. Recovery remains to be verified.
-
-## Baseline
-
-BK backup/before-auto-prespray-20261123 points to344ba4c (S1, no auto spit).
-Preserve local edits, fetch tags and create a separate branch for a baseline
-build if needed. PRINTER_PRESPRAY=0 restores the original boot and image flow.
-The independent temporary motor-loop branch is not merged into this branch;
-GPIO24 is fully active for normal pad positioning. HC32 stays79ba462.
-
-V44 restore tag: backup/before-burst-prespray-20261123 (5d8a642). V45 host checks
-independently reconstruct the CSV routes and burst order, verify exact dose and
-peak count, maximum8 consecutive shots, and100ms pauses only between batches.
-For this comparison, keep the current head condition and print the same CMY
-frame after one boot prespray; do not change tFire or add wetting beforehand.
-Log PRESPRAY_BEGIN should include burst_max=8 repeat_us=673 between_rows_ms=100.
-A successful log proves completed requests, not that ink actually left the head.
+backup/before-domain-prespray-20261123:6609d0e (V45 burst pattern).
+backup/before-burst-prespray-20261123:5d8a642 (V44 sparse pattern).
+backup/before-auto-prespray-20261123:344ba4c (S1 without automatic spit).
+Save local edits and build a separate branch from the desired fetched tag.
+PRINTER_PRESPRAY=0 restores the original boot/image flow. The temporary motor
+branch remains separate. HC32 is still79ba462, with no new firmware required.
