@@ -300,9 +300,20 @@ void printer_run_carriage_diagnostic(void);
 #define PRINTER_WASTE_MAINTENANCE PRINTER_MAINTENANCE
 #endif
 
+/* Short normal-drive spit over the pad: boot and each validated image job. */
+#ifndef PRINTER_PRESPRAY
+#define PRINTER_PRESPRAY PRINTER_MAINTENANCE
+#endif
+#if PRINTER_PRESPRAY && (!PRINTER_MAINTENANCE || !PRINTER_WASTE_MAINTENANCE || !PRINTER_BOOT_CARRIAGE_PREP)
+#error Prespray requires the optical waste-pad path and boot preparation
+#endif
+
 /* Automatic boot cleaning paused: long startup delay, no clear recovery benefit. */
 #ifndef PRINTER_BOOT_WASTE_CLEAN
 #define PRINTER_BOOT_WASTE_CLEAN 0
+#endif
+#if PRINTER_PRESPRAY && PRINTER_BOOT_WASTE_CLEAN
+#error Enable short prespray or legacy long boot cleaning, not both
 #endif
 int printer_run_boot_waste_clean(void);
 

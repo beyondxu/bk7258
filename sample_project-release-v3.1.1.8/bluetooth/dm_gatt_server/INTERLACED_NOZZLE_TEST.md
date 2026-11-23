@@ -1,3 +1,6 @@
+> Current automatic prespray policy is documented in PAD_PRESPRAY_TEST.md.
+> Legacy long boot cleaning remains disabled; the new RTC-based spit is separate.
+
 > Current default: interlacing is temporarily disabled
 > (`PRINTER_PAGE_INTERLACE=0`) for the user's S1 comparison. Normal images use
 > the original first24 physical nozzle rows, all S1. Automatic boot cleaning

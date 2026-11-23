@@ -1,3 +1,6 @@
+#ifndef PRINTER_PRESPRAY
+#define PRINTER_PRESPRAY 0
+#endif
 #ifndef PRINTER_PAGE_INTERLACE
 #define PRINTER_PAGE_INTERLACE 0
 #endif
@@ -182,6 +185,10 @@ static int printer_run_full_page(const uint8_t *bin, uint32_t length) {
 #if PRINTER_STARTUP_PREP
     if (PRINTER_PAGE_ONLY_SWATH < 0) {
         failure_locked = true;
+#if PRINTER_PRESPRAY
+        result = printer_run_prespray("PAGE");
+        if (result) goto done;
+#endif
         result = printer_startup_prepare(1U);
         if (result) goto done;
         scan_direction=s_bidi_right?0U:1U;
@@ -250,6 +257,9 @@ static int printer_run_full_page(const uint8_t *bin, uint32_t length) {
             result = printer_execute_cyan_line(data);
 #endif
             if (result) goto done;
+#if PRINTER_PRESPRAY
+            if(pass_dots)printer_prespray_note_ink();
+#endif
         }
         if (PRINTER_PAGE_ONLY_SWATH < 0 && strip + 1U < bands) {
             uint32_t sent = 0;

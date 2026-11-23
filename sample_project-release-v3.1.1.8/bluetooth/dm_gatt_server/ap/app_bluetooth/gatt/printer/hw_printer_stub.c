@@ -964,6 +964,9 @@ stop:
 #if PRINTER_DOMAIN_PAIR
 #include "printer_domain_pair_job.h"
 #endif
+#if PRINTER_PRESPRAY
+#include "printer_prespray_job.h"
+#endif
 #include "printer_page_job.h"
 #if PRINTER_MAINTENANCE
 #include "printer_maintenance_job.h"
@@ -976,6 +979,10 @@ int printer_run_boot_carriage_prepare(void) {
     static bool attempted=false;
     if (attempted || !printer_link_is_ready()) return -7;
     attempted=true;
+#if PRINTER_PRESPRAY
+    /* Pad seek and final cap return supply the boot reference round trip. */
+    return printer_run_prespray("BOOT");
+#else
     os_printf("[BOOT_CARRIAGE_BEGIN] round_trips=1 head_OFF feed=0 counted_LEFT_origin_required\r\n");
     os_printf("[TRAVEL_PLAN] boot_seek=%u boot_return=%u prep_seek=%u prep_return=%u print=%u final_return=%u print_endpoint_inset_each=%u\r\n",PRINTER_OC3_BOOT_SEARCH_STEPS,PRINTER_OC3_BOOT_RETURN_STEPS,PRINTER_OC3_PREP_SEARCH_STEPS,PRINTER_OC3_PREP_RETURN_STEPS,PRINTER_SERVICE_SPAN_STEPS,PRINTER_OC3_FINAL_RETURN_STEPS,PRINTER_MAINTENANCE_EXTRA_STEPS);
     int result=printer_startup_prepare(0U);
@@ -988,6 +995,7 @@ int printer_run_boot_carriage_prepare(void) {
     if (result) printer_bidirectional_abort();
     os_printf("[BOOT_CARRIAGE_DONE] code=%d endpoint=%s no_ink_no_feed motion_unverified\r\n",result,s_bidi_known?(s_bidi_right?"RIGHT":"LEFT"):"UNKNOWN");
     return result;
+#endif
 #else
     return 0;
 #endif

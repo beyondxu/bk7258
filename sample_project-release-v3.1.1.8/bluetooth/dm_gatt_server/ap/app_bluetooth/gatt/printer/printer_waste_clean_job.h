@@ -21,6 +21,9 @@ static int printer_run_waste_clean(void){
   result=printer_maint_build(row,PRINTER_NC_BYTES,PRINTER_MAINT_CLEAN,ch,group,1U,&cfg);if(result)goto stop;
   os_printf("[WASTE_PASS] color=%c group=%u/4 dots_each=32 crc32=%08lX\r\n","CMY"[ch],group+1U,(unsigned long)printer_crc32(row,PRINTER_NC_BYTES));
   result=printer_waste_fire(row);if(result)goto stop;
+#if PRINTER_PRESPRAY
+ printer_prespray_note_ink();
+#endif
   ++completed;printer_map_yield_cpu();
  }
  if(tph_mcu_set_head_power(0)!=BK_OK){result=-8;goto stop;}

@@ -1,3 +1,6 @@
+> Current automatic prespray policy is documented in PAD_PRESPRAY_TEST.md.
+> Legacy long boot cleaning remains disabled; the new RTC-based spit is separate.
+
 > Current default: automatic boot cleaning is temporarily disabled
 > (`PRINTER_BOOT_WASTE_CLEAN=0`) at the user's request because of startup delay
 > and no clear improvement. Head-OFF boot homing, normal print preparation,

@@ -15,6 +15,9 @@ h=r'''
 #include "printer_interlace_mask.h"
 #include "printer_service_geometry.h"
 #define BK_OK 0
+#ifndef PRINTER_PRESPRAY
+#define PRINTER_PRESPRAY 0
+#endif
 #define PRINTER_PAGE_BAND_ROWS 24U
 #define PRINTER_PAGE_BIDIRECTIONAL 1
 #define PRINTER_PAGE_COLOR_MODE 1
@@ -36,6 +39,12 @@ static int32_t pos;
 static unsigned dir,step,head,boost,commands,scans,feed_count,spi_count,mode;
 static unsigned expected_band, expected_bands=42;
 static unsigned live,powerups,powerdowns;
+#if PRINTER_PRESPRAY
+static unsigned presprays,prespray_pending,ink_notes;
+static void printer_prespray_note_ink(void){++ink_notes;}
+static int printer_run_prespray(const char*why){assert(!strcmp(why,"PAGE")&&!prespray_pending);++presprays;if(mode==8)return -13;prespray_pending=1;return 0;}
+#endif
+
 static void*printer_map_psram_alloc(size_t n){void*p=malloc(n);if(p)++live;return p;}
 static void printer_map_psram_free(void*p){if(p){assert(live);--live;free(p);}}
 static void printer_map_yield_cpu(void){}
@@ -101,6 +110,9 @@ static int motor_page_feed_fast_keep_power(uint32_t,uint8_t,uint32_t*);
 #define PRINTER_STARTUP_PREPARE_H
 static int simulated_startup_prepare(unsigned for_page){
  assert(for_page);
+#if PRINTER_PRESPRAY
+ assert(prespray_pending==1);prespray_pending=0;
+#endif
  return mode==7?printer_execute_bidirectional_line(NULL,1U):0;
 }
 #define printer_startup_prepare simulated_startup_prepare
@@ -142,12 +154,12 @@ int main(int argc,char**argv){
  assert(!printer_bidirectional_finish());assert(pos==0&&spi_count==old_spi);
  free(columns);free(scratch);printer_page_release(&page,printer_map_psram_free);assert(!live);
  }
- else{assert(rc==(mode==1?-9:mode==4?-10:-8));unsigned pulses=s_blank_spi_steps[0]+s_blank_spi_steps[1];assert(printer_run_full_page(b,n)==-7);assert(pulses==s_blank_spi_steps[0]+s_blank_spi_steps[1]);if(mode==4)assert(pos==((int32_t)PRINTER_SERVICE_SPAN_STEPS)&&scans==1);else assert(!scans&&!feed_count);}
+ else{assert(rc==(mode==1?-9:mode==4?-10:mode==8?-13:-8));unsigned pulses=s_blank_spi_steps[0]+s_blank_spi_steps[1];assert(printer_run_full_page(b,n)==-7);assert(pulses==s_blank_spi_steps[0]+s_blank_spi_steps[1]);if(mode==4)assert(pos==((int32_t)PRINTER_SERVICE_SPAN_STEPS)&&scans==1);else assert(!scans&&!feed_count);}
  free(b);puts("PASS: alternating directions, exact physical CMY positions, 24-row/final-band routing, fractional feeds, stop/lock after failure");
 }
 '''
 with tempfile.TemporaryDirectory() as t:
  p=Path(t);(p/'test.c').write_text(h);(p/'fixture.bin').write_bytes(blob({(ch,400+ch,y)for ch in range(3)for y in range(1476)}))
- subprocess.run(['cc','-DPRINTER_PAGE_INTERLACE='+os.environ.get('TEST_INTERLACE','0'),'-std=c99','-O1','-Wall','-Wextra','-Werror','-fsanitize=address,undefined','-I'+str(D),str(p/'test.c'),str(D/'printer_mapper.c'),str(D/'printer_page.c'),'-o',str(p/'test')],check=True)
+ subprocess.run(['cc','-DPRINTER_PAGE_INTERLACE='+os.environ.get('TEST_INTERLACE','0'),'-DPRINTER_PRESPRAY='+os.environ.get('TEST_PRESPRAY','0'),'-std=c99','-O1','-Wall','-Wextra','-Werror','-fsanitize=address,undefined','-I'+str(D),str(p/'test.c'),str(D/'printer_mapper.c'),str(D/'printer_page.c'),'-o',str(p/'test')],check=True)
  (p/'sparse.bin').write_bytes(blob({(ch,400+ch,y)for ch in range(3)for y in range(1476)if (y*992//1476)//24 in [0,2,41]}))
- for mode in range(8):subprocess.run([str(p/'test'),str(p/('sparse.bin' if mode==5 else 'fixture.bin')),str(mode)],check=True,env={**os.environ,'ASAN_OPTIONS':'detect_leaks=0'})
+ for mode in range(9 if os.environ.get('TEST_PRESPRAY')=='1' else 8):subprocess.run([str(p/'test'),str(p/('sparse.bin' if mode==5 else 'fixture.bin')),str(mode)],check=True,env={**os.environ,'ASAN_OPTIONS':'detect_leaks=0'})

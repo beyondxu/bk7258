@@ -39,6 +39,9 @@ static int printer_run_maintenance(uint8_t mode){
    if(!direction)printer_maint_reverse(row);
    os_printf("[MAINT_PASS] color=%c group=%u/4 phase=%s dots_each=%u direction=%s crc32=%08lX\r\n","CMY"[ch],group+1U,mode?(phase==0?"BEFORE":phase==1?"RECOVER":"AFTER"):"CHECK",mode?printer_maint_dots(phase):16U,direction?"RIGHT":"LEFT",(unsigned long)printer_crc32(row,PRINTER_NC_BYTES));
    result=printer_execute_bidirectional_line(row,direction);if(result)goto stop;
+#if PRINTER_PRESPRAY
+ printer_prespray_note_ink();
+#endif
    ++scans;printer_map_yield_cpu();
   }
   if(ch<2U){
