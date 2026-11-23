@@ -1,3 +1,6 @@
+> V48 keeps this HC32 profile and changes only BK waste-pad placement:
+> OC3_RIGHT with zero retreat. See PAD_POSITION_AND_CP_FAULT.md.
+
 # Dedicated prespray firing profile: first calibration step
 
 This revision changes BOTH BK and HC32. Update/build/flash HC32 first, then BK.
@@ -44,7 +47,7 @@ HC; new BK's prespray rejects old HC instead of silently using the wrong mode.
 Confirm HC boot log FIRE_PROFILE cap_v1 prespray_pad_nops=16. BK/HC LINE_ARMED
 or LINE_BUFFER_READY logs must show fire_profile=1 extra_pad_nops=16 for prespray
 and fire_profile=0 extra_pad_nops=0 for the following image rows. BK banner is
-APP_SERVICE_CMY_PAD_FIRE_PROFILE_V47_requires_HC_prespray_pad16.
+APP_SERVICE_CMY_PAD_HOLD_OC3_V48_requires_HC_prespray_pad16.
 
 Before sustained recovery trials, measure matching S falling-edge spacing in
 adjacent active address groups for both profiles, including the last-address

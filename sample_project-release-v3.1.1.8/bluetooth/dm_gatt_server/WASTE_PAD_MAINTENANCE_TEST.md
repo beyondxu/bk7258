@@ -1,3 +1,7 @@
+> Current waste-pad position is OC3_RIGHT with no374-step retreat, following
+> the user's physical alignment observation. The earlier PRINT_RIGHT position
+> described below is superseded; see PAD_POSITION_AND_CP_FAULT.md.
+
 > V36增加开机自动清洗，无需APP按钮；下述定位和剂量保持不变。参见[开机测试说明](BOOT_WASTE_MAINTENANCE_TEST.md)。
 
 # V35 废墨海绵定位吐墨清洗

@@ -1,3 +1,7 @@
+> V48 positioning correction: stop/hold at OC3_RIGHT, retract_steps=0.
+> The former374-step retreat is removed only for stationary waste-pad firing.
+> See PAD_POSITION_AND_CP_FAULT.md. Image geometry remains unchanged.
+
 > Current V47 adds a dedicated HC32 prespray padding profile. See
 > PRESPRAY_FIRE_PROFILE_TEST.md; both MCUs must be updated. Dose/mapping below
 > remain as V46. This is not a calibrated2.2us or preheat mode.
@@ -55,8 +59,7 @@ last row.20-round chunks give5,20+20+10, or20*10. Total dose is unchanged.
 ## Position, ownership and fault handling
 
 Use the established wiper-side starting position and connected active-LOW
-GPIO24 reference. Head-OFF seek to the sponge-side optical reference, retract
-374steps to PRINT_RIGHT (previously confirmed inside pad coverage), stop and
+GPIO24 reference. Head-OFF seek to the sponge-side optical reference, hold at OC3_RIGHT with no retreat, settle20ms, stop/release the timer and
 release TIMER4, then fire the finite stationary row(s). No image or paper feed
 runs while positioning. Missing/early/stuck optical input or motion errors reject
 firing; this revision does not change the intermittent GPIO24 issue.

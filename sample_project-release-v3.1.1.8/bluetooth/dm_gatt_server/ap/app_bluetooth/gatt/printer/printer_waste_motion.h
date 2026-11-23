@@ -1,8 +1,9 @@
 #ifndef PRINTER_WASTE_MOTION_H
 #define PRINTER_WASTE_MOTION_H
-/* User-confirmed waste pad covers the existing PRINT_RIGHT position.
- * Reference it from OC3, retract the existing374-step inset, then allow ink.
- * This proof flag belongs to this serialized maintenance job, not image scans. */
+/* User reports the optical endpoint itself is centered over the pad; the
+ * former374-step retreat moved the head off it. Hold at OC3 for stationary
+ * firing. Image endpoints/insets and the final wiper return remain unchanged.
+ */
 static uint8_t s_waste_station_ready;
 static int printer_waste_position(void){
  s_waste_station_ready=0U;
@@ -35,13 +36,11 @@ static int printer_waste_position(void){
  s_oc3_hit=0U;s_buf_error=0U;
  s_bidi_known=true;s_bidi_right=true;s_bidi_at_wiper=false;
  s_bidi_right_offset=PRINTER_PRINT_ENDPOINT_INSET_STEPS;
- result=printer_buffered_reposition(0U,PRINTER_PRINT_ENDPOINT_INSET_STEPS);
- if(result)goto failed;
- printer_buffered_stop();
- s_bidi_right_offset=0;
- if(motor_oc3_active()){result=PRINTER_OC3_STUCK;goto failed;}
+ /* Timer is stopped but U4 remains enabled to hold its microstep position. */
+ rtos_delay_milliseconds(20U);
+ if(!motor_oc3_active()){result=PRINTER_OC3_NOT_FOUND;goto failed;}
  s_waste_station_ready=1U;
- os_printf("[WASTE_POSITION] endpoint=PRINT_RIGHT retract_from_OC3=%u motor_stopped head_OFF pad_coverage_user_confirmed\r\n",PRINTER_PRINT_ENDPOINT_INSET_STEPS);
+ os_printf("[WASTE_POSITION] endpoint=OC3_RIGHT retract_steps=0 settle_ms=20 gpio24_LOW motor_hold head_OFF pad_alignment_hardware_check\r\n");
  return 0;
 failed:
  printer_buffered_stop();s_waste_station_ready=0U;
@@ -50,9 +49,13 @@ failed:
 /* Execute an ordinary cached row without U4 motion. HC supplies the finite
  * column count/deadline checks. Never do SPI while its SYNC is held LOW. */
 static int printer_waste_fire_profile(const uint8_t *row,unsigned prespray){
- if(!row||!s_waste_station_ready||!s_bidi_known||!s_bidi_right||s_bidi_at_wiper||s_bidi_right_offset||s_buf_active||s_buf_claimed||motor_oc3_active())return -7;
+ if(!row||!s_waste_station_ready||!s_bidi_known||!s_bidi_right||s_bidi_at_wiper||s_bidi_right_offset!=(int32_t)PRINTER_PRINT_ENDPOINT_INSET_STEPS||s_buf_active||s_buf_claimed||!motor_oc3_active())return -7;
  tph_line_ticket_t ticket={0};int result=-13;
  if((prespray?tph_line_prepare_prespray(row,PRINTER_CANVAS_COLUMN_US,&ticket):tph_line_prepare(row,PRINTER_CANVAS_COLUMN_US,&ticket))!=BK_OK)goto stop;
+ if(!motor_oc3_active()){
+  os_printf("[WASTE_POSITION_LOST] stage=BEFORE_SYNC GPIO24_released no_fire\r\n");
+  (void)tph_line_cancel(&ticket);goto stop;
+ }
  uint32_t begin=(uint32_t)bk_aon_rtc_get_us();unsigned saw_low=0U;
  bk_gpio_set_output_low(PIN_BK_SYNC_OUT);
  for(unsigned loops=0;loops<11U;++loops){
@@ -66,6 +69,9 @@ static int printer_waste_fire_profile(const uint8_t *row,unsigned prespray){
  unsigned complete=0U;
  /* The independent iteration bound also terminates a stalled RTC. */
  for(uint32_t loops=0;loops<(run_us+50000U)/1000U+1U;++loops){
+  if(!motor_oc3_active()){
+   os_printf("[WASTE_POSITION_LOST] stage=FIRING GPIO24_released abort_line\r\n");goto stop;
+  }
   if(bk_gpio_get_input(PIN_BK_READY_IN))goto stop;
   if((uint32_t)(bk_aon_rtc_get_us()-begin)>=run_us){complete=1U;break;}
   rtos_delay_milliseconds(1U);
