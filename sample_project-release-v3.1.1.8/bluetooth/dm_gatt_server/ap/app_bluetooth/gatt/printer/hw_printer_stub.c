@@ -1007,3 +1007,5 @@ int printer_run_boot_waste_clean(void) {
     return 0;
 #endif
 }
+
+#include "printer_boot_carriage_loop.h"

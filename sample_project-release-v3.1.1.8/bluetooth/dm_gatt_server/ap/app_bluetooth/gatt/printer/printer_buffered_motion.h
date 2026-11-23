@@ -2,6 +2,12 @@
 #define PRINTER_BUFFERED_MOTION_H
 #include <driver/timer.h>
 #include "printer_canvas_geometry.h"
+#ifndef PRINTER_BOOT_LOOP_STEP_US
+#define PRINTER_BOOT_LOOP_STEP_US 75U
+#endif
+#if PRINTER_BOOT_LOOP_STEP_US <= PRINTER_CANVAS_STEP_HIGH_US || PRINTER_BOOT_LOOP_STEP_US > 400
+#error Invalid temporary boot loop STEP period
+#endif
 #define PL_MOTOR_TIMER TIMER_ID4
 #define PL_STEP_PERIOD_US PRINTER_CANVAS_STEP_US
 /* V32: shorten the measured slow endpoint phase; keep cruise and ramps. */
@@ -21,10 +27,10 @@ static int printer_buffered_leave_wiper(void);
 static int printer_buffered_park_at_wiper(void);
 static volatile uint32_t s_buf_active,s_buf_steps,s_buf_sync,s_buf_error,s_buf_last_irq,s_buf_max_gap,s_buf_cruise_max_gap,s_buf_period,s_buf_target;
 static volatile uint8_t s_buf_direction;
-static uint8_t s_buf_ink,s_buf_claimed,s_buf_wipe_profile;
+static uint8_t s_buf_ink,s_buf_claimed,s_buf_wipe_profile,s_buf_boot_loop_profile;
 static volatile uint32_t s_buf_sync_us;
 static uint32_t printer_buffered_ramp_steps(void){return s_buf_ink?PRINTER_CANVAS_RAMP_STEPS:PL_RAMP_STEPS;}
-static uint32_t printer_buffered_period(uint32_t i){uint32_t ramp=printer_buffered_ramp_steps();uint32_t cruise=s_buf_wipe_profile?PRINTER_WIPE_STEP_US:PL_STEP_PERIOD_US;uint32_t edge=i<s_buf_target-1U-i?i:s_buf_target-1U-i;return edge<ramp?PL_START_PERIOD_US-(PL_START_PERIOD_US-cruise)*edge/ramp:cruise;}
+static uint32_t printer_buffered_period(uint32_t i){uint32_t ramp=printer_buffered_ramp_steps();uint32_t cruise=s_buf_boot_loop_profile?PRINTER_BOOT_LOOP_STEP_US:s_buf_wipe_profile?PRINTER_WIPE_STEP_US:PL_STEP_PERIOD_US;uint32_t edge=i<s_buf_target-1U-i?i:s_buf_target-1U-i;return edge<ramp?PL_START_PERIOD_US-(PL_START_PERIOD_US-cruise)*edge/ramp:cruise;}
 static void printer_buffered_stop(void){
  s_buf_active=0U;
  if(s_buf_claimed){(void)bk_timer_stop(PL_MOTOR_TIMER);(void)bk_timer_cancel(PL_MOTOR_TIMER);s_buf_claimed=0U;}

@@ -155,6 +155,14 @@
 #endif
 /* Independent head-OFF preparation before image row zero. Startup paper
  * travel is an absolute loading offset, NOT a scale or per-band feed. */
+/* Temporary standalone mode: occupies startup before BLE/print workers. */
+#ifndef PRINTER_BOOT_CARRIAGE_LOOP
+#define PRINTER_BOOT_CARRIAGE_LOOP 1
+#endif
+#ifndef PRINTER_BOOT_LOOP_STEP_US
+#define PRINTER_BOOT_LOOP_STEP_US 75U
+#endif
+int printer_run_boot_carriage_loop(void);
 #ifndef PRINTER_BOOT_CARRIAGE_PREP
 #define PRINTER_BOOT_CARRIAGE_PREP 1 /* once after link self-test, before BLE */
 #endif
