@@ -8,6 +8,9 @@
 #if PRINTER_BOOT_LOOP_STEP_US <= PRINTER_CANVAS_STEP_HIGH_US || PRINTER_BOOT_LOOP_STEP_US > 400
 #error Invalid temporary boot loop STEP period
 #endif
+#ifndef PRINTER_BOOT_LOOP_IGNORE_OC3
+#define PRINTER_BOOT_LOOP_IGNORE_OC3 0
+#endif
 #define PL_MOTOR_TIMER TIMER_ID4
 #define PL_STEP_PERIOD_US PRINTER_CANVAS_STEP_US
 /* V32: shorten the measured slow endpoint phase; keep cruise and ramps. */
@@ -29,6 +32,7 @@ static volatile uint32_t s_buf_active,s_buf_steps,s_buf_sync,s_buf_error,s_buf_l
 static volatile uint8_t s_buf_direction;
 static uint8_t s_buf_ink,s_buf_claimed,s_buf_wipe_profile,s_buf_boot_loop_profile;
 static volatile uint32_t s_buf_sync_us;
+static int printer_buffered_uses_oc3(void){return !(s_buf_boot_loop_profile && PRINTER_BOOT_LOOP_IGNORE_OC3);}
 static uint32_t printer_buffered_ramp_steps(void){return s_buf_ink?PRINTER_CANVAS_RAMP_STEPS:PL_RAMP_STEPS;}
 static uint32_t printer_buffered_period(uint32_t i){uint32_t ramp=printer_buffered_ramp_steps();uint32_t cruise=s_buf_boot_loop_profile?PRINTER_BOOT_LOOP_STEP_US:s_buf_wipe_profile?PRINTER_WIPE_STEP_US:PL_STEP_PERIOD_US;uint32_t edge=i<s_buf_target-1U-i?i:s_buf_target-1U-i;return edge<ramp?PL_START_PERIOD_US-(PL_START_PERIOD_US-cruise)*edge/ramp:cruise;}
 static void printer_buffered_stop(void){
@@ -39,14 +43,14 @@ static void printer_buffered_stop(void){
 /* GPIO ISR: stop future STEP edges and tell HC32 to stop firing. Direction
  * reversal and SPI power-OFF acknowledgement run later in task context. */
 static void printer_buffered_oc3_stop(void){
- if(!s_buf_active||!s_buf_direction||s_oc3_returning)return;
+ if(!printer_buffered_uses_oc3()||!s_buf_active||!s_buf_direction||s_oc3_returning)return;
  s_oc3_hit=1U;s_buf_error=3U;s_buf_active=0U;
  (void)bk_timer_stop(PL_MOTOR_TIMER);
  bk_gpio_set_output_high(PIN_BK_SYNC_OUT);
 }
 static void printer_buffered_tick(timer_id_t id){
  if(id!=PL_MOTOR_TIMER||!s_buf_active)return;
- if(s_buf_direction&&motor_oc3_active()){printer_buffered_oc3_stop();return;}
+ if(printer_buffered_uses_oc3()&&s_buf_direction&&motor_oc3_active()){printer_buffered_oc3_stop();return;}
  uint32_t now=(uint32_t)bk_aon_rtc_get_us();
  uint32_t gap=now-s_buf_last_irq;
  if(s_buf_steps&&gap>s_buf_period*2U+96U){s_buf_error=1U;s_buf_active=0U;(void)bk_timer_stop(id);return;}
@@ -64,8 +68,8 @@ static void printer_buffered_tick(timer_id_t id){
  if(next!=s_buf_period){if(bk_timer_set_period_us(id,next)!=BK_OK){s_buf_error=2U;s_buf_active=0U;(void)bk_timer_stop(id);}else s_buf_period=next;}
 }
 static int printer_buffered_claim(void){
- if(!motor_oc3_ready()){os_printf("[OC3_BLOCKED] GPIO24_not_initialized no_motion\r\n");return -17;}
- motor_oc3_set_handler(printer_buffered_oc3_stop);
+ if(printer_buffered_uses_oc3()&&!motor_oc3_ready()){os_printf("[OC3_BLOCKED] GPIO24_not_initialized no_motion\r\n");return -17;}
+ motor_oc3_set_handler(printer_buffered_uses_oc3()?printer_buffered_oc3_stop:NULL);
  if(s_buf_claimed)return 0;
  if(bk_timer_driver_init()!=BK_OK){os_printf("[BUFFERED_TIMER] init_failed no_motion\r\n");return -14;}
  uint32_t enabled=bk_timer_get_enable_status(),period=bk_timer_get_period(PL_MOTOR_TIMER);
@@ -166,7 +170,7 @@ static int printer_buffered_reposition(uint8_t direction,uint32_t steps){
   rtos_delay_milliseconds(1U);
  }
  (void)bk_timer_stop(PL_MOTOR_TIMER);
- if(direction&&motor_oc3_active()){s_oc3_hit=1U;goto failed;}
+ if(printer_buffered_uses_oc3()&&direction&&motor_oc3_active()){s_oc3_hit=1U;goto failed;}
  if(s_buf_error||s_buf_steps!=steps)goto failed;
  s_bidi_known=true;return 0;
 failed:
@@ -235,7 +239,7 @@ static int printer_buffered_wipe(uint32_t excursion,uint32_t rounds){
    rtos_delay_milliseconds(1U);
   }
   (void)bk_timer_stop(PL_MOTOR_TIMER);
-  if(direction&&motor_oc3_active()){s_oc3_hit=1U;goto failed;}
+  if(printer_buffered_uses_oc3()&&direction&&motor_oc3_active()){s_oc3_hit=1U;goto failed;}
   if(s_buf_error||s_buf_steps!=excursion)goto failed;
   os_printf("[WIPER_LEG] direction=%s pulses=%lu cruise_step_us=%u head_OFF contact_unverified\r\n",direction?"AWAY_FROM_LEFT":"BACK_TO_LEFT",(unsigned long)s_buf_steps,PRINTER_WIPE_STEP_US);
  }

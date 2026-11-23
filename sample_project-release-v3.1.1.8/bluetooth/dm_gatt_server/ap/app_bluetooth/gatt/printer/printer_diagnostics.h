@@ -159,6 +159,13 @@
 #ifndef PRINTER_BOOT_CARRIAGE_LOOP
 #define PRINTER_BOOT_CARRIAGE_LOOP 1
 #endif
+/* This temporary revision uses counted legs, independent of GPIO24. */
+#ifndef PRINTER_BOOT_LOOP_IGNORE_OC3
+#define PRINTER_BOOT_LOOP_IGNORE_OC3 1
+#endif
+#ifndef PRINTER_BOOT_LOOP_STEPS
+#define PRINTER_BOOT_LOOP_STEPS PRINTER_SERVICE_SPAN_STEPS
+#endif
 #ifndef PRINTER_BOOT_LOOP_STEP_US
 #define PRINTER_BOOT_LOOP_STEP_US 75U
 #endif

@@ -288,7 +288,7 @@ static void app_printer_task_entry(void *arg) {
 
     os_printf("\r\n************************************************\r\n");
     os_printf("    BK7258 DN20 Inkjet Printer Starting...      \r\n");
-    os_printf("[BOOT_MODE] TEMP_CONTINUOUS_V42 enabled=%u STEP_us=%u head_OFF feed=0\r\n",(unsigned)PRINTER_BOOT_CARRIAGE_LOOP,(unsigned)PRINTER_BOOT_LOOP_STEP_US);
+    os_printf("[BOOT_MODE] TEMP_COUNTED_NO_OC3_V43 enabled=%u STEP_us=%u head_OFF feed=0\r\n",(unsigned)PRINTER_BOOT_CARRIAGE_LOOP,(unsigned)PRINTER_BOOT_LOOP_STEP_US);
     os_printf("************************************************\r\n");
 	rtos_delay_milliseconds(500);
 	
