@@ -46,17 +46,28 @@ preparation then runs once. No extra wipe is added by prespray itself.
 
 ## Timing and limits
 
+V45 changes only the request order and recovery pauses;5/50/200 doses and
+per-shot waveform are unchanged. V44's same-nozzle spacing was25 columns;
+V45 places at most8 successive requests for one24-nozzle group in consecutive
+columns before moving to the next group. Partial bursts handle5/10-round tails.
+The instantaneous requested bit limit remains24; page image mapping is unchanged.
+This tests whether closer ordinary-drive bursts improve recovery, without
+assuming a measured temperature or guaranteed blockage removal.
+
 Each round covers all600 physical nozzles (S1..S4, all CMY), not just the image's
 first24 rows.24 requests are distributed per transport column;25 columns cover
 600 nozzles. This is an upper bound of24 requested bits over the whole column,
 not a command to fire600 simultaneously. Within a column the existing HC32
 25-address/S1..S4 sequence remains unchanged.
 
-A nozzle repeats after25*673us=16.825ms (~59.4Hz), below the18kHz limit cited by
-the user. Every existing column retains its25+1 zero-data stop, Ax/Dx reset and
+Within a burst a nozzle repeats after673us (~1.49kHz), below the18kHz limit
+cited by the user. There are at most8 consecutive requests before other groups
+run. After each completed cache row except the last, wait100ms with the head
+already OFF (HC32 shuts down before returning line DONE), then upload the next
+row. No additional burst follows any protocol or motion fault. Every existing column retains its25+1 zero-data stop, Ax/Dx reset and
 minimum60us completed-column idle guard. There is no faster sampling path.
 Up to40 rounds fit one1180-column row; doses split as5,40+10,or40*5.
-Playback is~0.8/1.6/4.0seconds, plus cache transfer and motion/parking time.
+Playback plus deliberate pauses is~0.8/1.7/4.4seconds, plus cache transfer and motion/parking time.
 No temperature or recovery claim follows from these limits.
 
 ## Verification and first hardware test
@@ -72,7 +83,7 @@ Hardware must still establish pad coverage, actual drive timing, power and ink.
 First test: after a long idle, power ON and inspect the BOOT prespray log, then
 print the same CMY frame once. BOOT normally selects200; a prompt PAGE selects5.
 Capture PRESPRAY_BEGIN/BATCH/DONE (or STOP) and the print result/photo. Logs
-identify APP_SERVICE_CMY_PAD_PRESPRAY_V44. Recovery remains to be verified.
+identify APP_SERVICE_CMY_PAD_BURST_PRESPRAY_V45. Recovery remains to be verified.
 
 ## Baseline
 
@@ -81,3 +92,11 @@ Preserve local edits, fetch tags and create a separate branch for a baseline
 build if needed. PRINTER_PRESPRAY=0 restores the original boot and image flow.
 The independent temporary motor-loop branch is not merged into this branch;
 GPIO24 is fully active for normal pad positioning. HC32 stays79ba462.
+
+V44 restore tag: backup/before-burst-prespray-20261123 (5d8a642). V45 host checks
+independently reconstruct the CSV routes and burst order, verify exact dose and
+peak count, maximum8 consecutive shots, and100ms pauses only between batches.
+For this comparison, keep the current head condition and print the same CMY
+frame after one boot prespray; do not change tFire or add wetting beforehand.
+Log PRESPRAY_BEGIN should include burst_max=8 repeat_us=673 between_rows_ms=100.
+A successful log proves completed requests, not that ink actually left the head.

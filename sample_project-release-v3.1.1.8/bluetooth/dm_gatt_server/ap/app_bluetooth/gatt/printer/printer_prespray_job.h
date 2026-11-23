@@ -17,7 +17,7 @@ static int printer_run_prespray(const char *reason){
     int result=printer_prespray_build(row,PRINTER_NC_BYTES,first,&cfg);
     if(result)goto done; /* Reject bad mapping before any movement. */
     s_waste_station_ready=0U;
-    os_printf("[PRESPRAY_BEGIN] reason=%s idle_known=%u idle_s=%lu nozzles=600 rounds=%u total_requests=%lu normal_drive no_TSR no_preheat peak_requests_per_column=24 paper_steps=0\r\n",
+    os_printf("[PRESPRAY_BEGIN] reason=%s idle_known=%u idle_s=%lu nozzles=600 rounds=%u total_requests=%lu normal_drive no_TSR no_preheat peak_requests_per_column=24 burst_max=8 repeat_us=673 between_rows_ms=100 paper_steps=0\r\n",
               reason,idle_known,(unsigned long)(idle_us/1000000U),rounds,(unsigned long)(rounds*600U));
     result=printer_waste_position();if(result)goto stop;
     unsigned batches=0U;
@@ -27,6 +27,8 @@ static int printer_run_prespray(const char *reason){
         result=printer_waste_fire(row);if(result)goto stop;
         printer_prespray_note_ink();sent+=chunk;++batches;
         os_printf("[PRESPRAY_BATCH] reason=%s completed_rounds=%u/%u cache_rows=%u\r\n",reason,sent,rounds,batches);
+        /* HC32 has shut the head OFF before returning line DONE. */
+        if(sent<rounds)rtos_delay_milliseconds(100U);
     }
     if(tph_mcu_set_head_power(0)!=BK_OK){result=-8;goto stop;}
     s_waste_station_ready=0U;

@@ -17,10 +17,11 @@ h=r'''
 #define PRINTER_MAP_FIRST_NOZZLE (fault==7?1U:0U)
 #define PRINTER_MAP_REVERSE_Y 0
 #define os_printf printf
-static unsigned fault,allocs,positioned,fired,finished,aborted,off;
+static unsigned fault,allocs,positioned,fired,finished,aborted,off,pauses;
 static uint64_t bk_aon_rtc_get_us(void){return UINT64_C(1000000000);}
 static bool s_bidi_known=true,s_bidi_right=false,s_bidi_at_wiper=true;
 static uint8_t s_waste_station_ready;
+static void rtos_delay_milliseconds(unsigned ms){assert(ms==100&&fired&&s_waste_station_ready);++pauses;}
 static bool printer_link_is_ready(void){return fault!=6;}
 static void*printer_map_psram_alloc(size_t n){if(fault==5)return NULL;++allocs;return malloc(n);}
 static void printer_map_psram_free(void*p){assert(allocs);--allocs;free(p);}
@@ -42,7 +43,7 @@ int main(int argc,char**argv){
  assert(argc==2);fault=atoi(argv[1]);if(fault==8)s_bidi_known=false;
  if(fault>=10){s_prespray_have_ink=1;s_prespray_last_ink_us=bk_aon_rtc_get_us()-(fault==10?0U:fault==11?UINT64_C(180000000):UINT64_C(900000000));}
  int rc=printer_run_prespray("TEST");assert(!allocs&&!s_waste_station_ready);
- if(!fault||fault>=10)assert(!rc&&positioned==1&&fired==(fault==10?1U:fault==11?2U:5U)&&finished==1&&!aborted&&s_bidi_at_wiper&&!s_bidi_right);
+ if(!fault||fault>=10)assert(pauses==fired-1U&&!rc&&positioned==1&&fired==(fault==10?1U:fault==11?2U:5U)&&finished==1&&!aborted&&s_bidi_at_wiper&&!s_bidi_right);
  else if(fault>=5&&fault<=8)assert(rc<0&&!positioned&&!fired&&!finished&&!aborted);
  else {assert(rc<0&&aborted==1);if(fault==2)assert(!fired);if(fault==3)assert(!off&&!finished);}
  puts("PASS prespray:validate->pad->bounded finite rows->OFF->park;failures stop,no paper/no extra wipe");
