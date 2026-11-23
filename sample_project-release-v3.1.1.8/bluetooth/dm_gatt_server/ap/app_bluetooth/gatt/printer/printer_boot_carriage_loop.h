@@ -16,7 +16,15 @@ int printer_run_boot_carriage_loop(void) {
     for (;;) {
         /* At the LEFT starting anchor the RIGHT sensor must be released. */
         if (motor_oc3_active()) {result=PRINTER_OC3_STUCK;break;}
+        uint32_t right_before=s_blank_spi_steps[1],left_before=s_blank_spi_steps[0];
+        os_printf("[BOOT_CARRIAGE_LOOP_BEGIN] next=%lu gpio24_active=%u known=%u at_wiper=%u\r\n",
+                  (unsigned long)(rounds+1U),(unsigned)motor_oc3_active(),(unsigned)s_bidi_known,(unsigned)s_bidi_at_wiper);
         result=printer_buffered_boot_round_trip();
+        os_printf("[BOOT_CARRIAGE_LOOP_RESULT] next=%lu code=%d right_pulses=%lu left_pulses=%lu gpio24_active=%u known=%u at_wiper=%u last_steps=%lu last_irq_error=%lu last_max_gap_us=%lu\r\n",
+                  (unsigned long)(rounds+1U),result,
+                  (unsigned long)(s_blank_spi_steps[1]-right_before),(unsigned long)(s_blank_spi_steps[0]-left_before),
+                  (unsigned)motor_oc3_active(),(unsigned)s_bidi_known,(unsigned)s_bidi_at_wiper,
+                  (unsigned long)s_buf_steps,(unsigned long)s_buf_error,(unsigned long)s_buf_max_gap);
         if (result) break;
         ++rounds;
         os_printf("[BOOT_CARRIAGE_LOOP_ROUND] completed=%lu endpoint=WIPER ink=OFF paper_steps=0\r\n",(unsigned long)rounds);

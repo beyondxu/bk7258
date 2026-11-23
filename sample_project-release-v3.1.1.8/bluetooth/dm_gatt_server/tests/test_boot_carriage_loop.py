@@ -57,3 +57,6 @@ a=main.index('    if (PRINTER_BOOT_CARRIAGE_LOOP) {');b=main.index('    if (link
 block=main[a:b]
 assert a<main.index('dm_gatts_init();')
 assert 'if (link_ready)' in block and 'link_ready=false;s_printer_link_ready=false;' in block
+
+assert main.index('[BOOT_MODE] TEMP_CONTINUOUS_V42')<a
+assert '[BOOT_CARRIAGE_LOOP_RESULT]' in (D/'printer_boot_carriage_loop.h').read_text()

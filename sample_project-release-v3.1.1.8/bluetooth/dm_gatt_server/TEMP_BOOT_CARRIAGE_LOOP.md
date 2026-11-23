@@ -23,6 +23,12 @@ cap without a blind fixed return; an initially active GPIO24 blocks movement.
 The wiper side still uses the previously verified fixed return count, not a
 second sensor. This is a temporary motor test, not an unattended endurance mode.
 
+V42 prints BOOT_MODE / TEMP_CONTINUOUS_V42 before initialization, including
+compiled enable and speed values. Each attempt logs BEGIN and RESULT with
+actual left/right pulse counts, optical state and last timer error/gap. This
+separates an old/disabled build from an early protected stop; the protection
+thresholds are unchanged. Incompatible temporary build options fail compilation.
+
 Logs: BOOT_CARRIAGE_LOOP, BOOT_CARRIAGE_LOOP_ROUND and
 BOOT_CARRIAGE_LOOP_STOP. Inspect actual movement/noise on the first trips.
 

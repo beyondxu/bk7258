@@ -314,4 +314,9 @@ void printer_run_carriage_diagnostic(void);
 #endif
 int printer_run_boot_waste_clean(void);
 
+/* A temporary build must not silently compile its loop into an inactive stub. */
+#if PRINTER_BOOT_CARRIAGE_LOOP && (PRINTER_APP_PAYLOAD_AUDIT || !PRINTER_BUFFERED_LINE || !PRINTER_FULL_PAGE || !PRINTER_PAGE_BIDIRECTIONAL)
+#error Temporary boot carriage loop requires the buffered bidirectional page engine and active HC32 link
+#endif
+
 #endif

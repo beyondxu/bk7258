@@ -288,6 +288,7 @@ static void app_printer_task_entry(void *arg) {
 
     os_printf("\r\n************************************************\r\n");
     os_printf("    BK7258 DN20 Inkjet Printer Starting...      \r\n");
+    os_printf("[BOOT_MODE] TEMP_CONTINUOUS_V42 enabled=%u STEP_us=%u head_OFF feed=0\r\n",(unsigned)PRINTER_BOOT_CARRIAGE_LOOP,(unsigned)PRINTER_BOOT_LOOP_STEP_US);
     os_printf("************************************************\r\n");
 	rtos_delay_milliseconds(500);
 	
@@ -295,7 +296,7 @@ static void app_printer_task_entry(void *arg) {
 	 //  u4_carriage_motor_standalone_test();
 	//   return ;
 
-#if !PRINTER_APP_PAYLOAD_AUDIT && (!PRINTER_DATA_AUDIT || PRINTER_BOUNDED_PRINT || PRINTER_CARRIAGE_TEST)
+#if !PRINTER_APP_PAYLOAD_AUDIT && (!PRINTER_DATA_AUDIT || PRINTER_BOUNDED_PRINT || PRINTER_CARRIAGE_TEST || PRINTER_BOOT_CARRIAGE_LOOP)
     // 1. 初始化电机 GPIO
     bk_motor_gpio_config_init();
 
@@ -369,8 +370,12 @@ static void app_printer_task_entry(void *arg) {
         os_printf("[SYS] APP_SERVICE_BLACK_YELLOW_V1 margin_each=%lu print_steps=%lu span=%lu service_head_OFF black_then_yellow\r\n",
                   (unsigned long)PRINTER_SERVICE_MARGIN_STEPS, (unsigned long)PRINTER_SERVICE_BASE_STEPS, (unsigned long)PRINTER_SERVICE_SPAN_STEPS);
 #else
-        os_printf("[SYS] TEMP_BOOT_CARRIAGE_LOOP_75US_V41 margin_each=%lu print_steps=%lu span=%lu actual_APP_CMY bands_24 alternating_direction HC_LBUFv1_required timer4_step_us82 start_period_us400 ramp_steps64 step_high_us27 nominal_low_us55 line_period_us673_requires_HC_min500 canvas_width_mm50_same_image_scale OC3_gpio24_active_LOW_irq_endpoint_step_cap_fallback boot_head_OFF_round_trip_1 boot_waste_clean_disabled_default print_span10473_inset_each374_service_span11221_boot_prep_final_same page_wipe_2x20mm_step164_then_parallel_load_3rounds_1p8mm_each_leg_total10p8mm_head_OFF page_load_6legs_702steps no_column_waits blank_band_scans page_power_session U4_hold_phase_MS111 service_head_OFF\r\n",
+#if PRINTER_BOOT_CARRIAGE_LOOP
+        os_printf("[SYS] TEMP_LOOP_STOPPED printing_BLOCKED see_BOOT_CARRIAGE_LOOP_STOP no_normal_boot_fallback\r\n");
+#else
+        os_printf("[SYS] APP_SERVICE_CMY_S1_NO_BOOT_CLEAN_V39 margin_each=%lu print_steps=%lu span=%lu actual_APP_CMY bands_24 alternating_direction HC_LBUFv1_required timer4_step_us82 start_period_us400 ramp_steps64 step_high_us27 nominal_low_us55 line_period_us673_requires_HC_min500 canvas_width_mm50_same_image_scale OC3_gpio24_active_LOW_irq_endpoint_step_cap_fallback boot_head_OFF_round_trip_1 boot_waste_clean_disabled_default print_span10473_inset_each374_service_span11221_boot_prep_final_same page_wipe_2x20mm_step164_then_parallel_load_3rounds_1p8mm_each_leg_total10p8mm_head_OFF page_load_6legs_702steps no_column_waits blank_band_scans page_power_session U4_hold_phase_MS111 service_head_OFF\r\n",
                   (unsigned long)PRINTER_SERVICE_MARGIN_STEPS, (unsigned long)PRINTER_SERVICE_BASE_STEPS, (unsigned long)PRINTER_SERVICE_SPAN_STEPS);
+#endif
 #endif
 #elif PRINTER_BLACK_PREFIX
         os_printf("[SYS] APP_BLACK_THEN_YELLOW_V1 one_CMY_black_then_actual_yellow no_repeat\r\n");
