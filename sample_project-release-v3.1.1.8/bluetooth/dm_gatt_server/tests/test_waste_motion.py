@@ -22,10 +22,11 @@ h=h.replace('++cache.fired;++hc_fires;\n   if(cache.fired==1180)', '++cache.fire
 h=h.replace('return !sync_high&&(cache.state==PL_RUNNING', 'if(stationary_run&&mode==48&&cache.fired>=10)return 1U;if(stationary_run&&mode==46&&!sync_high&&cache.state==PL_ERROR)return 0U;return !sync_high&&(cache.state==PL_RUNNING')
 h=h.replace('if(mode==2&&cache.state==PL_LOADING', 'if((mode==2||mode==44)&&cache.state==PL_LOADING')
 h=h.replace('mode==4&&s_buf_steps==3000', '(mode==4||mode==50)&&s_buf_steps==3000')
+h=h.replace('pl_status(&cache,p);if(mode==1)', 'pl_status(&cache,p);if(mode==52||mode==54||(mode==53&&cache.state==PL_READY)){uint8_t*q=p;if(mode==52)q[10]=0;if(mode==53)q[11]=0;if(mode==54)q[32]=0;pl_put32(q+96,pl_crc(q,96));}if(mode==1)')
 h+=r'''
 #include "printer_waste_motion.h"
 int main(int argc,char**argv){
- assert(argc==2);mode=atoi(argv[1]);
+ assert(argc==2);unsigned requested=atoi(argv[1]);mode=requested>=52?40:requested;
  pos=-(int32_t)PRINTER_MAINTENANCE_EXTRA_STEPS;s_bidi_left_offset=pos;s_bidi_at_wiper=true;
  uint8_t*row=malloc(PL_ROW_BYTES);for(unsigned i=0;i<PL_ROW_BYTES;i++)row[i]=(i*7+i/100)&63U;
  if(mode==49){assert(printer_waste_fire(row)==-7&&!hc_fires&&!oc3_right_pulses);free(row);return 0;}
@@ -40,12 +41,17 @@ int main(int argc,char**argv){
  assert(!rc&&s_waste_station_ready&&s_bidi_known&&s_bidi_right&&!s_bidi_at_wiper&&!s_bidi_right_offset);
  assert(pos==(int32_t)PRINTER_SERVICE_SPAN_STEPS&&oc3_level&&!timer_enabled&&!s_buf_claimed);
  unsigned steps=s_blank_spi_steps[0]+s_blank_spi_steps[1],feeds=total_paper;
- uint64_t before=now_us;stationary_run=1;
- rc=printer_waste_fire(row);
+ uint64_t before=now_us;stationary_run=1;if(requested>=52)mode=requested;
+ rc=requested>=52?printer_waste_fire_prespray(row):printer_waste_fire(row);
  assert(pos==(int32_t)PRINTER_SERVICE_SPAN_STEPS&&steps==s_blank_spi_steps[0]+s_blank_spi_steps[1]&&feeds==total_paper&&!timer_enabled&&sync_high);
  assert(now_us-before<900000U);
+ if(requested>=52){assert(rc==-13&&!hc_fires&&!s_waste_station_ready);printer_buffered_stop();free(row);puts("PASS missing capability/wrong prespray profile/pad rejected before ARM and fire");return 0;}
  if(mode==40){
   assert(!rc&&cache.state==PL_DONE&&cache.fired==1180&&hc_fires==1180&&s_waste_station_ready);
+  assert(cache.fire_profile==PL_FIRE_NORMAL);
+  assert(!printer_waste_fire_prespray(row)&&cache.fire_profile==PL_FIRE_PRESPRAY);
+  assert(pos==(int32_t)PRINTER_SERVICE_SPAN_STEPS&&steps==s_blank_spi_steps[0]+s_blank_spi_steps[1]&&feeds==total_paper);
+  assert(!printer_waste_fire(row)&&cache.fire_profile==PL_FIRE_NORMAL);
   stationary_run=0;s_waste_station_ready=0;
   assert(!printer_buffered_park_at_wiper()&&pos==-(int32_t)PRINTER_MAINTENANCE_EXTRA_STEPS);
  }else{
@@ -62,4 +68,4 @@ int main(int argc,char**argv){
 with tempfile.TemporaryDirectory() as tmp:
  t=Path(tmp);(t/'driver').mkdir();(t/'driver/timer.h').write_text('/* stub provided in test */\n');(t/'test.c').write_text(h)
  subprocess.run(['cc','-std=c99','-Wall','-Wextra','-Werror','-Wno-unused-function','-fsanitize=address,undefined','-I'+str(t),'-I'+str(D),'-I'+str(H),str(t/'test.c'),'-o',str(t/'test')],check=True)
- for mode in range(40,52):subprocess.run([str(t/'test'),str(mode)],check=True,env={**os.environ,'ASAN_OPTIONS':'detect_leaks=0'})
+ for mode in range(40,55):subprocess.run([str(t/'test'),str(mode)],check=True,env={**os.environ,'ASAN_OPTIONS':'detect_leaks=0'})

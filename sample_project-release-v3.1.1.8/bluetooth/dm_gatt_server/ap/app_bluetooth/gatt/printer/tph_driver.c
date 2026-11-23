@@ -189,25 +189,37 @@ bk_err_t tph_line_cancel(const tph_line_ticket_t *ticket) {
     pl_command(command,PL_CANCEL,ticket->token,ticket->period_us,ticket->crc);
     return tph_fire_raw_column_bytes(command);
 }
-bk_err_t tph_line_prepare(const uint8_t *columns,uint32_t period_us,tph_line_ticket_t *ticket) {
+static bk_err_t tph_line_prepare_profile(const uint8_t *columns,uint32_t period_us,tph_line_ticket_t *ticket,unsigned profile) {
     static uint32_t token;
     uint8_t command[PL_BYTES],status[PL_BYTES];
-    if(!columns||!ticket||period_us<PL_MIN_PERIOD_US||period_us>PL_MAX_PERIOD_US)return BK_FAIL;
+    if(profile>PL_FIRE_PRESPRAY||!columns||!ticket||period_us<PL_MIN_PERIOD_US||period_us>PL_MAX_PERIOD_US)return BK_FAIL;
     if(tph_mcu_set_head_power(0)!=BK_OK||tph_line_probe()!=BK_OK)return BK_FAIL;
+    if(profile==PL_FIRE_PRESPRAY){
+        if(tph_line_read_status(status)!=BK_OK || !(status[10]&PL_CAP_PRESPRAY_FIRE) || status[32]!=PL_PRESPRAY_PAD_NOPS){
+            TPH_LOGE("[LINE_FIRE_PROFILE_REJECT] HC32_prespray_profile_missing_or_mismatched update_HC32_first no_ARM_no_fire\r\n");
+            return BK_FAIL;
+        }
+    }
     if(++token==0)++token;
     ticket->token=token;ticket->period_us=period_us;ticket->crc=pl_crc(columns,PL_ROW_BYTES);
-    pl_command(command,PL_BEGIN,ticket->token,period_us,ticket->crc);
+    pl_command(command,profile==PL_FIRE_PRESPRAY?PL_BEGIN_PRESPRAY:PL_BEGIN,ticket->token,period_us,ticket->crc);
     if(tph_fire_raw_column_bytes(command)!=BK_OK)return BK_FAIL;
     for(unsigned i=0;i<PL_COLUMNS;i++)if(tph_fire_raw_column_bytes(columns+i*PL_BYTES)!=BK_OK)return BK_FAIL;
     if(tph_line_read_status(status)!=BK_OK){TPH_LOGE("[LINE_BUFFER_REJECT] invalid_status no_motion_no_fire\r\n");return BK_FAIL;}
-    if(status[8]!=PL_READY||status[9]!=PL_OK||pl_get16(status+12)!=PL_COLUMNS||pl_get32(status+16)!=ticket->token||pl_get32(status+20)!=period_us||pl_get32(status+24)!=ticket->crc){
-        TPH_LOGE("[LINE_BUFFER_REJECT] state=%u error=%u received=%u token=%lu/%lu crc32=%08lX/%08lX no_motion_no_fire\r\n",status[8],status[9],(unsigned)pl_get16(status+12),(unsigned long)pl_get32(status+16),(unsigned long)ticket->token,(unsigned long)pl_get32(status+24),(unsigned long)ticket->crc);
+    if(status[8]!=PL_READY||status[9]!=PL_OK||status[11]!=profile||pl_get16(status+12)!=PL_COLUMNS||pl_get32(status+16)!=ticket->token||pl_get32(status+20)!=period_us||pl_get32(status+24)!=ticket->crc){
+        TPH_LOGE("[LINE_BUFFER_REJECT] state=%u error=%u received=%u token=%lu/%lu crc32=%08lX/%08lX profile=%u/%u no_motion_no_fire\r\n",status[8],status[9],(unsigned)pl_get16(status+12),(unsigned long)pl_get32(status+16),(unsigned long)ticket->token,(unsigned long)pl_get32(status+24),(unsigned long)ticket->crc,status[11],profile);
         return BK_FAIL;
     }
     pl_command(command,PL_ARM,ticket->token,period_us,ticket->crc);
     if(tph_fire_raw_column_bytes(command)!=BK_OK)return BK_FAIL;
-    TPH_LOGI("[LINE_BUFFER_READY] token=%lu columns=1180 period_us=%lu crc32=%08lX start_SYNC_only\r\n",(unsigned long)ticket->token,(unsigned long)period_us,(unsigned long)ticket->crc);
+    TPH_LOGI("[LINE_BUFFER_READY] token=%lu columns=1180 period_us=%lu crc32=%08lX fire_profile=%u extra_pad_nops=%u start_SYNC_only\r\n",(unsigned long)ticket->token,(unsigned long)period_us,(unsigned long)ticket->crc,profile,profile?PL_PRESPRAY_PAD_NOPS:0U);
     return BK_OK;
+}
+bk_err_t tph_line_prepare(const uint8_t *columns,uint32_t period_us,tph_line_ticket_t *ticket){
+    return tph_line_prepare_profile(columns,period_us,ticket,PL_FIRE_NORMAL);
+}
+bk_err_t tph_line_prepare_prespray(const uint8_t *columns,uint32_t period_us,tph_line_ticket_t *ticket){
+    return tph_line_prepare_profile(columns,period_us,ticket,PL_FIRE_PRESPRAY);
 }
 bk_err_t tph_line_finish(const tph_line_ticket_t *ticket) {
     uint8_t status[PL_BYTES];

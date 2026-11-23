@@ -49,10 +49,10 @@ failed:
 }
 /* Execute an ordinary cached row without U4 motion. HC supplies the finite
  * column count/deadline checks. Never do SPI while its SYNC is held LOW. */
-static int printer_waste_fire(const uint8_t *row){
+static int printer_waste_fire_profile(const uint8_t *row,unsigned prespray){
  if(!row||!s_waste_station_ready||!s_bidi_known||!s_bidi_right||s_bidi_at_wiper||s_bidi_right_offset||s_buf_active||s_buf_claimed||motor_oc3_active())return -7;
  tph_line_ticket_t ticket={0};int result=-13;
- if(tph_line_prepare(row,PRINTER_CANVAS_COLUMN_US,&ticket)!=BK_OK)goto stop;
+ if((prespray?tph_line_prepare_prespray(row,PRINTER_CANVAS_COLUMN_US,&ticket):tph_line_prepare(row,PRINTER_CANVAS_COLUMN_US,&ticket))!=BK_OK)goto stop;
  uint32_t begin=(uint32_t)bk_aon_rtc_get_us();unsigned saw_low=0U;
  bk_gpio_set_output_low(PIN_BK_SYNC_OUT);
  for(unsigned loops=0;loops<11U;++loops){
@@ -81,4 +81,6 @@ stop:
  s_waste_station_ready=0U;
  return result;
 }
+static int printer_waste_fire(const uint8_t *row){return printer_waste_fire_profile(row,0U);}
+static int printer_waste_fire_prespray(const uint8_t *row){return printer_waste_fire_profile(row,1U);}
 #endif

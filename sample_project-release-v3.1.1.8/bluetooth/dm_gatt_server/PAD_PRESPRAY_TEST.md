@@ -1,3 +1,7 @@
+> Current V47 adds a dedicated HC32 prespray padding profile. See
+> PRESPRAY_FIRE_PROFILE_TEST.md; both MCUs must be updated. Dose/mapping below
+> remain as V46. This is not a calibrated2.2us or preheat mode.
+
 # RTC-based sponge-pad prespray: V46 single Domain/Section comparison
 
 Normal branch: codex/printer-startup-load-prep. Image printing stays24-row S1,

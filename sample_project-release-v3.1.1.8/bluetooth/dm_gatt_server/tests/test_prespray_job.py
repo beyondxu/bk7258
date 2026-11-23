@@ -30,7 +30,7 @@ static int printer_waste_position(void){
  if(fault==2)return -18;
  s_bidi_at_wiper=false;s_bidi_right=true;s_waste_station_ready=1;return 0;
 }
-static int printer_waste_fire(const uint8_t*p){
+static int printer_waste_fire_prespray(const uint8_t*p){
  assert(positioned==1&&s_waste_station_ready&&s_bidi_right&&!s_bidi_at_wiper);++fired;
  unsigned bits=0;for(unsigned i=0;i<118000;++i)for(unsigned b=0;b<6;++b)bits+=(p[i]>>b)&1U;
  unsigned plan=fault==10?5U:fault==11?50U:200U;unsigned done=(fired-1U)*20U;unsigned chunk=plan-done;if(chunk>20U)chunk=20U;assert(bits==600U*chunk);
