@@ -1,3 +1,14 @@
+> V51 extends only the long/unknown-idle dose:400 → 800 requests/nozzle,
+> 20 cache rows instead of10. Short/medium doses remain10/100.
+> Batch OFF pauses remain20ms;32-NOP HC profile remains unchanged.
+> Nominal playback plus pauses is16.26s (20*1180*673us +19*20ms),
+> excluding transfers and carriage movements. This is requested firing,
+> not confirmed droplets or a measured thermal guarantee.
+> Only BK needs updating, with the existing HC32 pad32 firmware972fa1d.
+> Banner: APP_SERVICE_CMY_PAD_LONG_PRESPRAY_V51_requires_HC_prespray_pad32.
+> Restore tag: backup/before-prespray-800-20261124 (BK216feed).
+> Previous V49/V50 comparison details below are historical for dose/time.
+
 > V50 uses the new HC32 prespray32-NOP profile (previously16).
 > Update HC32 first, then BK. Dose, pattern and waits below are unchanged.
 > See PRESPRAY_FIRE_PROFILE_TEST.md for the theoretical80ns increment.
