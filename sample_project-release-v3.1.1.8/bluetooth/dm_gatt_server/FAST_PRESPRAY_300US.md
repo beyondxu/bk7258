@@ -1,3 +1,14 @@
+> V53 extends only long/unknown-idle dose800 → 1600 requests/nozzle:
+> 40 cache rows; nominal playback + OFF pauses14.355s, excluding transfers
+> and carriage movements. Period300us, pauses5ms, burst8,40 rounds/cache,
+> pad32, VP and normal printing remain unchanged. Short/medium doses10/100.
+> Only BK needs updating; retain HC ffcb23a. Banner:
+> APP_SERVICE_CMY_PAD_1600_PRESPRAY_V53_requires_HC_prespray_300us_pad32.
+> Restore tag: backup/before-prespray-1600-20261124 (BK2f6173c).
+> Require PRESPRAY_DONE and40 batches, each40 rounds. These are requested
+> shots, not measured droplets or confirmation that a dry head has recovered.
+> Earlier800-dose/time details below are historical.
+
 # V52: dedicated300us prespray
 
 Update HC32 first, then BK7258, on the existing branches. Requires BOTH updates.

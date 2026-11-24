@@ -1,3 +1,5 @@
+> V53 long/unknown-idle dose is1600,40 cache rows. See FAST_PRESPRAY_300US.md.
+
 > Current V52 changes only automatic prespray to300us/5ms; BOTH MCUs must
 > be updated. See FAST_PRESPRAY_300US.md. Earlier period/pause details below
 > describe previous comparisons.
