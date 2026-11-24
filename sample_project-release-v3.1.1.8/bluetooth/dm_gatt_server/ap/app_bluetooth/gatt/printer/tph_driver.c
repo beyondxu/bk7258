@@ -192,10 +192,10 @@ bk_err_t tph_line_cancel(const tph_line_ticket_t *ticket) {
 static bk_err_t tph_line_prepare_profile(const uint8_t *columns,uint32_t period_us,tph_line_ticket_t *ticket,unsigned profile) {
     static uint32_t token;
     uint8_t command[PL_BYTES],status[PL_BYTES];
-    if(profile>PL_FIRE_PRESPRAY||!columns||!ticket||period_us<PL_MIN_PERIOD_US||period_us>PL_MAX_PERIOD_US)return BK_FAIL;
+    if(profile>PL_FIRE_PRESPRAY||!columns||!ticket||period_us<(profile==PL_FIRE_PRESPRAY?PL_PRESPRAY_PERIOD_US:PL_MIN_PERIOD_US)||period_us>PL_MAX_PERIOD_US)return BK_FAIL;
     if(tph_mcu_set_head_power(0)!=BK_OK||tph_line_probe()!=BK_OK)return BK_FAIL;
     if(profile==PL_FIRE_PRESPRAY){
-        if(tph_line_read_status(status)!=BK_OK || !(status[10]&PL_CAP_PRESPRAY_FIRE) || status[32]!=PL_PRESPRAY_PAD_NOPS){
+        if(tph_line_read_status(status)!=BK_OK || (status[10]&(PL_CAP_PRESPRAY_FIRE|PL_CAP_PRESPRAY_FAST))!=(PL_CAP_PRESPRAY_FIRE|PL_CAP_PRESPRAY_FAST) || status[32]!=PL_PRESPRAY_PAD_NOPS || pl_get16(status+33)!=PL_PRESPRAY_PERIOD_US){
             TPH_LOGE("[LINE_FIRE_PROFILE_REJECT] HC32_prespray_profile_missing_or_mismatched update_HC32_first no_ARM_no_fire\r\n");
             return BK_FAIL;
         }

@@ -1,3 +1,7 @@
+> Current V52 changes only automatic prespray to300us/5ms; BOTH MCUs must
+> be updated. See FAST_PRESPRAY_300US.md. Earlier period/pause details below
+> describe previous comparisons.
+
 > V51 extends only the long/unknown-idle dose:400 → 800 requests/nozzle,
 > 20 cache rows instead of10. Short/medium doses remain10/100.
 > Batch OFF pauses remain20ms;32-NOP HC profile remains unchanged.

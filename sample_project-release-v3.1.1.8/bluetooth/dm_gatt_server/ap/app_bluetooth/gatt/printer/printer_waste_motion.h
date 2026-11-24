@@ -51,7 +51,8 @@ failed:
 static int printer_waste_fire_profile(const uint8_t *row,unsigned prespray){
  if(!row||!s_waste_station_ready||!s_bidi_known||!s_bidi_right||s_bidi_at_wiper||s_bidi_right_offset!=(int32_t)PRINTER_PRINT_ENDPOINT_INSET_STEPS||s_buf_active||s_buf_claimed||!motor_oc3_active())return -7;
  tph_line_ticket_t ticket={0};int result=-13;
- if((prespray?tph_line_prepare_prespray(row,PRINTER_CANVAS_COLUMN_US,&ticket):tph_line_prepare(row,PRINTER_CANVAS_COLUMN_US,&ticket))!=BK_OK)goto stop;
+ const uint32_t period_us=prespray?PL_PRESPRAY_PERIOD_US:PRINTER_CANVAS_COLUMN_US;
+ if((prespray?tph_line_prepare_prespray(row,period_us,&ticket):tph_line_prepare(row,period_us,&ticket))!=BK_OK)goto stop;
  if(!motor_oc3_active()){
   os_printf("[WASTE_POSITION_LOST] stage=BEFORE_SYNC GPIO24_released no_fire\r\n");
   (void)tph_line_cancel(&ticket);goto stop;
@@ -65,7 +66,7 @@ static int printer_waste_fire_profile(const uint8_t *row,unsigned prespray){
  }
  if(!saw_low)goto stop;
  begin=(uint32_t)bk_aon_rtc_get_us();
- const uint32_t run_us=PL_COLUMNS*PRINTER_CANVAS_COLUMN_US+2000U;
+ const uint32_t run_us=PL_COLUMNS*period_us+2000U;
  unsigned complete=0U;
  /* The independent iteration bound also terminates a stalled RTC. */
  for(uint32_t loops=0;loops<(run_us+50000U)/1000U+1U;++loops){
@@ -79,7 +80,7 @@ static int printer_waste_fire_profile(const uint8_t *row,unsigned prespray){
  if(!complete){result=-14;goto stop;}
  bk_gpio_set_output_high(PIN_BK_SYNC_OUT);
  if(tph_line_finish(&ticket)!=BK_OK)goto stop;
- os_printf("[WASTE_FIRED] token=%lu columns=%u period_us=%u U4_steps=0 paper_steps=0 ink_unverified\r\n",(unsigned long)ticket.token,PL_COLUMNS,PRINTER_CANVAS_COLUMN_US);
+ os_printf("[WASTE_FIRED] token=%lu columns=%u period_us=%u U4_steps=0 paper_steps=0 ink_unverified\r\n",(unsigned long)ticket.token,PL_COLUMNS,(unsigned)period_us);
  return 0;
 stop:
  bk_gpio_set_output_high(PIN_BK_SYNC_OUT);

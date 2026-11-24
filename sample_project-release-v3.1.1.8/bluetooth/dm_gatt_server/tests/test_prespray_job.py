@@ -21,7 +21,7 @@ static unsigned fault,allocs,positioned,fired,finished,aborted,off,pauses;
 static uint64_t bk_aon_rtc_get_us(void){return UINT64_C(1000000000);}
 static bool s_bidi_known=true,s_bidi_right=false,s_bidi_at_wiper=true;
 static uint8_t s_waste_station_ready;
-static void rtos_delay_milliseconds(unsigned ms){assert(ms==20&&fired&&s_waste_station_ready);++pauses;}
+static void rtos_delay_milliseconds(unsigned ms){assert(ms==5&&fired&&s_waste_station_ready);++pauses;}
 static bool printer_link_is_ready(void){return fault!=6;}
 static void*printer_map_psram_alloc(size_t n){if(fault==5)return NULL;++allocs;return malloc(n);}
 static void printer_map_psram_free(void*p){assert(allocs);--allocs;free(p);}
