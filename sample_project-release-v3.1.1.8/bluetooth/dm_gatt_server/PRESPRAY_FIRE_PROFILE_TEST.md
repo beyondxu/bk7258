@@ -1,3 +1,6 @@
+> V49 changes BK dose/pattern/waits; see PAD_PRESPRAY_TEST.md.
+> The HC32 fire profile described here is unchanged. Earlier dose numbers below are historical.
+
 > V48 keeps this HC32 profile and changes only BK waste-pad placement:
 > OC3_RIGHT with zero retreat. See PAD_POSITION_AND_CP_FAULT.md.
 

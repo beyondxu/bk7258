@@ -21,7 +21,7 @@ static unsigned fault,allocs,positioned,fired,finished,aborted,off,pauses;
 static uint64_t bk_aon_rtc_get_us(void){return UINT64_C(1000000000);}
 static bool s_bidi_known=true,s_bidi_right=false,s_bidi_at_wiper=true;
 static uint8_t s_waste_station_ready;
-static void rtos_delay_milliseconds(unsigned ms){assert(ms==100&&fired&&s_waste_station_ready);++pauses;}
+static void rtos_delay_milliseconds(unsigned ms){assert(ms==20&&fired&&s_waste_station_ready);++pauses;}
 static bool printer_link_is_ready(void){return fault!=6;}
 static void*printer_map_psram_alloc(size_t n){if(fault==5)return NULL;++allocs;return malloc(n);}
 static void printer_map_psram_free(void*p){assert(allocs);--allocs;free(p);}
@@ -33,8 +33,8 @@ static int printer_waste_position(void){
 static int printer_waste_fire_prespray(const uint8_t*p){
  assert(positioned==1&&s_waste_station_ready&&s_bidi_right&&!s_bidi_at_wiper);++fired;
  unsigned bits=0;for(unsigned i=0;i<118000;++i)for(unsigned b=0;b<6;++b)bits+=(p[i]>>b)&1U;
- unsigned plan=fault==10?5U:fault==11?50U:200U;unsigned done=(fired-1U)*20U;unsigned chunk=plan-done;if(chunk>20U)chunk=20U;assert(bits==600U*chunk);
- for(unsigned x=0;x<1180;++x){unsigned mask=0,sections=0;for(unsigned a=0;a<100;++a){unsigned v=p[x*100+a];mask|=v;if(v)sections|=1U<<(a%4);}assert((mask&(mask-1U))==0&&(sections&(sections-1U))==0);}return fault==3?-13:0;
+ unsigned plan=fault==10?10U:fault==11?100U:400U;unsigned done=(fired-1U)*40U;unsigned chunk=plan-done;if(chunk>40U)chunk=40U;assert(bits==600U*chunk);
+ for(unsigned x=0;x<1180;++x){unsigned mask=0,sections=0;for(unsigned a=0;a<100;++a){unsigned v=p[x*100+a];mask|=v;if(v)sections|=1U<<(a%4);}assert((mask&(mask-1U))==0&&((sections&~3U)==0||(sections&~12U)==0));}return fault==3?-13:0;
 }
 static int tph_mcu_set_head_power(unsigned on){assert(!on&&fired>=1);++off;return fault==4?-1:0;}
 static int printer_bidirectional_finish(void){assert(!s_waste_station_ready&&off==1);++finished;if(fault==9)return -14;s_bidi_right=false;s_bidi_at_wiper=true;return 0;}

@@ -1,13 +1,14 @@
 #ifndef PRINTER_PRESPRAY_PATTERN_H
 #define PRINTER_PRESPRAY_PATTERN_H
 #include "printer_nozzle_check.h"
-#define PRINTER_PRESPRAY_ROW_ROUNDS 20U
-#define PRINTER_PRESPRAY_PEAK_BITS 24U
+#define PRINTER_PRESPRAY_ROW_ROUNDS 40U
+#define PRINTER_PRESPRAY_PEAK_BITS 48U
 #define PRINTER_PRESPRAY_BURST_ROUNDS 8U
-#define PRINTER_PRESPRAY_GROUPS 48U
-/* Each column uses exactly one D and one S. For each D1..D6, visit
- * S1..S4 and split25 addresses into24+1 request groups.48 groups per
- * round;20 rounds fit one finite row. No added drive energy or preheat.
+#define PRINTER_PRESPRAY_GROUPS 24U
+/* Each column uses one D and a pair of S sections (S1/S2 or S3/S4).
+ * Split25 addresses into24+1 groups:24 groups/round,40 rounds per row.
+ * At most2 selected sections per address; per-nozzle cadence and tFire
+ * remain unchanged. More requested drops, not a calibrated energy change.
  */
 static int printer_prespray_build(uint8_t *row,uint32_t bytes,unsigned rounds,const printer_map_config_t *cfg){
     if(!row || bytes<PRINTER_NC_BYTES || !rounds || rounds>PRINTER_PRESPRAY_ROW_ROUNDS || printer_nc_validate(cfg)) return -1;
@@ -18,7 +19,7 @@ static int printer_prespray_build(uint8_t *row,uint32_t bytes,unsigned rounds,co
         unsigned domain=0U;
         while(domain<6U && route.mask!=(1U<<domain))++domain;
         if(domain>=6U)return -1;
-        unsigned group=domain*8U+(route.slot%4U)*2U+(route.slot/4U)/24U;
+        unsigned group=domain*4U+((route.slot%4U)/2U)*2U+(route.slot/4U)/24U;
         for(unsigned batch=0;batch<rounds;++batch){
             unsigned base=(batch/PRINTER_PRESPRAY_BURST_ROUNDS)*PRINTER_PRESPRAY_BURST_ROUNDS;
             unsigned burst=rounds-base;

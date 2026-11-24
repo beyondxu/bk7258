@@ -9,7 +9,7 @@ with tempfile.TemporaryDirectory() as tmp:
  subprocess.run(['cc','-std=c99','-Wall','-Wextra','-Werror','-Wno-unused-function','-fPIC','-shared','-I'+str(D),str(t/'a.c'),str(D/'printer_mapper.c'),'-o',str(t/'a.so')],check=True)
  lib=C.CDLL(str(t/'a.so'));buf=(C.c_uint8*118000)();lib.build.argtypes=[C.POINTER(C.c_uint8),C.c_uint32,C.c_uint,C.POINTER(Config)]
  records=list(csv.DictReader((P/'tools/data/m0333n_v12_nozzles.csv').open()))
- for rounds in [1,5,8,10,20]:
+ for rounds in [1,5,8,10,20,39,40]:
   gold=bytearray(118000);seen=set()
   for ch in range(3):
    rows=sorted([r for r in records if (int(r['domain'])-1)//2==ch],key=lambda r:-Decimal(r['y_um']))
@@ -20,17 +20,17 @@ with tempfile.TemporaryDirectory() as tmp:
     for start in range(0,rounds,8):
      count=min(8,rounds-start)
      for shot in range(count):
-      col=40+start*48+((d-1)*8+(s-1)*2+(a-1)//24)*count+shot
+      col=40+start*24+((d-1)*4+((s-1)//2)*2+(a-1)//24)*count+shot
       gold[col*100+(a-1)*4+s-1]|=1<<(d-1)
   assert len(seen)==600 and sum(v.bit_count() for v in gold)==600*rounds
-  assert max(sum(v.bit_count() for v in gold[x*100:x*100+100]) for x in range(1180))==24
+  assert max(sum(v.bit_count() for v in gold[x*100:x*100+100]) for x in range(1180))==48
   for x in range(1180):
    col=gold[x*100:x*100+100];mask=0;sections=set()
    for slot,v in enumerate(col):
     mask|=v
     if v:sections.add(slot%4)
-   assert mask.bit_count()<=1 and len(sections)<=1
-   assert all(sum(v.bit_count() for v in col[a*4:a*4+4])<=1 for a in range(25))
+   assert mask.bit_count()<=1 and (sections <= {0,1} or sections <= {2,3})
+   assert all(sum(v.bit_count() for v in col[a*4:a*4+4])<=2 for a in range(25))
   for direction in [-1,1]:
    cfg=Config(4388,direction,0,0);assert not lib.build(buf,len(buf),rounds,C.byref(cfg));assert bytes(buf)==gold
    for r in records:
@@ -46,5 +46,5 @@ with tempfile.TemporaryDirectory() as tmp:
  for cfg in [Config(4388,-1,1,0),Config(4388,-1,0,1)]:assert lib.build(buf,len(buf),5,C.byref(cfg))
  cfg=Config(4388,-1,0,0)
  assert lib.build(None,118000,5,C.byref(cfg));assert lib.build(buf,117999,5,C.byref(cfg));assert lib.build(buf,118000,5,None)
- for rounds in [0,21]:assert lib.build(buf,118000,rounds,C.byref(cfg))
-print('PASS independent CSV:600 unique nozzles,1/5/8/10/20 exact doses,one Domain and Section per column,one request/address,8-shot bursts,invalid dose rejection')
+ for rounds in [0,41]:assert lib.build(buf,118000,rounds,C.byref(cfg))
+print('PASS independent CSV:600 unique nozzles,1/5/8/10/20/39/40 exact doses,one Domain and paired Sections per column,two requests/address,8-shot bursts,invalid dose rejection')
