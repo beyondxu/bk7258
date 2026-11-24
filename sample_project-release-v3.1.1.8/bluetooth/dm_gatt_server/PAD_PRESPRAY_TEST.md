@@ -1,7 +1,11 @@
+> V50 uses the new HC32 prespray32-NOP profile (previously16).
+> Update HC32 first, then BK. Dose, pattern and waits below are unchanged.
+> See PRESPRAY_FIRE_PROFILE_TEST.md for the theoretical80ns increment.
+
 # Compact prespray V49
 
 BK branch: `codex/printer-startup-load-prep`. Requires the existing HC32
-prespray profile (`214560d` or a compatible newer version). No new HC32 change.
+prespray profile with32-NOP padding; HC32 revision214560d is the old16-NOP version.
 
 | Idle | Requests/nozzle before → now | Cache rows | Explicit OFF pauses before → now |
 | --- | ---: | ---: | ---: |
@@ -45,7 +49,7 @@ paired-section concurrency and8-shot bursts; RTC boundaries/rollback; job doses,
 integration; actual SDK ARM object compilation. Host checks do not measure
 pulse width, current, voltage, temperature or ink flow.
 
-On hardware, identify `APP_SERVICE_CMY_PAD_COMPACT_PRESPRAY_V49` and
+On hardware, identify `APP_SERVICE_CMY_PAD_STRONG_PRESPRAY_V50` and
 `PRESPRAY_BEGIN ... rounds=400 ... one_D_two_S_per_column row_rounds=40 ...
 between_rows_ms=20`. Cold boot should end with10 batches, each40 rounds.
 Compare the same head's ink recovery and BEGIN→DONE time after overnight idle.

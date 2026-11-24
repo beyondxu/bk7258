@@ -17,7 +17,7 @@ static int printer_run_prespray(const char *reason){
     int result=printer_prespray_build(row,PRINTER_NC_BYTES,first,&cfg);
     if(result)goto done; /* Reject bad mapping before any movement. */
     s_waste_station_ready=0U;
-    os_printf("[PRESPRAY_BEGIN] reason=%s idle_known=%u idle_s=%lu nozzles=600 rounds=%u total_requests=%lu prespray_only_pad_nops=16 nominal_extra_ns80 target_unmeasured no_TSR no_preheat peak_requests_per_column=48 domain_mode=D1_to_D6 one_D_two_S_per_column row_rounds=40 burst_max=8 repeat_us=673 between_rows_ms=20 paper_steps=0\r\n",
+    os_printf("[PRESPRAY_BEGIN] reason=%s idle_known=%u idle_s=%lu nozzles=600 rounds=%u total_requests=%lu prespray_only_pad_nops=32 nominal_extra_ns160 target_unmeasured no_TSR no_preheat peak_requests_per_column=48 domain_mode=D1_to_D6 one_D_two_S_per_column row_rounds=40 burst_max=8 repeat_us=673 between_rows_ms=20 paper_steps=0\r\n",
               reason,idle_known,(unsigned long)(idle_us/1000000U),rounds,(unsigned long)(rounds*600U));
     result=printer_waste_position();if(result)goto stop;
     unsigned batches=0U;
