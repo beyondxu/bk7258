@@ -9,7 +9,6 @@ static int printer_startup_prepare(unsigned for_page) {
 #if PRINTER_BUFFERED_LINE
         if (tph_line_probe()!=BK_OK) return -13;
 #endif
-#if !PRINTER_PRESPRAY
         result=printer_bidi_power_up();
         if (result) return result;
 #if PRINTER_BUFFERED_LINE && PRINTER_STARTUP_WIPE_STEPS > 0
@@ -18,7 +17,6 @@ static int printer_startup_prepare(unsigned for_page) {
         if(result==PRINTER_OC3_RETURNED&&s_bidi_known&&s_bidi_at_wiper)
             result=printer_buffered_wipe(PRINTER_STARTUP_WIPE_STEPS,PRINTER_STARTUP_WIPE_ROUNDS);
         if (result) return result;
-#endif
 #endif
 #if PRINTER_PRESPRAY
         result=printer_run_prespray("PAGE",3U,true);
