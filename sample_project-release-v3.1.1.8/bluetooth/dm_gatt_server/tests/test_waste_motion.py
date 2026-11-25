@@ -33,6 +33,8 @@ h=h.replace('if(cache.fired==1180)cache.state=PL_DONE;',
             'if(cache.fired==1180){cache.state=PL_DONE;audit_done_at=now_us+150000U;}')
 h=h.replace('return !sync_high&&(cache.state==PL_RUNNING',
             'if(sync_high&&cache.state==PL_DONE&&(mode==60||(mode==59&&now_us<audit_done_at)))return 0U;return !sync_high&&(cache.state==PL_RUNNING')
+h=h.replace('mode==48)&&oc3_level&&pos==(int32_t)PRINTER_OC3_REFERENCE_STEPS',
+            'mode==48||mode==63||mode==64)&&oc3_level&&pos==(int32_t)PRINTER_OC3_REFERENCE_STEPS-(mode==63?32:mode==64?65:0)')
 h+=r'''
 #include "printer_waste_motion.h"
 int main(int argc,char**argv){
@@ -41,7 +43,7 @@ int main(int argc,char**argv){
  uint8_t*row=malloc(PL_ROW_BYTES);for(unsigned i=0;i<PL_ROW_BYTES;i++)row[i]=(i%100U<52U&&i/100U%9U<8U)?1U:0U;
  if(mode==49){assert(printer_waste_fire(row)==-7&&!hc_fires&&!oc3_right_pulses);free(row);return 0;}
  if(mode==42)oc3_level=0;
- if(requested==61||requested==62){
+ if(requested>=61){
   mode=40;
   const int32_t seal=pos;
   for(unsigned visit=0;visit<3U;++visit){
@@ -50,12 +52,19 @@ int main(int argc,char**argv){
    assert(!printer_waste_park_for_preparation()&&pos==seal&&s_bidi_at_wiper);
   }
   assert(printer_buffered_full_return()==11221U&&printer_buffered_print_span()==10286U);
-  if(requested==61){
+  if(requested==64){
+   mode=64;
+   assert(printer_waste_print_range_round_trip()==PRINTER_OC3_NOT_FOUND);
+   assert(!s_bidi_known&&!hc_fires&&!total_paper&&!timer_enabled);
+   free(row);puts("PASS early GPIO24 outside window blocks preparation");return 0;
+  }
+  if(requested==61||requested==63){
+   mode=requested==63?63:40;
    const unsigned right_before=oc3_right_pulses;
    assert(!printer_waste_print_range_round_trip());
    assert(pos==seal+935&&!s_bidi_at_wiper&&!s_bidi_right&&oc3_level);
    assert(s_buf_steps==10286U);
-   assert(oc3_right_pulses-right_before==11221U); /* 935-step entry + print span */
+   assert(oc3_right_pulses-right_before==(mode==63?11189U:11221U)); /* 935-step entry + print span */
    assert(!hc_fires&&!total_paper&&!timer_enabled&&!s_buf_claimed);
    assert(!printer_buffered_park_at_wiper()&&pos==seal);
    free(row);
@@ -123,4 +132,4 @@ int main(int argc,char**argv){
 with tempfile.TemporaryDirectory() as tmp:
  t=Path(tmp);(t/'driver').mkdir();(t/'driver/timer.h').write_text('/* stub provided in test */\n');(t/'test.c').write_text(h)
  subprocess.run(['cc','-std=c99','-Wall','-Wextra','-Werror','-Wno-unused-function','-fsanitize=address,undefined','-I'+str(t),'-I'+str(D),'-I'+str(H),str(t/'test.c'),'-o',str(t/'test')],check=True)
- for mode in range(40,63):subprocess.run([str(t/'test'),str(mode)],check=True,env={**os.environ,'ASAN_OPTIONS':'detect_leaks=0'})
+ for mode in range(40,65):subprocess.run([str(t/'test'),str(mode)],check=True,env={**os.environ,'ASAN_OPTIONS':'detect_leaks=0'})

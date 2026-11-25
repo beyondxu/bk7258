@@ -34,11 +34,14 @@ static int printer_waste_seek_from(uint32_t search_steps,bool print_range){
                                 2U*(PRINTER_CANVAS_RAMP_STEPS+50U);
  const uint32_t min_seek=(search_steps==PRINTER_OC3_PREP_SEARCH_STEPS)?
                            min_print_steps+PRINTER_PRINT_SHORTER_STEPS:PRINTER_SERVICE_SPAN_STEPS;
- if(print_range&&s_buf_steps!=search_steps){
+ if(print_range&&!printer_buffered_print_endpoint_matches()){
   os_printf("[WASTE_PRINT_RANGE] endpoint_mismatch steps=%lu expected=%lu no_ink\r\n",
             (unsigned long)s_buf_steps,(unsigned long)search_steps);
   result=PRINTER_OC3_NOT_FOUND;goto failed;
  }
+ if(print_range&&s_buf_steps!=search_steps)
+  os_printf("[WASTE_PRINT_RANGE] reanchor=GPIO24 steps=%lu nominal=%lu\r\n",
+            (unsigned long)s_buf_steps,(unsigned long)search_steps);
  if(!print_range&&s_buf_steps<min_seek){
   os_printf("[WASTE_REFERENCE_REJECT] seek_steps=%lu below_minimum=%u no_ink\r\n",(unsigned long)s_buf_steps,(unsigned)min_seek);
   result=-7;goto failed;
