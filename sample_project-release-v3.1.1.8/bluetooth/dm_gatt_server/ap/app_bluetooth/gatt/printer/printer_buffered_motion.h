@@ -39,6 +39,26 @@ static volatile uint8_t s_buf_direction;
 static uint8_t s_buf_ink,s_buf_claimed,s_buf_wipe_profile;
 static volatile bool s_buf_past_oc3;
 static volatile uint32_t s_buf_sync_us;
+static volatile uint64_t s_buf_endpoint_us;
+static volatile uint8_t s_buf_endpoint_direction,s_buf_endpoint_seen;
+/* GPIO24 can interrupt a high pulse, and the RTC rounds to a tick. */
+#define PRINTER_TURN_HOLD_US 1000064U
+static void printer_buffered_record_endpoint(uint64_t now){
+ s_buf_endpoint_us=now;
+ s_buf_endpoint_direction=s_buf_direction;
+ s_buf_endpoint_seen=1U;
+}
+static int printer_buffered_set_direction(uint8_t direction){
+ if(s_buf_endpoint_seen&&s_buf_endpoint_direction!=direction){
+  unsigned polls=0U;
+  while(bk_aon_rtc_get_us()-s_buf_endpoint_us<PRINTER_TURN_HOLD_US){
+   if(++polls>2000U)return -14;
+   rtos_delay_milliseconds(1U);
+  }
+ }
+ if(direction)GPIO_UP(TPH_MOT_DIR);else GPIO_DOWN(TPH_MOT_DIR);
+ return 0;
+}
 static uint32_t printer_buffered_ramp_steps(void){return s_buf_ink?PRINTER_CANVAS_RAMP_STEPS:PL_RAMP_STEPS;}
 static uint32_t printer_buffered_period(uint32_t i){uint32_t ramp=printer_buffered_ramp_steps();uint32_t cruise=s_buf_wipe_profile?PRINTER_WIPE_STEP_US:PL_STEP_PERIOD_US;uint32_t edge=i<s_buf_target-1U-i?i:s_buf_target-1U-i;return edge<ramp?PL_START_PERIOD_US-(PL_START_PERIOD_US-cruise)*edge/ramp:cruise;}
 static void printer_buffered_stop(void){
@@ -50,6 +70,7 @@ static void printer_buffered_stop(void){
  * reversal and SPI power-OFF acknowledgement run later in task context. */
 static void printer_buffered_oc3_stop(void){
  if(!s_buf_active||!s_buf_direction||s_oc3_returning||s_buf_past_oc3)return;
+ printer_buffered_record_endpoint(bk_aon_rtc_get_us());
  s_oc3_hit=1U;s_buf_error=3U;s_buf_active=0U;
  (void)bk_timer_stop(PL_MOTOR_TIMER);
  bk_gpio_set_output_high(PIN_BK_SYNC_OUT);
@@ -71,7 +92,11 @@ static void printer_buffered_tick(timer_id_t id){
  GPIO_UP(TPH_MOT_STEP);delay_us(PRINTER_CANVAS_STEP_HIGH_US);GPIO_DOWN(TPH_MOT_STEP);
  ++s_buf_steps;++s_blank_spi_steps[s_buf_direction?1:0];
  if(!s_buf_active)return; /* OC3 may interrupt an already-started STEP high pulse */
- if(s_buf_steps==s_buf_target){s_buf_active=0U;(void)bk_timer_stop(id);return;}
+ if(s_buf_steps==s_buf_target){
+  if(s_buf_wipe_profile)s_buf_endpoint_seen=0U;
+  else printer_buffered_record_endpoint(bk_aon_rtc_get_us());
+  s_buf_active=0U;(void)bk_timer_stop(id);return;
+ }
  uint32_t next=printer_buffered_period(s_buf_steps);
  if(next!=s_buf_period){if(bk_timer_set_period_us(id,next)!=BK_OK){s_buf_error=2U;s_buf_active=0U;(void)bk_timer_stop(id);}else s_buf_period=next;}
 }
@@ -107,12 +132,12 @@ static int printer_execute_buffered_line(const uint8_t*columns,uint8_t direction
  s_blank_spi_columns=0;s_blank_spi_steps[0]=s_blank_spi_steps[1]=0;
  uint64_t prepare_start=bk_aon_rtc_get_us();
  if(printer_bidi_power_up()!=0){result=-8;goto stop;}
+ result=printer_buffered_set_direction(direction);if(result)goto stop;
  if(columns){
   if(tph_line_prepare(columns,PRINTER_CANVAS_COLUMN_US,&ticket)!=BK_OK){result=-13;goto stop;}
   armed=1;
  }
  uint32_t prepare_us=(uint32_t)(bk_aon_rtc_get_us()-prepare_start);
- if(direction)GPIO_UP(TPH_MOT_DIR);else GPIO_DOWN(TPH_MOT_DIR);
  delay_us(50U);
  s_buf_direction=direction;s_buf_ink=columns?1U:0U;s_oc3_hit=0U;s_buf_steps=0;s_buf_sync=0;s_buf_error=0;s_buf_max_gap=0;s_buf_cruise_max_gap=0;
  s_buf_target=printer_buffered_print_span();
@@ -179,7 +204,7 @@ static int printer_buffered_reposition(uint8_t direction,uint32_t steps){
  if(tph_mcu_set_head_power(0)!=BK_OK)return -8;
  if(printer_buffered_claim())return -14;
  if(printer_bidi_power_up()!=0)return -8;
- if(direction)GPIO_UP(TPH_MOT_DIR);else GPIO_DOWN(TPH_MOT_DIR);
+ if(printer_buffered_set_direction(direction))goto failed;
  delay_us(50U);
  s_buf_target=steps;s_buf_direction=direction;s_buf_ink=0;s_buf_sync=0;
  s_oc3_hit=0U;s_buf_steps=0;s_buf_error=0;s_buf_max_gap=0;s_buf_cruise_max_gap=0;
@@ -260,7 +285,7 @@ static int printer_buffered_wipe(uint32_t excursion,uint32_t rounds){
  s_bidi_known=false; /* do not expose the short-leg turnaround as an endpoint */
  for(uint32_t leg=0;leg<rounds*2U;++leg){
   uint32_t direction=(leg&1U)?0U:1U;
-  if(direction)GPIO_UP(TPH_MOT_DIR);else GPIO_DOWN(TPH_MOT_DIR);
+  if(printer_buffered_set_direction((uint8_t)direction))goto failed;
   delay_us(50U);
   s_buf_target=excursion;s_buf_direction=direction;s_buf_ink=0;s_buf_sync=0;
   s_oc3_hit=0U;s_buf_steps=0;s_buf_error=0;s_buf_max_gap=0;s_buf_cruise_max_gap=0;
@@ -298,7 +323,7 @@ static int printer_buffered_load_while_moving(uint32_t paper_steps,uint8_t paper
  if(printer_buffered_claim())return -14;
  if(printer_bidi_power_up()!=0)return -8;
  uint8_t carriage_direction=s_bidi_right?0U:1U;
- if(carriage_direction)GPIO_UP(TPH_MOT_DIR);else GPIO_DOWN(TPH_MOT_DIR);
+ if(printer_buffered_set_direction(carriage_direction))return -14;
  delay_us(50U);
  s_buf_target=carriage_direction?PRINTER_OC3_PREP_SEARCH_STEPS:PRINTER_OC3_PREP_RETURN_STEPS;s_buf_direction=carriage_direction;s_buf_ink=0U;s_buf_sync=0U;
  s_oc3_hit=0U;s_buf_steps=0;s_buf_error=0;s_buf_max_gap=0;s_buf_cruise_max_gap=0;

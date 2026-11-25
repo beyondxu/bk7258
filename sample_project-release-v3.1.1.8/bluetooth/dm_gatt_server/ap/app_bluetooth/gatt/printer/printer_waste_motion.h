@@ -20,7 +20,8 @@ static int printer_waste_seek_from(uint32_t search_steps,bool print_range,bool a
  if(tph_mcu_set_head_power(0)!=BK_OK)return -8;
  if(printer_buffered_claim())return -14;
  if(printer_bidi_power_up()!=0)return -8;
- GPIO_UP(TPH_MOT_DIR);delay_us(50U);
+ if(printer_buffered_set_direction(1U)){printer_bidirectional_abort();return -14;}
+ delay_us(50U);
  s_buf_target=search_steps;s_buf_direction=1U;s_buf_ink=0U;s_buf_sync=0U;
  s_oc3_hit=0U;s_buf_steps=0U;s_buf_error=0U;s_buf_max_gap=0U;s_buf_cruise_max_gap=0U;
  s_buf_period=printer_buffered_period(0U);s_buf_last_irq=(uint32_t)bk_aon_rtc_get_us();

@@ -49,8 +49,19 @@ typedef struct {uint32_t token,period_us,crc;}tph_line_ticket_t;
 static void advance(unsigned us);
 static uint64_t bk_aon_rtc_get_us(void){return now_us/32U*32U;}
 static void delay_us(unsigned n){assert(n==PRINTER_CANVAS_STEP_HIGH_US||n==50);now_us+=n;}
+static uint64_t last_step_fall;
+static bool last_step_was_wipe;
+static bool test_wipe_profile(void);
+static void check_turn_hold(void){
+ if(!last_step_fall)return;
+ if(last_step_was_wipe){
+  if(oc3_level)assert(now_us-last_step_fall<1000000U);
+ }else{
+  assert(now_us-last_step_fall>=1000000U);
+ }
+}
 static void up(unsigned p){
- if(p==50){assert(!timer_enabled&&!step);dir=1;have_step_rise=0;return;}
+ if(p==50){assert(!timer_enabled&&!step);if(!dir)check_turn_hold();dir=1;have_step_rise=0;return;}
  assert(p==19&&boost&&!step);
  if(have_step_rise&&prior_step_period==82U&&timer_period==82U){assert(now_us-step_rise_us==82U);++fast_edges;}
  if(have_step_rise&&prior_step_period==164U&&timer_period==164U){assert(now_us-step_rise_us==164U);++slow_wipe_edges;}
@@ -69,7 +80,7 @@ static void up(unsigned p){
   if(++oc3_left_edges>=8&&mode!=18&&mode!=24)oc3_level=1;
  }
 }
-static void down(unsigned p){if(p==50){assert(!timer_enabled&&!step);dir=0;have_step_rise=0;return;}assert(p==19&&step);assert(now_us-step_rise_us==27U);step=0;}
+static void down(unsigned p){if(p==50){assert(!timer_enabled&&!step);if(dir)check_turn_hold();dir=0;have_step_rise=0;return;}assert(p==19&&step);assert(now_us-step_rise_us==27U);step=0;last_step_fall=now_us;last_step_was_wipe=test_wipe_profile();}
 #define GPIO_UP(p) up(p)
 #define GPIO_DOWN(p) down(p)
 static void bk_gpio_set_output_low(unsigned pin){
@@ -100,6 +111,7 @@ static int printer_bidi_power_up(void){boost=1;s_bidi_power=true;return 0;}
 static void printer_bidirectional_abort(void);
 static int motor_page_load_keep_power_guarded(uint32_t,uint8_t,uint32_t*,int(*)(void));
 #include "printer_buffered_motion.h"
+static bool test_wipe_profile(void){return s_buf_wipe_profile!=0;}
 static void printer_bidirectional_abort(void){printer_buffered_stop();boost=0;s_bidi_power=false;s_bidi_known=false;}
 #ifndef TEST_LOAD_STEPS
 #define TEST_LOAD_STEPS 702U
