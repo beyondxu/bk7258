@@ -34,7 +34,9 @@ h=h.replace('if(cache.fired==1180)cache.state=PL_DONE;',
 h=h.replace('return !sync_high&&(cache.state==PL_RUNNING',
             'if(sync_high&&cache.state==PL_DONE&&(mode==60||(mode==59&&now_us<audit_done_at)))return 0U;return !sync_high&&(cache.state==PL_RUNNING')
 h=h.replace('mode==48)&&oc3_level&&pos==(int32_t)PRINTER_OC3_REFERENCE_STEPS',
-            'mode==48||mode==63||mode==64)&&oc3_level&&pos==(int32_t)PRINTER_OC3_REFERENCE_STEPS-(mode==63?32:mode==64?65:0)')
+            'mode==48||mode==63||mode==64||mode==65)&&oc3_level&&pos==(int32_t)PRINTER_OC3_REFERENCE_STEPS-(mode==63?32:mode==64?65:0)')
+h=h.replace('if(pos>max_pos)max_pos=pos;',
+            'if(pos>max_pos)max_pos=pos;\n if(mode==65&&pos==(int32_t)PRINTER_OC3_REFERENCE_STEPS+40)oc3_level=1;')
 h+=r'''
 #include "printer_waste_motion.h"
 int main(int argc,char**argv){
@@ -43,15 +45,25 @@ int main(int argc,char**argv){
  uint8_t*row=malloc(PL_ROW_BYTES);for(unsigned i=0;i<PL_ROW_BYTES;i++)row[i]=(i%100U<52U&&i/100U%9U<8U)?1U:0U;
  if(mode==49){assert(printer_waste_fire(row)==-7&&!hc_fires&&!oc3_right_pulses);free(row);return 0;}
  if(mode==42)oc3_level=0;
+ if(requested==65){
+  mode=65;
+  assert(printer_waste_seek(PRINTER_OC3_PREP_SEARCH_STEPS)!=0);
+  assert(pos==PRINTER_OC3_REFERENCE_STEPS+40&&!s_waste_station_ready&&!s_buf_past_oc3);
+  assert(!hc_fires&&!timer_enabled&&!s_bidi_known);
+  free(row);puts("PASS GPIO24 release cuts the post-edge move before flashing");return 0;
+ }
  if(requested>=61){
   mode=40;
-  const int32_t seal=pos;
+  pos=PRINTER_OC3_REFERENCE_STEPS-PRINTER_OLD_SEAL_TO_OC3_STEPS;
+  const int32_t seal=PRINTER_OC3_REFERENCE_STEPS-PRINTER_NEW_SEAL_TO_OC3_STEPS;
   for(unsigned visit=0;visit<2U;++visit){
-   assert(!printer_waste_seek(PRINTER_OC3_PREP_SEARCH_STEPS));
-   assert(s_buf_steps==11221U&&pos==PRINTER_OC3_REFERENCE_STEPS);
+   const unsigned before=oc3_right_pulses;
+   assert(!printer_waste_seek(PRINTER_OC3_PREP_SEARCH_STEPS)&&s_waste_pad_advanced);
+   assert(s_buf_steps==187U&&pos==PRINTER_OC3_REFERENCE_STEPS+187);
+   assert(oc3_right_pulses-before==(visit?11441U:11254U));
    assert(!printer_waste_park_for_preparation()&&pos==seal&&s_bidi_at_wiper);
   }
-  assert(printer_buffered_full_return()==11221U&&printer_buffered_print_span()==10099U);
+  assert(printer_buffered_full_return()==11254U&&printer_buffered_print_span()==10132U);
   if(requested==64){
    mode=64;
    assert(printer_waste_seek_from_print_left()==PRINTER_OC3_NOT_FOUND);
@@ -65,8 +77,8 @@ int main(int argc,char**argv){
    s_waste_station_ready=0U;
    assert(!printer_waste_return_to_print_left());
    assert(pos==seal+935&&!s_bidi_at_wiper&&!s_bidi_right&&oc3_level);
-   assert(s_buf_steps==10099U);
-   assert(oc3_right_pulses-right_before==(mode==63?11189U:11221U)); /* 935-step entry + print span */
+   assert(s_buf_steps==10132U);
+   assert(oc3_right_pulses-right_before==(mode==63?11409U:11441U)); /* Seal to the extended pad, with a 32-step early edge in mode 63. */
    assert(!hc_fires&&!total_paper&&!timer_enabled&&!s_buf_claimed);
    assert(!printer_buffered_park_at_wiper()&&pos==seal);
    free(row);
@@ -135,4 +147,4 @@ int main(int argc,char**argv){
 with tempfile.TemporaryDirectory() as tmp:
  t=Path(tmp);(t/'driver').mkdir();(t/'driver/timer.h').write_text('/* stub provided in test */\n');(t/'test.c').write_text(h)
  subprocess.run(['cc','-std=c99','-Wall','-Wextra','-Werror','-Wno-unused-function','-fsanitize=address,undefined','-I'+str(t),'-I'+str(D),'-I'+str(H),str(t/'test.c'),'-o',str(t/'test')],check=True)
- for mode in range(40,65):subprocess.run([str(t/'test'),str(mode)],check=True,env={**os.environ,'ASAN_OPTIONS':'detect_leaks=0'})
+ for mode in range(40,66):subprocess.run([str(t/'test'),str(mode)],check=True,env={**os.environ,'ASAN_OPTIONS':'detect_leaks=0'})

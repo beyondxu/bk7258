@@ -12,7 +12,9 @@ static bool printer_buffered_print_endpoint_matches(void){
       s_buf_target-s_buf_steps<=PRINTER_OC3_PRINT_EARLY_STEPS;
 }
 static uint8_t s_waste_station_ready;
-static int printer_waste_seek_from(uint32_t search_steps,bool print_range){
+static bool s_waste_pad_advanced;
+static int printer_waste_seek_from(uint32_t search_steps,bool print_range,bool advance){
+ s_waste_pad_advanced=false;
  s_waste_station_ready=0U;
  if(!s_bidi_known||s_bidi_at_wiper==print_range||s_bidi_right||s_buf_active)return -7;
  if(print_range&&(!s_bidi_full_stroke||s_bidi_left_offset!=0))return -7;
@@ -60,15 +62,24 @@ static int printer_waste_seek_from(uint32_t search_steps,bool print_range){
  /* Timer is stopped but U4 remains enabled to hold its microstep position. */
  rtos_delay_milliseconds(20U);
  if(!motor_oc3_active()){result=PRINTER_OC3_NOT_FOUND;goto failed;}
+ if(advance){
+  result=printer_buffered_advance_past_oc3();
+  if(result)goto failed;
+  s_bidi_right_offset+=PRINTER_PAD_ADVANCE_STEPS;
+  rtos_delay_milliseconds(20U);
+  if(!motor_oc3_active()){result=PRINTER_OC3_NOT_FOUND;goto failed;}
+  s_waste_pad_advanced=true;
+ }
  s_waste_station_ready=1U;
- os_printf("[WASTE_POSITION] endpoint=OC3_RIGHT retract_steps=0 settle_ms=20 gpio24_LOW motor_hold head_OFF pad_alignment_hardware_check\r\n");
+ os_printf("[WASTE_POSITION] endpoint=%s advance_steps=%u settle_ms=20 gpio24_LOW motor_hold head_OFF\r\n",
+           advance?"PAD_EXTENDED":"OC3_RIGHT",advance?PRINTER_PAD_ADVANCE_STEPS:0U);
  return 0;
 failed:
  printer_buffered_stop();s_waste_station_ready=0U;
  printer_bidirectional_abort();return result;
 }
 static int printer_waste_seek(uint32_t search_steps){
- return printer_waste_seek_from(search_steps,false);
+ return printer_waste_seek_from(search_steps,false,search_steps==PRINTER_OC3_PREP_SEARCH_STEPS);
 }
 
 static int printer_waste_position(void){
@@ -76,13 +87,15 @@ static int printer_waste_position(void){
 }
 
 static int printer_waste_park_for_preparation(void){
- /* The seek started from the counted seal position. Return the same number
-  * of steps; the search limit is not a calibrated mechanical stroke. */
- s_bidi_full_stroke=s_buf_steps;
+ /* Return to a fixed distance from GPIO24 on every boot, including when
+  * the carriage already started from the extended seal position. */
+ if(!s_waste_pad_advanced)return -7;
+ s_bidi_full_stroke=PRINTER_NEW_SEAL_TO_OC3_STEPS;
  os_printf("[CARRIAGE_STROKE] full_steps=%lu print_steps=%lu seal_inset=%u pad_inset=%u\r\n",
-           (unsigned long)s_bidi_full_stroke,(unsigned long)printer_buffered_print_span(),
-           PRINTER_PRINT_SHORTER_STEPS,(unsigned)printer_buffered_optical_inset());
- int result=printer_buffered_oc3_return(s_bidi_full_stroke);
+           (unsigned long)PRINTER_NEW_FULL_STROKE_STEPS,(unsigned long)printer_buffered_print_span(),
+           PRINTER_PRINT_SHORTER_STEPS,(unsigned)printer_buffered_optical_inset()+PRINTER_PAD_ADVANCE_STEPS);
+ int result=printer_buffered_return_from_reference(PRINTER_NEW_FULL_STROKE_STEPS,
+             printer_buffered_optical_inset()+PRINTER_PAD_ADVANCE_STEPS);
  if(result!=PRINTER_OC3_RETURNED)return result;
  printer_buffered_stop();
  carriage_verified_power_down();
@@ -95,12 +108,13 @@ static int printer_waste_seek_from_print_left(void){
  if(!s_bidi_full_stroke||!s_bidi_known||!s_bidi_at_wiper||s_bidi_right)return -7;
  int result=printer_buffered_leave_wiper();
  if(result)return result;
- return printer_waste_seek_from(printer_buffered_print_span()+printer_buffered_optical_inset(),true);
+ return printer_waste_seek_from(printer_buffered_print_span()+printer_buffered_optical_inset(),true,true);
 }
 
 static int printer_waste_return_to_print_left(void){
  const uint32_t steps=printer_buffered_print_span();
- const uint32_t retreat=printer_buffered_optical_inset();
+ if(!s_waste_pad_advanced)return -7;
+ const uint32_t retreat=printer_buffered_optical_inset()+PRINTER_PAD_ADVANCE_STEPS;
  int result=printer_buffered_reposition(0U,retreat);
  if(result)return result;
  if(motor_oc3_active()){printer_bidirectional_abort();return PRINTER_OC3_STUCK;}
@@ -117,7 +131,7 @@ static int printer_waste_return_to_print_left(void){
 /* Execute an ordinary cached row without U4 motion. HC supplies the finite
  * column count/deadline checks. Never do SPI while its SYNC is held LOW. */
 static int printer_waste_fire_profile(const uint8_t *row,unsigned prespray){
- if(!row||!s_waste_station_ready||!s_bidi_known||!s_bidi_right||s_bidi_at_wiper||s_bidi_right_offset!=(int32_t)printer_buffered_optical_inset()||s_buf_active||s_buf_claimed||!motor_oc3_active())return -7;
+ if(!row||!s_waste_station_ready||!s_bidi_known||!s_bidi_right||s_bidi_at_wiper||s_bidi_right_offset!=(int32_t)(printer_buffered_optical_inset()+(s_waste_pad_advanced?PRINTER_PAD_ADVANCE_STEPS:0U))||s_buf_active||s_buf_claimed||!motor_oc3_active())return -7;
  tph_line_ticket_t ticket={0};int result=-13;
  const char *stage="prepare";
  const uint32_t period_us=prespray?PL_PRESPRAY_PERIOD_US:PRINTER_CANVAS_COLUMN_US;

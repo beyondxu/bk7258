@@ -37,6 +37,7 @@ static int printer_buffered_park_at_wiper(void);
 static volatile uint32_t s_buf_active,s_buf_steps,s_buf_sync,s_buf_error,s_buf_last_irq,s_buf_max_gap,s_buf_cruise_max_gap,s_buf_period,s_buf_target,s_buf_lead;
 static volatile uint8_t s_buf_direction;
 static uint8_t s_buf_ink,s_buf_claimed,s_buf_wipe_profile;
+static volatile bool s_buf_past_oc3;
 static volatile uint32_t s_buf_sync_us;
 static uint32_t printer_buffered_ramp_steps(void){return s_buf_ink?PRINTER_CANVAS_RAMP_STEPS:PL_RAMP_STEPS;}
 static uint32_t printer_buffered_period(uint32_t i){uint32_t ramp=printer_buffered_ramp_steps();uint32_t cruise=s_buf_wipe_profile?PRINTER_WIPE_STEP_US:PL_STEP_PERIOD_US;uint32_t edge=i<s_buf_target-1U-i?i:s_buf_target-1U-i;return edge<ramp?PL_START_PERIOD_US-(PL_START_PERIOD_US-cruise)*edge/ramp:cruise;}
@@ -48,14 +49,17 @@ static void printer_buffered_stop(void){
 /* GPIO ISR: stop future STEP edges and tell HC32 to stop firing. Direction
  * reversal and SPI power-OFF acknowledgement run later in task context. */
 static void printer_buffered_oc3_stop(void){
- if(!s_buf_active||!s_buf_direction||s_oc3_returning)return;
+ if(!s_buf_active||!s_buf_direction||s_oc3_returning||s_buf_past_oc3)return;
  s_oc3_hit=1U;s_buf_error=3U;s_buf_active=0U;
  (void)bk_timer_stop(PL_MOTOR_TIMER);
  bk_gpio_set_output_high(PIN_BK_SYNC_OUT);
 }
 static void printer_buffered_tick(timer_id_t id){
  if(id!=PL_MOTOR_TIMER||!s_buf_active)return;
- if(s_buf_direction&&motor_oc3_active()){printer_buffered_oc3_stop();return;}
+ if(s_buf_past_oc3&&!motor_oc3_active()){
+  s_buf_error=4U;s_buf_active=0U;(void)bk_timer_stop(id);return;
+ }
+ if(!s_buf_past_oc3&&s_buf_direction&&motor_oc3_active()){printer_buffered_oc3_stop();return;}
  uint32_t now=(uint32_t)bk_aon_rtc_get_us();
  uint32_t gap=now-s_buf_last_irq;
  if(s_buf_steps&&gap>s_buf_period*2U+96U){s_buf_error=1U;s_buf_active=0U;(void)bk_timer_stop(id);return;}
@@ -168,6 +172,9 @@ static int printer_buffered_reposition(uint8_t direction,uint32_t steps){
  if((direction&&s_oc3_reposition_return==PRINTER_OC3_BOOT_RETURN_STEPS)||
     (!direction&&s_oc3_returning))
   limit=PRINTER_OC3_PREP_SEARCH_STEPS;
+ if(!direction&&s_oc3_returning&&steps==PRINTER_NEW_FULL_STROKE_STEPS&&
+    s_bidi_full_stroke==PRINTER_NEW_SEAL_TO_OC3_STEPS)
+  limit=PRINTER_NEW_FULL_STROKE_STEPS;
  if(!s_bidi_known||s_buf_active||direction>1U||!steps||steps>limit)return -7;
  if(tph_mcu_set_head_power(0)!=BK_OK)return -8;
  if(printer_buffered_claim())return -14;
@@ -185,12 +192,23 @@ static int printer_buffered_reposition(uint8_t direction,uint32_t steps){
   rtos_delay_milliseconds(1U);
  }
  (void)bk_timer_stop(PL_MOTOR_TIMER);
- if(direction&&motor_oc3_active()){s_oc3_hit=1U;goto failed;}
+ if(direction&&!s_buf_past_oc3&&motor_oc3_active()){s_oc3_hit=1U;goto failed;}
  if(s_buf_error||s_buf_steps!=steps)goto failed;
  s_bidi_known=true;return 0;
 failed:
  if(s_oc3_hit&&!s_oc3_returning)return printer_buffered_oc3_return(s_oc3_reposition_return);
  printer_buffered_stop();printer_bidirectional_abort();return -14;
+}
+/* Only callable from task context after an optical seek. No ink or SYNC. */
+static inline int printer_buffered_advance_past_oc3(void){
+ if(!motor_oc3_active()||s_buf_active||s_buf_claimed||!s_bidi_known||!s_bidi_right)
+  return -7;
+ s_buf_past_oc3=true;
+ int result=printer_buffered_reposition(1U,PRINTER_PAD_ADVANCE_STEPS);
+ s_buf_past_oc3=false;
+ printer_buffered_stop();
+ if(!result&&!motor_oc3_active())return PRINTER_OC3_NOT_FOUND;
+ return result;
 }
 static int printer_buffered_leave_wiper(void){
  if(!s_bidi_known)return -7;
@@ -255,7 +273,7 @@ static int printer_buffered_wipe(uint32_t excursion,uint32_t rounds){
    rtos_delay_milliseconds(1U);
   }
   (void)bk_timer_stop(PL_MOTOR_TIMER);
-  if(direction&&motor_oc3_active()){s_oc3_hit=1U;goto failed;}
+  if(direction&&!s_buf_past_oc3&&motor_oc3_active()){s_oc3_hit=1U;goto failed;}
   if(s_buf_error||s_buf_steps!=excursion)goto failed;
   os_printf("[WIPER_LEG] direction=%s pulses=%lu cruise_step_us=%u head_OFF contact_unverified\r\n",direction?"AWAY_FROM_LEFT":"BACK_TO_LEFT",(unsigned long)s_buf_steps,PRINTER_WIPE_STEP_US);
  }
@@ -316,16 +334,16 @@ failed:
 #endif
 /* GPIO24 LOW is a physical RIGHT reference. A fixed, head-OFF LEFT stroke
  * returns to the wiper even when the outward count was interrupted. */
-static int printer_buffered_oc3_return(uint32_t return_steps){
+static int printer_buffered_return_from_reference(uint32_t return_steps,uint32_t inset){
  uint32_t stopped=s_buf_steps;
  printer_buffered_stop();
  if(tph_mcu_set_head_power(0)!=BK_OK){printer_bidirectional_abort();return -8;}
  s_oc3_returning=1U;s_oc3_hit=0U;
- s_bidi_known=true;s_bidi_right=true;s_bidi_right_offset=(int32_t)printer_buffered_optical_inset();s_bidi_at_wiper=false;
+ s_bidi_known=true;s_bidi_right=true;s_bidi_right_offset=(int32_t)inset;s_bidi_at_wiper=false;
  os_printf("[OC3_RETURN_BEGIN] stopped_steps=%lu gpio=24 LOW reverse=LEFT fixed_steps=%u head_OFF\r\n",(unsigned long)stopped,return_steps);
  int result=printer_buffered_reposition(0U,return_steps);
  if(!result){
-  s_bidi_left_offset=(int32_t)(printer_buffered_print_span()+printer_buffered_optical_inset())-(int32_t)return_steps;
+  s_bidi_left_offset=(int32_t)(printer_buffered_print_span()+inset)-(int32_t)return_steps;
   s_bidi_right=false;s_bidi_right_offset=0;s_bidi_at_wiper=true;
  }
  s_oc3_returning=0U;
@@ -333,5 +351,8 @@ static int printer_buffered_oc3_return(uint32_t return_steps){
  if(result){printer_bidirectional_abort();return result;}
  os_printf("[OC3_RETURN_DONE] endpoint=SEAL steps=%u gpio24_released=1\r\n",return_steps);
  return PRINTER_OC3_RETURNED;
+}
+static int printer_buffered_oc3_return(uint32_t return_steps){
+ return printer_buffered_return_from_reference(return_steps,printer_buffered_optical_inset());
 }
 #endif
