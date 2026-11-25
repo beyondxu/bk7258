@@ -3,8 +3,7 @@
 /* Counted LEFT origin is still required. No sensor homing is implied. */
 static int printer_startup_prepare(unsigned for_page) {
     if (!s_bidi_known || s_bidi_right) return -7;
-    os_printf("[PAGE_PREP_BEGIN] load_steps=%lu head_OFF no_image_pixels unchanged_stroke\r\n",
-              (unsigned long)PRINTER_STARTUP_LOAD_STEPS);
+    os_printf("[PAGE_PREP_BEGIN] head_OFF no_image_pixels\r\n");
     int result=0;
     if (for_page) {
 #if PRINTER_BUFFERED_LINE
@@ -19,7 +18,19 @@ static int printer_startup_prepare(unsigned for_page) {
             result=printer_buffered_wipe(PRINTER_STARTUP_WIPE_STEPS,PRINTER_STARTUP_WIPE_ROUNDS);
         if (result) return result;
 #endif
-#if PRINTER_STARTUP_LOAD_STEPS > 0
+#if PRINTER_PRESPRAY
+        result=printer_run_prespray("PAGE",3U);
+        if(result)return result;
+        result=printer_bidi_power_up();
+        if(result)return result;
+        /* 11700 feed steps / 30 mm = 3900 steps for the provisional 10 mm. */
+        const uint32_t load_steps=3900U;
+        uint32_t sent=0;
+        result=motor_page_load_keep_power(load_steps,PRINTER_PAGE_FEED_DIRECTION,&sent);
+        os_printf("[PAGE_PREP_LOAD] pulses=%lu/%lu code=%d head_OFF after_three_visits\r\n",
+                  (unsigned long)sent,(unsigned long)load_steps,result);
+        if(result!=BK_OK||sent!=load_steps)return -10;
+#elif PRINTER_STARTUP_LOAD_STEPS > 0
         const uint32_t legs=PRINTER_STARTUP_LOAD_ROUNDS*2U;
         os_printf("[PAGE_LOAD_PLAN] round_trips=%u legs=%lu paper_steps_per_leg=%u total_paper_steps=%lu head_OFF\r\n",
                   PRINTER_STARTUP_LOAD_ROUNDS,(unsigned long)legs,PRINTER_STARTUP_LOAD_STEPS,

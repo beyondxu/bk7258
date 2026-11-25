@@ -111,6 +111,7 @@ static int motor_page_feed_fast_keep_power(uint32_t,uint8_t,uint32_t*);
 static int simulated_startup_prepare(unsigned for_page){
  assert(for_page);
 #if PRINTER_PRESPRAY
+ int rc=printer_run_prespray("PAGE");if(rc)return rc;
  assert(prespray_pending==1);prespray_pending=0;
 #endif
  return mode==7?printer_execute_bidirectional_line(NULL,1U):0;

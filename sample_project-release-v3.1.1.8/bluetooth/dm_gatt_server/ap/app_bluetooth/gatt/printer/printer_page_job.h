@@ -185,10 +185,6 @@ static int printer_run_full_page(const uint8_t *bin, uint32_t length) {
 #if PRINTER_STARTUP_PREP
     if (PRINTER_PAGE_ONLY_SWATH < 0) {
         failure_locked = true;
-#if PRINTER_PRESPRAY
-        result = printer_run_prespray("PAGE");
-        if (result) goto done;
-#endif
         result = printer_startup_prepare(1U);
         if (result) goto done;
         scan_direction=s_bidi_right?0U:1U;

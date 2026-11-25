@@ -101,3 +101,50 @@ with tempfile.TemporaryDirectory() as tmp:
  p=Path(tmp);(p/'test.c').write_text(h)
  subprocess.run(['cc','-std=c99','-Wall','-Wextra','-Werror','-I'+str(D),str(p/'test.c'),'-o',str(p/'test')],check=True)
  for mode in range(16):subprocess.run([str(p/'test'),str(mode)],check=True)
+
+# Active prespray configuration. Stub the three-visit job here; the real
+# per-visit seek, dose and return are covered in the waste/prespray tests.
+page = r'''
+#include <assert.h>
+#include <stdbool.h>
+#include <stdint.h>
+#include <stdio.h>
+#define PRINTER_BUFFERED_LINE 1
+#define PRINTER_PRESPRAY 1
+#define PRINTER_STARTUP_WIPE_STEPS 3740U
+#define PRINTER_STARTUP_WIPE_ROUNDS 2U
+#define PRINTER_PAGE_FEED_DIRECTION 0U
+#define PRINTER_OC3_RETURNED (-15)
+#define BK_OK 0
+#define os_printf printf
+static bool s_bidi_known=true,s_bidi_right=false,s_bidi_at_wiper=true;
+static unsigned stage,fault;
+static int tph_line_probe(void){assert(stage++==0U);return 0;}
+static int printer_bidi_power_up(void){assert(stage==1U||stage==4U);++stage;return 0;}
+static int printer_buffered_wipe(unsigned steps,unsigned rounds){
+ assert(stage++==2U&&steps==3740U&&rounds==2U);return 0;
+}
+static int printer_run_prespray(const char *reason,unsigned visits){
+ assert(stage++==3U&&reason[0]=='P'&&visits==3U);return fault==1U?-13:0;
+}
+static int motor_page_load_keep_power(uint32_t steps,uint8_t dir,uint32_t *sent){
+ assert(stage++==5U&&steps==3900U&&!dir&&s_bidi_at_wiper&&!s_bidi_right);
+ *sent=steps-(fault==2U);return 0;
+}
+static int printer_buffered_leave_wiper(void){assert(stage++==6U);return 0;}
+static int printer_buffered_boot_round_trip(void){assert(0);return -1;}
+#include "printer_startup_prepare.h"
+int main(void){
+ for(fault=0U;fault<3U;++fault){
+  stage=0U;
+  int result=printer_startup_prepare(1U);
+  assert(stage==(fault==1U?4U:fault==2U?6U:7U));
+  assert(result==(fault==1U?-13:fault==2U?-10:0));
+ }
+ puts("PASS two small wipes, three pad visits, single 3900-step feed, then print anchor");
+}
+'''
+with tempfile.TemporaryDirectory() as tmp:
+ p=Path(tmp);(p/'page.c').write_text(page)
+ subprocess.run(['cc','-std=c99','-Wall','-Wextra','-Werror','-I'+str(D),str(p/'page.c'),'-o',str(p/'page')],check=True)
+ subprocess.run([str(p/'page')],check=True)

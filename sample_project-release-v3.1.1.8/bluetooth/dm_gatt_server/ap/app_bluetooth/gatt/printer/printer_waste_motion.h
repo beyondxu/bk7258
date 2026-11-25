@@ -28,14 +28,19 @@ static int printer_waste_seek(uint32_t search_steps){
  printer_buffered_stop();
  if(s_buf_error&&s_buf_error!=3U)goto failed;
  if(!(s_oc3_hit||motor_oc3_active())){result=PRINTER_OC3_NOT_FOUND;goto failed;}
- if(s_buf_steps<PRINTER_SERVICE_SPAN_STEPS){
-  os_printf("[WASTE_REFERENCE_REJECT] seek_steps=%lu below_minimum=%u no_ink\r\n",(unsigned long)s_buf_steps,PRINTER_SERVICE_SPAN_STEPS);
+ const uint32_t min_print_steps=((PRINTER_CANVAS_COLUMNS-1U)*PRINTER_CANVAS_COLUMN_US+
+                                PRINTER_CANVAS_STEP_US-1U)/PRINTER_CANVAS_STEP_US+
+                                2U*(PRINTER_CANVAS_RAMP_STEPS+50U);
+ const uint32_t min_seek=(search_steps==PRINTER_OC3_PREP_SEARCH_STEPS)?
+                           min_print_steps+PRINTER_PRINT_SHORTER_STEPS:PRINTER_SERVICE_SPAN_STEPS;
+ if(s_buf_steps<min_seek){
+  os_printf("[WASTE_REFERENCE_REJECT] seek_steps=%lu below_minimum=%u no_ink\r\n",(unsigned long)s_buf_steps,(unsigned)min_seek);
   result=-7;goto failed;
  }
  os_printf("[WASTE_REFERENCE] OC3_LOW seek_steps=%lu head_OFF\r\n",(unsigned long)s_buf_steps);
  s_oc3_hit=0U;s_buf_error=0U;
  s_bidi_known=true;s_bidi_right=true;s_bidi_at_wiper=false;
- s_bidi_right_offset=PRINTER_PRINT_ENDPOINT_INSET_STEPS;
+ s_bidi_right_offset=(int32_t)printer_buffered_optical_inset();
  /* Timer is stopped but U4 remains enabled to hold its microstep position. */
  rtos_delay_milliseconds(20U);
  if(!motor_oc3_active()){result=PRINTER_OC3_NOT_FOUND;goto failed;}
@@ -51,7 +56,13 @@ static int printer_waste_position(void){
 }
 
 static int printer_waste_park_for_preparation(void){
- int result=printer_buffered_oc3_return(PRINTER_OC3_PREP_RETURN_STEPS);
+ /* The seek started from the counted seal position. Return the same number
+  * of steps; the search limit is not a calibrated mechanical stroke. */
+ s_bidi_full_stroke=s_buf_steps;
+ os_printf("[CARRIAGE_STROKE] full_steps=%lu print_steps=%lu seal_inset=%u pad_inset=%u\r\n",
+           (unsigned long)s_bidi_full_stroke,(unsigned long)printer_buffered_print_span(),
+           PRINTER_PRINT_SHORTER_STEPS/2U,(unsigned)printer_buffered_optical_inset());
+ int result=printer_buffered_oc3_return(s_bidi_full_stroke);
  if(result!=PRINTER_OC3_RETURNED)return result;
  printer_buffered_stop();
  carriage_verified_power_down();
@@ -62,7 +73,7 @@ static int printer_waste_park_for_preparation(void){
 /* Execute an ordinary cached row without U4 motion. HC supplies the finite
  * column count/deadline checks. Never do SPI while its SYNC is held LOW. */
 static int printer_waste_fire_profile(const uint8_t *row,unsigned prespray){
- if(!row||!s_waste_station_ready||!s_bidi_known||!s_bidi_right||s_bidi_at_wiper||s_bidi_right_offset!=(int32_t)PRINTER_PRINT_ENDPOINT_INSET_STEPS||s_buf_active||s_buf_claimed||!motor_oc3_active())return -7;
+ if(!row||!s_waste_station_ready||!s_bidi_known||!s_bidi_right||s_bidi_at_wiper||s_bidi_right_offset!=(int32_t)printer_buffered_optical_inset()||s_buf_active||s_buf_claimed||!motor_oc3_active())return -7;
  tph_line_ticket_t ticket={0};int result=-13;
  const char *stage="prepare";
  const uint32_t period_us=prespray?PL_PRESPRAY_PERIOD_US:PRINTER_CANVAS_COLUMN_US;
