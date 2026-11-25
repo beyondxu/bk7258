@@ -143,7 +143,11 @@ stop:
 /* Head-OFF positioning between maintenance and print anchors. Never changes
  * the image stroke or its first-column timing. No SPI while the timer runs. */
 static int printer_buffered_reposition(uint8_t direction,uint32_t steps){
- if(!s_bidi_known||s_buf_active||direction>1U||!steps||steps>PRINTER_OC3_TRAVEL_LIMIT_STEPS)return -7;
+ uint32_t limit=PRINTER_OC3_TRAVEL_LIMIT_STEPS;
+ if((direction&&s_oc3_reposition_return==PRINTER_OC3_BOOT_RETURN_STEPS)||
+    (!direction&&s_oc3_returning&&steps==PRINTER_OC3_PREP_RETURN_STEPS))
+  limit=PRINTER_OC3_PREP_SEARCH_STEPS;
+ if(!s_bidi_known||s_buf_active||direction>1U||!steps||steps>limit)return -7;
  if(tph_mcu_set_head_power(0)!=BK_OK)return -8;
  if(printer_buffered_claim())return -14;
  if(printer_bidi_power_up()!=0)return -8;
@@ -200,6 +204,7 @@ static int printer_buffered_boot_round_trip(void){
  if(!s_bidi_known||!s_bidi_at_wiper||s_bidi_right)return -7;
  s_oc3_reposition_return=PRINTER_OC3_BOOT_RETURN_STEPS;
  int result=printer_buffered_reposition(1U,PRINTER_OC3_BOOT_SEARCH_STEPS);
+ s_oc3_reposition_return=PRINTER_OC3_FINAL_RETURN_STEPS;
  if(result==PRINTER_OC3_RETURNED&&s_bidi_known&&s_bidi_at_wiper)return 0;
  if(result)return result;
  os_printf("[OC3_NOT_FOUND] stage=BOOT search_cap=%u gpio24=%u stopped_no_blind_return\r\n",PRINTER_OC3_BOOT_SEARCH_STEPS,(unsigned)!motor_oc3_active());
@@ -239,7 +244,7 @@ static int printer_buffered_wipe(uint32_t excursion,uint32_t rounds){
  return 0;
 failed:
  printer_buffered_stop();s_buf_wipe_profile=0U;
- if(s_oc3_hit&&!s_oc3_returning)return printer_buffered_oc3_return(PRINTER_OC3_BOOT_RETURN_STEPS);
+ if(s_oc3_hit&&!s_oc3_returning)return printer_buffered_oc3_return(PRINTER_OC3_FINAL_RETURN_STEPS);
  printer_bidirectional_abort();return -14;
 }
 /* A normal optical endpoint halts U4 but does not cancel the current 1.8mm

@@ -20,12 +20,14 @@ with tempfile.TemporaryDirectory() as tmp:
     for start in range(0,rounds,8):
      count=min(8,rounds-start)
      for shot in range(count):
-      col=40+start*24+((d-1)*4+((s-1)//2)*2+(a-1)//24)*count+shot
+      col=40+start*24+((d-1)*4+((s-1)//2)*2+(a-1)//13)*count+shot
       gold[col*100+(a-1)*4+s-1]|=1<<(d-1)
   assert len(seen)==600 and sum(v.bit_count() for v in gold)==600*rounds
-  assert max(sum(v.bit_count() for v in gold[x*100:x*100+100]) for x in range(1180))==48
+  assert max(sum(v.bit_count() for v in gold[x*100:x*100+100]) for x in range(1180))==26
   for x in range(1180):
    col=gold[x*100:x*100+100];mask=0;sections=set()
+   active=[a for a in range(25) if any(col[a*4:a*4+4])]
+   assert not active or active[-1]-active[0]+1<=13
    for slot,v in enumerate(col):
     mask|=v
     if v:sections.add(slot%4)

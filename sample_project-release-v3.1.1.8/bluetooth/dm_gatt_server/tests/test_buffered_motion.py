@@ -56,7 +56,7 @@ static void up(unsigned p){
  if(have_step_rise&&prior_step_period==164U&&timer_period==164U){assert(now_us-step_rise_us==164U);++slow_wipe_edges;}
  prior_step_period=timer_period;have_step_rise=1;step_rise_us=now_us;step=1;pos+=dir?1:-1;
  if(pos>max_pos)max_pos=pos;
- assert(pos>=(int32_t)PRINTER_OC3_REFERENCE_STEPS-(int32_t)PRINTER_MAINTENANCE_SPAN_STEPS-23&&pos<=(int32_t)PRINTER_OC3_TRAVEL_LIMIT_STEPS);
+ assert(pos>=(int32_t)PRINTER_OC3_REFERENCE_STEPS-(int32_t)PRINTER_OC3_PREP_RETURN_STEPS-23&&pos<=(int32_t)PRINTER_OC3_PREP_SEARCH_STEPS);
  if(dir){
   ++oc3_right_pulses;
   unsigned trip=mode==15?3001U:mode==22?10301U:mode==16?10001U:mode==17?61U:101U;
@@ -178,9 +178,9 @@ int main(int argc,char**argv){
   assert(PRINTER_MAINTENANCE_SPAN_STEPS==11221U);
   assert(PRINTER_MAINTENANCE_SPAN_STEPS-PRINTER_SERVICE_SPAN_STEPS==748U);
   assert(PRINTER_OC3_BOOT_RETURN_STEPS==PRINTER_OC3_PREP_RETURN_STEPS);
-  assert(PRINTER_OC3_FINAL_RETURN_STEPS==PRINTER_OC3_BOOT_RETURN_STEPS);
+  assert(PRINTER_OC3_FINAL_RETURN_STEPS==11221U&&PRINTER_OC3_BOOT_RETURN_STEPS==11315U);
   assert(!printer_buffered_boot_round_trip());
-  assert(s_buf_steps==11221U&&pos==-374&&s_bidi_at_wiper);
+  assert(s_buf_steps==11315U&&pos==-468&&s_bidi_at_wiper);
   assert(!printer_startup_prepare(1U)&&pos==0&&total_paper==4212);
   assert(!printer_execute_buffered_line(row,1)&&pos==10473);
   assert(!printer_execute_buffered_line(row,0)&&pos==0);
@@ -192,7 +192,7 @@ int main(int argc,char**argv){
   if(mode==13||mode==14||mode==18||mode==21){
    int result=printer_buffered_boot_round_trip();
    assert(result==(mode==18?PRINTER_OC3_STUCK:0));
-   assert(pos==-(int32_t)PRINTER_MAINTENANCE_EXTRA_STEPS&&!load_calls&&!hc_fires);
+   assert(pos==-468&&!load_calls&&!hc_fires);
    assert(!timer_enabled&&sync_high);
    if(mode==14)assert(!oc3_right_pulses);
    if(mode==18)assert(!s_bidi_known&&!oc3_level);else assert(s_bidi_known&&s_bidi_at_wiper&&oc3_level);
@@ -206,12 +206,12 @@ int main(int argc,char**argv){
    assert(s_bidi_right&&!s_bidi_at_wiper&&total_paper==702&&oc3_level==0);
    assert(!printer_buffered_load_while_moving(702U,0U));
    assert(!s_bidi_right&&s_bidi_at_wiper&&total_paper==1404&&oc3_level);
-   assert(pos==-(int32_t)PRINTER_MAINTENANCE_EXTRA_STEPS&&!hc_fires);
+   assert(pos==-468&&!hc_fires);
   }else if(mode==17){
    assert(!printer_buffered_load_while_moving(702U,0U));
    assert(total_paper==702&&!hc_fires&&s_bidi_known&&s_bidi_right&&!oc3_level);
    assert(!printer_buffered_load_while_moving(702U,0U));
-   assert(total_paper==1404&&s_bidi_at_wiper&&oc3_level&&pos==-(int32_t)PRINTER_MAINTENANCE_EXTRA_STEPS);
+   assert(total_paper==1404&&s_bidi_at_wiper&&oc3_level&&pos==-468);
   }else if(mode==19){
    pos=PRINTER_SERVICE_SPAN_STEPS;s_bidi_at_wiper=false;s_bidi_right=true;oc3_level=0;
    assert(!printer_buffered_park_at_wiper()&&oc3_level&&!hc_fires);
@@ -268,8 +268,8 @@ int main(int argc,char**argv){
  }
  if(mode==11){
   assert(!printer_buffered_boot_round_trip());
-  assert(pos==-(int32_t)PRINTER_MAINTENANCE_EXTRA_STEPS&&s_bidi_at_wiper&&!s_bidi_right&&s_bidi_known&&!load_calls&&!hc_fires);
-  assert(s_buf_steps==PRINTER_MAINTENANCE_SPAN_STEPS);printer_buffered_stop();free(row);return 0;
+  assert(pos==-468&&s_bidi_at_wiper&&!s_bidi_right&&s_bidi_known&&!load_calls&&!hc_fires);
+  assert(s_buf_steps==PRINTER_OC3_BOOT_RETURN_STEPS);printer_buffered_stop();free(row);return 0;
  }
  if(mode==12){
   pos=PRINTER_SERVICE_SPAN_STEPS;s_bidi_at_wiper=false;s_bidi_right=true;

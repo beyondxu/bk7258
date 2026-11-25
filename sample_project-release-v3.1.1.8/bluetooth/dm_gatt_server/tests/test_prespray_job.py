@@ -25,7 +25,9 @@ static void rtos_delay_milliseconds(unsigned ms){assert(ms==5&&fired&&s_waste_st
 static bool printer_link_is_ready(void){return fault!=6;}
 static void*printer_map_psram_alloc(size_t n){if(fault==5)return NULL;++allocs;return malloc(n);}
 static void printer_map_psram_free(void*p){assert(allocs);--allocs;free(p);}
-static int printer_waste_position(void){
+#define PRINTER_OC3_PREP_SEARCH_STEPS 11315U
+static int printer_waste_seek(unsigned steps){
+ assert(steps==11315U);
  assert(!s_waste_station_ready&&s_bidi_at_wiper);++positioned;
  if(fault==2)return -18;
  s_bidi_at_wiper=false;s_bidi_right=true;s_waste_station_ready=1;return 0;
@@ -37,7 +39,7 @@ static int printer_waste_fire_prespray(const uint8_t*p){
  for(unsigned x=0;x<1180;++x){unsigned mask=0,sections=0;for(unsigned a=0;a<100;++a){unsigned v=p[x*100+a];mask|=v;if(v)sections|=1U<<(a%4);}assert((mask&(mask-1U))==0&&((sections&~3U)==0||(sections&~12U)==0));}return fault==3?-13:0;
 }
 static int tph_mcu_set_head_power(unsigned on){assert(!on&&fired>=1);++off;return fault==4?-1:0;}
-static int printer_bidirectional_finish(void){assert(!s_waste_station_ready&&off==1);++finished;if(fault==9)return -14;s_bidi_right=false;s_bidi_at_wiper=true;return 0;}
+static int printer_waste_park_for_preparation(void){assert(!s_waste_station_ready&&off==1);++finished;if(fault==9)return -14;s_bidi_right=false;s_bidi_at_wiper=true;return 0;}
 static void printer_bidirectional_abort(void){assert(!s_waste_station_ready);++aborted;s_bidi_known=false;}
 #include "printer_prespray_job.h"
 int main(int argc,char**argv){

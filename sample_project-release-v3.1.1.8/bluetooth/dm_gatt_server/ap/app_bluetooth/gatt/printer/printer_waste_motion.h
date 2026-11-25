@@ -5,7 +5,7 @@
  * firing. Image endpoints/insets and the final wiper return remain unchanged.
  */
 static uint8_t s_waste_station_ready;
-static int printer_waste_position(void){
+static int printer_waste_seek(uint32_t search_steps){
  s_waste_station_ready=0U;
  if(!s_bidi_known||!s_bidi_at_wiper||s_bidi_right||s_buf_active)return -7;
  if(!motor_oc3_ready())return -17;
@@ -14,7 +14,7 @@ static int printer_waste_position(void){
  if(printer_buffered_claim())return -14;
  if(printer_bidi_power_up()!=0)return -8;
  GPIO_UP(TPH_MOT_DIR);delay_us(50U);
- s_buf_target=PRINTER_OC3_BOOT_SEARCH_STEPS;s_buf_direction=1U;s_buf_ink=0U;s_buf_sync=0U;
+ s_buf_target=search_steps;s_buf_direction=1U;s_buf_ink=0U;s_buf_sync=0U;
  s_oc3_hit=0U;s_buf_steps=0U;s_buf_error=0U;s_buf_max_gap=0U;s_buf_cruise_max_gap=0U;
  s_buf_period=printer_buffered_period(0U);s_buf_last_irq=(uint32_t)bk_aon_rtc_get_us();
  uint32_t begin=s_buf_last_irq;s_bidi_known=false;
@@ -46,6 +46,19 @@ failed:
  printer_buffered_stop();s_waste_station_ready=0U;
  printer_bidirectional_abort();return result;
 }
+static int printer_waste_position(void){
+ return printer_waste_seek(PRINTER_MAINTENANCE_SPAN_STEPS);
+}
+
+static int printer_waste_park_for_preparation(void){
+ int result=printer_buffered_oc3_return(PRINTER_OC3_PREP_RETURN_STEPS);
+ if(result!=PRINTER_OC3_RETURNED)return result;
+ printer_buffered_stop();
+ carriage_verified_power_down();
+ s_bidi_power=false;
+ return 0;
+}
+
 /* Execute an ordinary cached row without U4 motion. HC supplies the finite
  * column count/deadline checks. Never do SPI while its SYNC is held LOW. */
 static int printer_waste_fire_profile(const uint8_t *row,unsigned prespray){

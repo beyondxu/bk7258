@@ -25,7 +25,7 @@ h=h.replace('mode==4&&s_buf_steps==3000', '(mode==4||mode==50)&&s_buf_steps==300
 h=h.replace('pl_status(&cache,p);if(mode==1)', 'pl_status(&cache,p);if(mode==52||mode==54||(mode==53&&cache.state==PL_READY)){uint8_t*q=p;if(mode==52)q[10]=0;if(mode==53)q[11]=0;if(mode==54)q[32]=0;pl_put32(q+96,pl_crc(q,96));}if(mode==1)')
 h=h.replace('static void rtos_delay_milliseconds(unsigned n){assert(n==1);advance(mode==5?7000U:1000U);}', 'static void rtos_delay_milliseconds(unsigned n){if(n==20U){assert(!timer_enabled&&sync_high);advance(20000U);if(mode==43)oc3_level=1;return;}assert(n==1);advance(mode==5?7000U:1000U);}')
 h=h.replace('pl_status(&cache,p);if(mode==52', 'pl_status(&cache,p);if(mode==55&&cache.state==PL_READY)oc3_level=1;if(mode==52')
-h=h.replace('if(stationary_run&&mode==48&&cache.fired>=10)', 'if(stationary_run&&mode==56&&cache.fired>=10)oc3_level=1;if(stationary_run&&mode==48&&cache.fired>=10)')
+h=h.replace('++cache.fired;++hc_fires;', '++cache.fired;++hc_fires;if(stationary_run&&mode==56&&hc_fires==10U)oc3_level=1;')
 h=h.replace('(int32_t)PRINTER_SERVICE_SPAN_STEPS','(int32_t)PRINTER_OC3_REFERENCE_STEPS')
 h=h.replace('assert(cache.period_us==PRINTER_CANVAS_COLUMN_US);', 'assert(cache.period_us==(cache.fire_profile==PL_FIRE_PRESPRAY?PL_PRESPRAY_PERIOD_US:PRINTER_CANVAS_COLUMN_US));')
 h=h.replace('pl_status(&cache,p);if(mode==55', 'pl_status(&cache,p);if(mode==57||mode==58){uint8_t*q=p;if(mode==57)q[10]&=~PL_CAP_PRESPRAY_FAST;else pl_put16(q+33,500U);pl_put32(q+96,pl_crc(q,96));}if(mode==55')
@@ -34,7 +34,7 @@ h+=r'''
 int main(int argc,char**argv){
  assert(argc==2);unsigned requested=atoi(argv[1]);mode=requested>=52?40:requested;
  pos=-(int32_t)PRINTER_MAINTENANCE_EXTRA_STEPS;s_bidi_left_offset=pos;s_bidi_at_wiper=true;
- uint8_t*row=malloc(PL_ROW_BYTES);for(unsigned i=0;i<PL_ROW_BYTES;i++)row[i]=(i*7+i/100)&63U;
+ uint8_t*row=malloc(PL_ROW_BYTES);for(unsigned i=0;i<PL_ROW_BYTES;i++)row[i]=(i%100U<52U&&i/100U%9U<8U)?1U:0U;
  if(mode==49){assert(printer_waste_fire(row)==-7&&!hc_fires&&!oc3_right_pulses);free(row);return 0;}
  if(mode==42)oc3_level=0;
  int rc=printer_waste_position();
@@ -52,14 +52,14 @@ int main(int argc,char**argv){
  rc=requested>=52?printer_waste_fire_prespray(row):printer_waste_fire(row);
  assert(pos==(int32_t)PRINTER_OC3_REFERENCE_STEPS&&steps==s_blank_spi_steps[0]+s_blank_spi_steps[1]&&feeds==total_paper&&!timer_enabled&&sync_high);
  assert(now_us-before<900000U);
- if(requested==56){assert(rc==-13&&hc_fires>=10&&hc_fires<=14&&!s_waste_station_ready);printer_buffered_stop();free(row);puts("PASS optical release during firing aborts promptly");return 0;}
+ if(requested==56){assert(rc==-13&&hc_fires>=10&&hc_fires<=27&&!s_waste_station_ready);printer_buffered_stop();free(row);puts("PASS optical release during firing aborts promptly");return 0;}
  if(requested>=52){assert(rc==-13&&!hc_fires&&!s_waste_station_ready);printer_buffered_stop();free(row);puts("PASS missing capability/wrong prespray profile/pad rejected before ARM and fire");return 0;}
  if(mode==40){
   assert(!rc&&cache.state==PL_DONE&&cache.fired==1180&&hc_fires==1180&&s_waste_station_ready);
   assert(cache.fire_profile==PL_FIRE_NORMAL);
   before=now_us;
   assert(!printer_waste_fire_prespray(row)&&cache.fire_profile==PL_FIRE_PRESPRAY);
-  assert(cache.period_us==300U&&now_us-before>=354000U&&now_us-before<400000U);
+  assert(cache.period_us==60U&&now_us-before>=70800U&&now_us-before<100000U);
   assert(pos==(int32_t)PRINTER_OC3_REFERENCE_STEPS&&steps==s_blank_spi_steps[0]+s_blank_spi_steps[1]&&feeds==total_paper);
   assert(!printer_waste_fire(row)&&cache.fire_profile==PL_FIRE_NORMAL);
   stationary_run=0;s_waste_station_ready=0;

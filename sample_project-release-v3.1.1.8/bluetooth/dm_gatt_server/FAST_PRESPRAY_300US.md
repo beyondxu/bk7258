@@ -1,3 +1,5 @@
+> V54 采用 HC32 的 60 µs 短扫描闪喷。开机及打印前准备的海绵侧寻位上限和刮刀侧回程为 11315 步，GPIO24 仍提前停止寻位。上机波形验收见 HC32 仓库的 FAST_PRESPRAY_60US.md。
+
 > V53 extends only long/unknown-idle dose800 → 1600 requests/nozzle:
 > 40 cache rows; nominal playback + OFF pauses14.355s, excluding transfers
 > and carriage movements. Period300us, pauses5ms, burst8,40 rounds/cache,

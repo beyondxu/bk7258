@@ -18,9 +18,9 @@ static int printer_run_prespray(const char *reason){
     int result=printer_prespray_build(row,PRINTER_NC_BYTES,first,&cfg);
     if(result)goto done; /* Reject bad mapping before any movement. */
     s_waste_station_ready=0U;
-    os_printf("[PRESPRAY_BEGIN] reason=%s idle_known=%u idle_s=%lu nozzles=600 rounds=%u total_requests=%lu prespray_only_pad_nops=32 nominal_extra_ns160 target_unmeasured no_TSR no_preheat peak_requests_per_column=48 domain_mode=D1_to_D6 one_D_two_S_per_column row_rounds=40 burst_max=8 repeat_us=300 between_rows_ms=5 paper_steps=0\r\n",
-              reason,idle_known,(unsigned long)(idle_us/1000000U),rounds,(unsigned long)(rounds*600U));
-    result=printer_waste_position();if(result)goto stop;
+    os_printf("[PRESPRAY_BEGIN] reason=%s idle_known=%u idle_s=%lu nozzles=600 rounds=%u total_requests=%lu prespray_only_pad_nops=32 nominal_extra_ns160 target_unmeasured no_TSR no_preheat peak_requests_per_column=%u domain_mode=D1_to_D6 one_D_two_S_per_column row_rounds=40 burst_max=8 repeat_us=%u between_rows_ms=5 paper_steps=0\r\n",
+              reason,idle_known,(unsigned long)(idle_us/1000000U),rounds,(unsigned long)(rounds*600U),PRINTER_PRESPRAY_PEAK_BITS,PL_PRESPRAY_PERIOD_US);
+    result=printer_waste_seek(PRINTER_OC3_PREP_SEARCH_STEPS);if(result)goto stop;
     unsigned batches=0U;
     for(unsigned sent=0U;sent<rounds;){
         unsigned chunk=rounds-sent;if(chunk>PRINTER_PRESPRAY_ROW_ROUNDS)chunk=PRINTER_PRESPRAY_ROW_ROUNDS;
@@ -33,7 +33,7 @@ static int printer_run_prespray(const char *reason){
     }
     if(tph_mcu_set_head_power(0)!=BK_OK){result=-8;goto stop;}
     s_waste_station_ready=0U;
-    result=printer_bidirectional_finish();if(result)goto stop;
+    result=printer_waste_park_for_preparation();if(result)goto stop;
     os_printf("[PRESPRAY_DONE] reason=%s stationary_cache_rows=%u parked=WIPER no_extra_wipe no_paper_feed recovery_unverified\r\n",reason,batches);
     goto done;
 stop:
