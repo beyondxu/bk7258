@@ -5,7 +5,7 @@
 #include "printer_ink_idle.h"
 #include "printer_waste_motion.h"
 /* Serialized boot/page worker only. No temperature or recovery claim. */
-static int printer_run_prespray(const char *reason,unsigned visits){
+static int printer_run_prespray(const char *reason,unsigned visits,bool finish_at_print_left){
     if(!visits||!printer_link_is_ready()||!s_bidi_known||!s_bidi_at_wiper||s_bidi_right)return -7;
     printer_map_config_t cfg;printer_map_default_config(&cfg);
     cfg.x_pitch_centi_um=PRINTER_MAP_X_PITCH_CENTI_UM;cfg.x_direction=PRINTER_MAP_X_DIRECTION;
@@ -30,7 +30,9 @@ static int printer_run_prespray(const char *reason,unsigned visits){
             (remaining+remaining_visits-1U)/remaining_visits;
         if(dose>remaining) dose=remaining;
         const unsigned end=sent+dose;
-        result=printer_waste_seek(PRINTER_OC3_PREP_SEARCH_STEPS);if(result)goto stop;
+        const bool print_range=finish_at_print_left&&visit+1U==visits;
+        result=print_range?printer_waste_seek_from_print_left():printer_waste_seek(PRINTER_OC3_PREP_SEARCH_STEPS);
+        if(result)goto stop;
         for(;sent<end;){
             unsigned chunk=end-sent;if(chunk>PRINTER_PRESPRAY_ROW_ROUNDS)chunk=PRINTER_PRESPRAY_ROW_ROUNDS;
             result=printer_prespray_build(row,PRINTER_NC_BYTES,chunk,&cfg);if(result)goto stop;
@@ -42,11 +44,13 @@ static int printer_run_prespray(const char *reason,unsigned visits){
         }
         if(tph_mcu_set_head_power(0)!=BK_OK){result=-8;goto stop;}
         s_waste_station_ready=0U;
-        result=printer_waste_park_for_preparation();if(result)goto stop;
-        os_printf("[PRESPRAY_VISIT_DONE] visit=%u/%u rounds=%u/%u parked=SEAL\r\n",
-                  visit+1U,visits,sent,rounds);
+        result=print_range?printer_waste_return_to_print_left():printer_waste_park_for_preparation();
+        if(result)goto stop;
+        os_printf("[PRESPRAY_VISIT_DONE] visit=%u/%u rounds=%u/%u parked=%s\r\n",
+                  visit+1U,visits,sent,rounds,print_range?"PRINT_LEFT":"SEAL");
     }
-    os_printf("[PRESPRAY_DONE] reason=%s stationary_cache_rows=%u parked=SEAL no_paper_feed recovery_unverified\r\n",reason,batches);
+    os_printf("[PRESPRAY_DONE] reason=%s stationary_cache_rows=%u parked=%s no_paper_feed recovery_unverified\r\n",
+              reason,batches,finish_at_print_left?"PRINT_LEFT":"SEAL");
     goto done;
 stop:
     s_waste_station_ready=0U;

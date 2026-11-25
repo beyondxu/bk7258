@@ -14,11 +14,11 @@
 static int32_t s_bidi_right_offset;
 static uint32_t s_bidi_full_stroke;
 static uint32_t printer_buffered_print_span(void){
- return s_bidi_full_stroke?s_bidi_full_stroke-PRINTER_PRINT_SHORTER_STEPS:PRINTER_SERVICE_SPAN_STEPS;
+ return s_bidi_full_stroke?s_bidi_full_stroke-PRINTER_PRINT_SHORTER_STEPS-PRINTER_PAD_PRINT_RETREAT_STEPS:
+      PRINTER_SERVICE_SPAN_STEPS;
 }
 static uint32_t printer_buffered_optical_inset(void){
- /* The calibrated image stroke ends at the same GPIO24 reference. */
- return s_bidi_full_stroke?0U:PRINTER_PRINT_ENDPOINT_INSET_STEPS;
+ return s_bidi_full_stroke?PRINTER_PAD_PRINT_RETREAT_STEPS:PRINTER_PRINT_ENDPOINT_INSET_STEPS;
 }
 static uint32_t printer_buffered_full_return(void){
  return s_bidi_full_stroke?s_bidi_full_stroke:PRINTER_OC3_FINAL_RETURN_STEPS;
@@ -38,13 +38,6 @@ static volatile uint32_t s_buf_active,s_buf_steps,s_buf_sync,s_buf_error,s_buf_l
 static volatile uint8_t s_buf_direction;
 static uint8_t s_buf_ink,s_buf_claimed,s_buf_wipe_profile;
 static volatile uint32_t s_buf_sync_us;
-/* GPIO24 supplies the physical anchor. Allow it to trigger slightly early
- * while retaining the calibrated step count as the hard travel limit. */
-#define PRINTER_OC3_PRINT_EARLY_STEPS 64U
-static bool printer_buffered_print_endpoint_matches(void){
- return (s_buf_error==0U||s_buf_error==3U)&&s_buf_steps<=s_buf_target&&
-      s_buf_target-s_buf_steps<=PRINTER_OC3_PRINT_EARLY_STEPS;
-}
 static uint32_t printer_buffered_ramp_steps(void){return s_buf_ink?PRINTER_CANVAS_RAMP_STEPS:PL_RAMP_STEPS;}
 static uint32_t printer_buffered_period(uint32_t i){uint32_t ramp=printer_buffered_ramp_steps();uint32_t cruise=s_buf_wipe_profile?PRINTER_WIPE_STEP_US:PL_STEP_PERIOD_US;uint32_t edge=i<s_buf_target-1U-i?i:s_buf_target-1U-i;return edge<ramp?PL_START_PERIOD_US-(PL_START_PERIOD_US-cruise)*edge/ramp:cruise;}
 static void printer_buffered_stop(void){
@@ -139,14 +132,11 @@ static int printer_execute_buffered_line(const uint8_t*columns,uint8_t direction
  s_buf_active=0U;
  bk_gpio_set_output_high(PIN_BK_SYNC_OUT); /* release or abort HC32 line */
  unsigned optical_end=direction&&(s_oc3_hit||motor_oc3_active());
- if(direction&&s_bidi_full_stroke&&(!optical_end||!printer_buffered_print_endpoint_matches())){
-  os_printf("[OC3_PRINT_ENDPOINT_MISMATCH] gpio24_hit=%u steps=%lu expected=%lu\r\n",
-            optical_end,(unsigned long)s_buf_steps,(unsigned long)s_buf_target);
+ if(optical_end&&s_bidi_full_stroke){
+  os_printf("[OC3_PRINT_ENDPOINT_MISMATCH] gpio24_hit=1 steps=%lu expected=%lu\r\n",
+            (unsigned long)s_buf_steps,(unsigned long)s_buf_target);
   result=PRINTER_OC3_NOT_FOUND;goto stop;
  }
- if(optical_end&&s_bidi_full_stroke&&s_buf_steps!=s_buf_target)
-  os_printf("[OC3_PRINT_REANCHOR] steps=%lu nominal=%lu\r\n",
-            (unsigned long)s_buf_steps,(unsigned long)s_buf_target);
  if((s_buf_error&&!optical_end)||(!optical_end&&s_buf_steps!=s_buf_target)){result=-14;goto stop;}
  if(columns){
   if(!saw_low||tph_line_finish(&ticket)!=BK_OK){

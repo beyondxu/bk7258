@@ -21,7 +21,7 @@ h=r'''
 static unsigned mode,spits;
 static bool s_printer_link_ready;
 static bool printer_link_is_ready(void){return s_printer_link_ready;}
-static int printer_run_prespray(const char*why,unsigned visits){assert(!strcmp(why,"BOOT")&&visits==1U);++spits;return mode==1?-13:0;}
+static int printer_run_prespray(const char*why,unsigned visits,bool finish_at_print_left){assert(!strcmp(why,"BOOT")&&visits==1U&&!finish_at_print_left);++spits;return mode==1?-13:0;}
 static int printer_run_boot_waste_clean(void){assert(0);return -1;}
 WRAPPER
 int main(int argc,char**argv){

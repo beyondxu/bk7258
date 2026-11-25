@@ -981,7 +981,7 @@ int printer_run_boot_carriage_prepare(void) {
     attempted=true;
 #if PRINTER_PRESPRAY
     /* Pad seek and final cap return supply the boot reference round trip. */
-    return printer_run_prespray("BOOT",1U);
+    return printer_run_prespray("BOOT",1U,false);
 #else
     os_printf("[BOOT_CARRIAGE_BEGIN] round_trips=1 head_OFF feed=0 counted_LEFT_origin_required\r\n");
     os_printf("[TRAVEL_PLAN] boot_seek=%u boot_return=%u prep_seek=%u prep_return=%u print=%u final_return=%u print_endpoint_inset_each=%u\r\n",PRINTER_OC3_BOOT_SEARCH_STEPS,PRINTER_OC3_BOOT_RETURN_STEPS,PRINTER_OC3_PREP_SEARCH_STEPS,PRINTER_OC3_PREP_RETURN_STEPS,PRINTER_SERVICE_SPAN_STEPS,PRINTER_OC3_FINAL_RETURN_STEPS,PRINTER_MAINTENANCE_EXTRA_STEPS);

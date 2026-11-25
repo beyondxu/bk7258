@@ -46,37 +46,40 @@ int main(int argc,char**argv){
  if(requested>=61){
   mode=40;
   const int32_t seal=pos;
-  for(unsigned visit=0;visit<3U;++visit){
+  for(unsigned visit=0;visit<2U;++visit){
    assert(!printer_waste_seek(PRINTER_OC3_PREP_SEARCH_STEPS));
    assert(s_buf_steps==11221U&&pos==PRINTER_OC3_REFERENCE_STEPS);
    assert(!printer_waste_park_for_preparation()&&pos==seal&&s_bidi_at_wiper);
   }
-  assert(printer_buffered_full_return()==11221U&&printer_buffered_print_span()==10286U);
+  assert(printer_buffered_full_return()==11221U&&printer_buffered_print_span()==10099U);
   if(requested==64){
    mode=64;
-   assert(printer_waste_print_range_round_trip()==PRINTER_OC3_NOT_FOUND);
+   assert(printer_waste_seek_from_print_left()==PRINTER_OC3_NOT_FOUND);
    assert(!s_bidi_known&&!hc_fires&&!total_paper&&!timer_enabled);
    free(row);puts("PASS early GPIO24 outside window blocks preparation");return 0;
   }
   if(requested==61||requested==63){
    mode=requested==63?63:40;
    const unsigned right_before=oc3_right_pulses;
-   assert(!printer_waste_print_range_round_trip());
+   assert(!printer_waste_seek_from_print_left()&&s_waste_station_ready&&!oc3_level);
+   s_waste_station_ready=0U;
+   assert(!printer_waste_return_to_print_left());
    assert(pos==seal+935&&!s_bidi_at_wiper&&!s_bidi_right&&oc3_level);
-   assert(s_buf_steps==10286U);
+   assert(s_buf_steps==10099U);
    assert(oc3_right_pulses-right_before==(mode==63?11189U:11221U)); /* 935-step entry + print span */
    assert(!hc_fires&&!total_paper&&!timer_enabled&&!s_buf_claimed);
    assert(!printer_buffered_park_at_wiper()&&pos==seal);
    free(row);
-   puts("PASS three full visits followed by one head-OFF print-range round trip before load");
+   puts("PASS two full visits and the third returning from GPIO24 to PRINT_LEFT");
    return 0;
   }
   assert(!printer_buffered_leave_wiper()&&pos==seal+935);
-  mode=41; /* Suppress the optical edge during a calibrated print leg. */
-  assert(printer_execute_buffered_line(NULL,1U)==PRINTER_OC3_NOT_FOUND&&!s_bidi_known);
-  assert(pos==PRINTER_OC3_REFERENCE_STEPS&&!timer_enabled);
+  mode=41; /* No optical edge at the inset image turnaround, as on hardware. */
+  assert(!printer_execute_buffered_line(NULL,1U)&&s_bidi_known);
+  assert(pos==PRINTER_OC3_REFERENCE_STEPS-187&&!timer_enabled&&oc3_level);
+  assert(!printer_execute_buffered_line(NULL,0U)&&pos==seal+935);
   free(row);
-  puts("PASS calibrated print cannot continue without the shared GPIO24 endpoint");
+  puts("PASS calibrated image scans turn 187 steps inside GPIO24 without waiting for it");
   return 0;
  }
  int rc=printer_waste_position();

@@ -4,6 +4,13 @@
  * former374-step retreat moved the head off it. Hold at OC3 for stationary
  * firing. Image endpoints/insets and the final wiper return remain unchanged.
  */
+/* GPIO24 supplies the physical anchor. Allow it to trigger slightly early
+ * while retaining the calibrated step count as the hard travel limit. */
+#define PRINTER_OC3_PRINT_EARLY_STEPS 64U
+static bool printer_buffered_print_endpoint_matches(void){
+ return (s_buf_error==0U||s_buf_error==3U)&&s_buf_steps<=s_buf_target&&
+      s_buf_target-s_buf_steps<=PRINTER_OC3_PRINT_EARLY_STEPS;
+}
 static uint8_t s_waste_station_ready;
 static int printer_waste_seek_from(uint32_t search_steps,bool print_range){
  s_waste_station_ready=0U;
@@ -31,9 +38,9 @@ static int printer_waste_seek_from(uint32_t search_steps,bool print_range){
  if(!(s_oc3_hit||motor_oc3_active())){result=PRINTER_OC3_NOT_FOUND;goto failed;}
  const uint32_t min_print_steps=((PRINTER_CANVAS_COLUMNS-1U)*PRINTER_CANVAS_COLUMN_US+
                                 PRINTER_CANVAS_STEP_US-1U)/PRINTER_CANVAS_STEP_US+
-                                2U*(PRINTER_CANVAS_RAMP_STEPS+50U);
+                                2U*(PRINTER_CANVAS_RAMP_STEPS+32U);
  const uint32_t min_seek=(search_steps==PRINTER_OC3_PREP_SEARCH_STEPS)?
-                           min_print_steps+PRINTER_PRINT_SHORTER_STEPS:PRINTER_SERVICE_SPAN_STEPS;
+                           min_print_steps+PRINTER_PRINT_SHORTER_STEPS+PRINTER_PAD_PRINT_RETREAT_STEPS:PRINTER_SERVICE_SPAN_STEPS;
  if(print_range&&!printer_buffered_print_endpoint_matches()){
   os_printf("[WASTE_PRINT_RANGE] endpoint_mismatch steps=%lu expected=%lu no_ink\r\n",
             (unsigned long)s_buf_steps,(unsigned long)search_steps);
@@ -83,20 +90,26 @@ static int printer_waste_park_for_preparation(void){
  return 0;
 }
 
-/* After the three flashing visits, move within the image stroke head-OFF
- * and leave the carriage at PRINT_LEFT while paper advances. */
-static int printer_waste_print_range_round_trip(void){
+/* The last page visit starts from PRINT_LEFT and references the pad for flashing. */
+static int printer_waste_seek_from_print_left(void){
  if(!s_bidi_full_stroke||!s_bidi_known||!s_bidi_at_wiper||s_bidi_right)return -7;
  int result=printer_buffered_leave_wiper();
  if(result)return result;
+ return printer_waste_seek_from(printer_buffered_print_span()+printer_buffered_optical_inset(),true);
+}
+
+static int printer_waste_return_to_print_left(void){
  const uint32_t steps=printer_buffered_print_span();
- result=printer_waste_seek_from(steps,true);
+ const uint32_t retreat=printer_buffered_optical_inset();
+ int result=printer_buffered_reposition(0U,retreat);
  if(result)return result;
- s_waste_station_ready=0U;
+ if(motor_oc3_active()){printer_bidirectional_abort();return PRINTER_OC3_STUCK;}
+ s_bidi_right_offset=0;
+ os_printf("[PAGE_PREP_PAD_RETREAT] steps=%lu toward=SEAL head_OFF\r\n",(unsigned long)retreat);
  result=printer_execute_buffered_line(NULL,0U);
  if(result)return result;
  printer_buffered_stop();
- os_printf("[PAGE_PREP_PRINT_RANGE_DONE] steps_each=%lu parked=PRINT_LEFT head_OFF\r\n",
+ os_printf("[PAGE_PREP_LAST_VISIT_DONE] steps_each=%lu parked=PRINT_LEFT head_OFF\r\n",
            (unsigned long)steps);
  return 0;
 }
