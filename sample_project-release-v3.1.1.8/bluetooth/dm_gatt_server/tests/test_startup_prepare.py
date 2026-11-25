@@ -120,18 +120,14 @@ page = r'''
 static bool s_bidi_known=true,s_bidi_right=false,s_bidi_at_wiper=true;
 static unsigned stage,fault;
 static int tph_line_probe(void){assert(stage++==0U);return 0;}
-static int printer_bidi_power_up(void){assert(stage++==1U);return 0;}
-static int printer_buffered_wipe(unsigned steps,unsigned rounds){
- assert(stage++==2U&&steps==3740U&&rounds==2U);return 0;
-}
 static int printer_run_prespray(const char *reason,unsigned visits,bool finish_at_print_left){
- assert(stage++==3U&&reason[0]=='P'&&visits==3U&&finish_at_print_left);
+ assert(stage++==1U&&reason[0]=='P'&&visits==3U&&finish_at_print_left);
  if(fault==1U)return -13;
  if(fault==3U)return -18;
  s_bidi_at_wiper=false;return 0;
 }
 static int motor_page_load_keep_power(uint32_t steps,uint8_t dir,uint32_t *sent){
- assert(stage++==4U&&steps==3900U&&!dir&&!s_bidi_at_wiper&&!s_bidi_right);
+ assert(stage++==2U&&steps==3900U&&!dir&&!s_bidi_at_wiper&&!s_bidi_right);
  *sent=steps-(fault==2U);return 0;
 }
 static int printer_buffered_boot_round_trip(void){assert(0);return -1;}
@@ -140,10 +136,10 @@ int main(void){
  for(fault=0U;fault<4U;++fault){
   stage=0U;s_bidi_at_wiper=true;
   int result=printer_startup_prepare(1U);
-  assert(stage==((fault==1U||fault==3U)?4U:5U));
+  assert(stage==((fault==1U||fault==3U)?2U:3U));
   assert(result==(fault==1U?-13:fault==2U?-10:fault==3U?-18:0));
  }
- puts("PASS two small wipes, three flashing visits ending at PRINT_LEFT, then single 3900-step feed");
+ puts("PASS three flashing visits, no extra page wipes, then single 3900-step feed");
 }
 '''
 with tempfile.TemporaryDirectory() as tmp:
