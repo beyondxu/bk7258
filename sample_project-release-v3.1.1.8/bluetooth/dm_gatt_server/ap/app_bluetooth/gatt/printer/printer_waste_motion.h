@@ -64,6 +64,7 @@ static int printer_waste_park_for_preparation(void){
 static int printer_waste_fire_profile(const uint8_t *row,unsigned prespray){
  if(!row||!s_waste_station_ready||!s_bidi_known||!s_bidi_right||s_bidi_at_wiper||s_bidi_right_offset!=(int32_t)PRINTER_PRINT_ENDPOINT_INSET_STEPS||s_buf_active||s_buf_claimed||!motor_oc3_active())return -7;
  tph_line_ticket_t ticket={0};int result=-13;
+ const char *stage="prepare";
  const uint32_t period_us=prespray?PL_PRESPRAY_PERIOD_US:PRINTER_CANVAS_COLUMN_US;
  if((prespray?tph_line_prepare_prespray(row,period_us,&ticket):tph_line_prepare(row,period_us,&ticket))!=BK_OK)goto stop;
  if(!motor_oc3_active()){
@@ -71,6 +72,7 @@ static int printer_waste_fire_profile(const uint8_t *row,unsigned prespray){
   (void)tph_line_cancel(&ticket);goto stop;
  }
  uint32_t begin=(uint32_t)bk_aon_rtc_get_us();unsigned saw_low=0U;
+ stage="wait_ready_low";
  bk_gpio_set_output_low(PIN_BK_SYNC_OUT);
  for(unsigned loops=0;loops<11U;++loops){
   if(!bk_gpio_get_input(PIN_BK_READY_IN)){saw_low=1U;break;}
@@ -78,6 +80,7 @@ static int printer_waste_fire_profile(const uint8_t *row,unsigned prespray){
   rtos_delay_milliseconds(1U);
  }
  if(!saw_low)goto stop;
+ stage="playback";
  begin=(uint32_t)bk_aon_rtc_get_us();
  const uint32_t run_us=PL_COLUMNS*period_us+2000U;
  unsigned complete=0U;
@@ -92,12 +95,15 @@ static int printer_waste_fire_profile(const uint8_t *row,unsigned prespray){
  }
  if(!complete){result=-14;goto stop;}
  bk_gpio_set_output_high(PIN_BK_SYNC_OUT);
+ stage="status";
  if(tph_line_finish(&ticket)!=BK_OK)goto stop;
  os_printf("[WASTE_FIRED] token=%lu columns=%u period_us=%u U4_steps=0 paper_steps=0 ink_unverified\r\n",(unsigned long)ticket.token,PL_COLUMNS,(unsigned)period_us);
  return 0;
 stop:
  bk_gpio_set_output_high(PIN_BK_SYNC_OUT);
  (void)tph_mcu_set_head_power(0);
+ os_printf("[WASTE_FIRE_STOP] stage=%s token=%lu period_us=%lu code=%d\r\n",stage,
+           (unsigned long)ticket.token,(unsigned long)period_us,result);
  s_waste_station_ready=0U;
  return result;
 }

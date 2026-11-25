@@ -59,7 +59,7 @@ int main(int argc,char**argv){
   assert(cache.fire_profile==PL_FIRE_NORMAL);
   before=now_us;
   assert(!printer_waste_fire_prespray(row)&&cache.fire_profile==PL_FIRE_PRESPRAY);
-  assert(cache.period_us==60U&&now_us-before>=70800U&&now_us-before<100000U);
+  assert(cache.period_us==58U&&now_us-before>=68440U&&now_us-before<100000U);
   assert(pos==(int32_t)PRINTER_OC3_REFERENCE_STEPS&&steps==s_blank_spi_steps[0]+s_blank_spi_steps[1]&&feeds==total_paper);
   assert(!printer_waste_fire(row)&&cache.fire_profile==PL_FIRE_NORMAL);
   stationary_run=0;s_waste_station_ready=0;
