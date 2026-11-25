@@ -552,6 +552,10 @@ static void dump_epilogue(void)
  */
 static void arch_dump_cpu_registers(uint32_t mcause, SAVED_CONTEXT *context) {
 
+    /* Emit the program counter before the full register dump. */
+    BK_DUMP_OUT("[AP_FAULT_PC] cpu=%d pc=%08lx lr=%08lx sp=%08lx\r\n",
+                CPU_ID, (unsigned long)context->pc, (unsigned long)context->lr,
+                (unsigned long)context->sp);
     BK_DUMP_OUT("CPU%d Current regs:\r\n", CPU_ID);
 
     // Context of task.
@@ -848,6 +852,12 @@ void user_except_handler_ex(uint32_t reset_reason, uint32_t lr, uint32_t sp)
 #if CONFIG_INTERRUPT_DEBUG_RECORDER
         CPUx_crash_recorder = sp;
 #endif
+        /* Report fault status before reading the saved stack frame. */
+        const uint32_t cfsr = SCB->CFSR;
+        BK_DUMP_OUT("[AP_FAULT_STATUS] cpu=%d rr=%02lx cfsr=%08lx mmfar=%08lx exc_return=%08lx psp=%08lx psplim=%08lx\r\n",
+                    CPU_ID, (unsigned long)reset_reason, (unsigned long)cfsr,
+                    (unsigned long)((cfsr & SCB_CFSR_MMARVALID_Msk) ? SCB->MMFAR : 0U),
+                    (unsigned long)lr, (unsigned long)__get_PSP(), (unsigned long)__get_PSPLIM());
         BK_DUMP_OUT("AP crash happend, rr: 0x%x\r\n", reset_reason);
         BK_DUMP_OUT("build time => %s !\r\n", build_version); 
         dump_context(lr, sp);
