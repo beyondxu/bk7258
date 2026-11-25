@@ -17,8 +17,8 @@ static uint32_t printer_buffered_print_span(void){
  return s_bidi_full_stroke?s_bidi_full_stroke-PRINTER_PRINT_SHORTER_STEPS:PRINTER_SERVICE_SPAN_STEPS;
 }
 static uint32_t printer_buffered_optical_inset(void){
- return s_bidi_full_stroke?PRINTER_PRINT_SHORTER_STEPS-PRINTER_PRINT_SHORTER_STEPS/2U:
-      PRINTER_PRINT_ENDPOINT_INSET_STEPS;
+ /* The calibrated image stroke ends at the same GPIO24 reference. */
+ return s_bidi_full_stroke?0U:PRINTER_PRINT_ENDPOINT_INSET_STEPS;
 }
 static uint32_t printer_buffered_full_return(void){
  return s_bidi_full_stroke?s_bidi_full_stroke:PRINTER_OC3_FINAL_RETURN_STEPS;
@@ -132,6 +132,11 @@ static int printer_execute_buffered_line(const uint8_t*columns,uint8_t direction
  s_buf_active=0U;
  bk_gpio_set_output_high(PIN_BK_SYNC_OUT); /* release or abort HC32 line */
  unsigned optical_end=direction&&(s_oc3_hit||motor_oc3_active());
+ if(direction&&s_bidi_full_stroke&&(!optical_end||s_buf_steps!=s_buf_target)){
+  os_printf("[OC3_PRINT_ENDPOINT_MISMATCH] gpio24_hit=%u steps=%lu expected=%lu\r\n",
+            optical_end,(unsigned long)s_buf_steps,(unsigned long)s_buf_target);
+  result=PRINTER_OC3_NOT_FOUND;goto stop;
+ }
  if((s_buf_error&&!optical_end)||(!optical_end&&s_buf_steps!=s_buf_target)){result=-14;goto stop;}
  if(columns){
   if(!saw_low||tph_line_finish(&ticket)!=BK_OK){

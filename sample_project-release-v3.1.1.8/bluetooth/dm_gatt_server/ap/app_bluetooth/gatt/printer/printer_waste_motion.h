@@ -61,7 +61,7 @@ static int printer_waste_park_for_preparation(void){
  s_bidi_full_stroke=s_buf_steps;
  os_printf("[CARRIAGE_STROKE] full_steps=%lu print_steps=%lu seal_inset=%u pad_inset=%u\r\n",
            (unsigned long)s_bidi_full_stroke,(unsigned long)printer_buffered_print_span(),
-           PRINTER_PRINT_SHORTER_STEPS/2U,(unsigned)printer_buffered_optical_inset());
+           PRINTER_PRINT_SHORTER_STEPS,(unsigned)printer_buffered_optical_inset());
  int result=printer_buffered_oc3_return(s_bidi_full_stroke);
  if(result!=PRINTER_OC3_RETURNED)return result;
  printer_buffered_stop();

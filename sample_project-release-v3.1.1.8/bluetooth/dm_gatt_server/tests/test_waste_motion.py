@@ -41,7 +41,7 @@ int main(int argc,char**argv){
  uint8_t*row=malloc(PL_ROW_BYTES);for(unsigned i=0;i<PL_ROW_BYTES;i++)row[i]=(i%100U<52U&&i/100U%9U<8U)?1U:0U;
  if(mode==49){assert(printer_waste_fire(row)==-7&&!hc_fires&&!oc3_right_pulses);free(row);return 0;}
  if(mode==42)oc3_level=0;
- if(requested==61){
+ if(requested==61||requested==62){
   mode=40;
   const int32_t seal=pos;
   for(unsigned visit=0;visit<3U;++visit){
@@ -50,12 +50,20 @@ int main(int argc,char**argv){
    assert(!printer_waste_park_for_preparation()&&pos==seal&&s_bidi_at_wiper);
   }
   assert(printer_buffered_full_return()==11221U&&printer_buffered_print_span()==10286U);
-  assert(!printer_buffered_leave_wiper()&&pos==seal+467);
-  assert(!printer_execute_buffered_line(NULL,1U)&&pos==PRINTER_OC3_REFERENCE_STEPS-468);
-  assert(!printer_execute_buffered_line(NULL,0U)&&pos==seal+467);
+  assert(!printer_buffered_leave_wiper()&&pos==seal+935);
+  if(requested==62){
+   mode=41; /* Suppress the optical edge during a calibrated print leg. */
+   assert(printer_execute_buffered_line(NULL,1U)==PRINTER_OC3_NOT_FOUND&&!s_bidi_known);
+   assert(pos==PRINTER_OC3_REFERENCE_STEPS&&!timer_enabled);
+   free(row);
+   puts("PASS calibrated print cannot continue without the shared GPIO24 endpoint");
+   return 0;
+  }
+  assert(!printer_execute_buffered_line(NULL,1U)&&pos==PRINTER_OC3_REFERENCE_STEPS&&!oc3_level);
+  assert(!printer_execute_buffered_line(NULL,0U)&&pos==seal+935&&oc3_level);
   assert(!printer_buffered_park_at_wiper()&&pos==seal);
   free(row);
-  puts("PASS three measured returns to the seal and a print stroke inset 467/468 steps");
+  puts("PASS three measured returns to the seal and a print stroke inset 935 steps only at the seal");
   return 0;
  }
  int rc=printer_waste_position();
@@ -111,4 +119,4 @@ int main(int argc,char**argv){
 with tempfile.TemporaryDirectory() as tmp:
  t=Path(tmp);(t/'driver').mkdir();(t/'driver/timer.h').write_text('/* stub provided in test */\n');(t/'test.c').write_text(h)
  subprocess.run(['cc','-std=c99','-Wall','-Wextra','-Werror','-Wno-unused-function','-fsanitize=address,undefined','-I'+str(t),'-I'+str(D),'-I'+str(H),str(t/'test.c'),'-o',str(t/'test')],check=True)
- for mode in range(40,62):subprocess.run([str(t/'test'),str(mode)],check=True,env={**os.environ,'ASAN_OPTIONS':'detect_leaks=0'})
+ for mode in range(40,63):subprocess.run([str(t/'test'),str(mode)],check=True,env={**os.environ,'ASAN_OPTIONS':'detect_leaks=0'})
