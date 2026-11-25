@@ -21,13 +21,14 @@ static int printer_startup_prepare(unsigned for_page) {
 #if PRINTER_PRESPRAY
         result=printer_run_prespray("PAGE",3U);
         if(result)return result;
-        result=printer_bidi_power_up();
+        result=printer_waste_print_range_round_trip();
         if(result)return result;
+        if(!s_bidi_known||s_bidi_at_wiper||s_bidi_right)return -7;
         /* 11700 feed steps / 30 mm = 3900 steps for the provisional 10 mm. */
         const uint32_t load_steps=3900U;
         uint32_t sent=0;
         result=motor_page_load_keep_power(load_steps,PRINTER_PAGE_FEED_DIRECTION,&sent);
-        os_printf("[PAGE_PREP_LOAD] pulses=%lu/%lu code=%d head_OFF after_three_visits\r\n",
+        os_printf("[PAGE_PREP_LOAD] pulses=%lu/%lu code=%d head_OFF after_print_range_round_trip carriage=PRINT_LEFT\r\n",
                   (unsigned long)sent,(unsigned long)load_steps,result);
         if(result!=BK_OK||sent!=load_steps)return -10;
 #elif PRINTER_STARTUP_LOAD_STEPS > 0
@@ -54,7 +55,7 @@ static int printer_startup_prepare(unsigned for_page) {
 #else
         os_printf("[PAGE_PREP_LOAD] disabled reason=OFFSET_UNCALIBRATED pulses=0\r\n");
 #endif
-#if PRINTER_BUFFERED_LINE
+#if PRINTER_BUFFERED_LINE && !PRINTER_PRESPRAY
         result=printer_buffered_leave_wiper();
         if(result)return result;
 #endif

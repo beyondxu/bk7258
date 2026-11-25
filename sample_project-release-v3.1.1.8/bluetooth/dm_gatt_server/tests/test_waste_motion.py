@@ -50,20 +50,24 @@ int main(int argc,char**argv){
    assert(!printer_waste_park_for_preparation()&&pos==seal&&s_bidi_at_wiper);
   }
   assert(printer_buffered_full_return()==11221U&&printer_buffered_print_span()==10286U);
-  assert(!printer_buffered_leave_wiper()&&pos==seal+935);
-  if(requested==62){
-   mode=41; /* Suppress the optical edge during a calibrated print leg. */
-   assert(printer_execute_buffered_line(NULL,1U)==PRINTER_OC3_NOT_FOUND&&!s_bidi_known);
-   assert(pos==PRINTER_OC3_REFERENCE_STEPS&&!timer_enabled);
+  if(requested==61){
+   const unsigned right_before=oc3_right_pulses;
+   assert(!printer_waste_print_range_round_trip());
+   assert(pos==seal+935&&!s_bidi_at_wiper&&!s_bidi_right&&oc3_level);
+   assert(s_buf_steps==10286U);
+   assert(oc3_right_pulses-right_before==11221U); /* 935-step entry + print span */
+   assert(!hc_fires&&!total_paper&&!timer_enabled&&!s_buf_claimed);
+   assert(!printer_buffered_park_at_wiper()&&pos==seal);
    free(row);
-   puts("PASS calibrated print cannot continue without the shared GPIO24 endpoint");
+   puts("PASS three full visits followed by one head-OFF print-range round trip before load");
    return 0;
   }
-  assert(!printer_execute_buffered_line(NULL,1U)&&pos==PRINTER_OC3_REFERENCE_STEPS&&!oc3_level);
-  assert(!printer_execute_buffered_line(NULL,0U)&&pos==seal+935&&oc3_level);
-  assert(!printer_buffered_park_at_wiper()&&pos==seal);
+  assert(!printer_buffered_leave_wiper()&&pos==seal+935);
+  mode=41; /* Suppress the optical edge during a calibrated print leg. */
+  assert(printer_execute_buffered_line(NULL,1U)==PRINTER_OC3_NOT_FOUND&&!s_bidi_known);
+  assert(pos==PRINTER_OC3_REFERENCE_STEPS&&!timer_enabled);
   free(row);
-  puts("PASS three measured returns to the seal and a print stroke inset 935 steps only at the seal");
+  puts("PASS calibrated print cannot continue without the shared GPIO24 endpoint");
   return 0;
  }
  int rc=printer_waste_position();

@@ -5,9 +5,10 @@
  * firing. Image endpoints/insets and the final wiper return remain unchanged.
  */
 static uint8_t s_waste_station_ready;
-static int printer_waste_seek(uint32_t search_steps){
+static int printer_waste_seek_from(uint32_t search_steps,bool print_range){
  s_waste_station_ready=0U;
- if(!s_bidi_known||!s_bidi_at_wiper||s_bidi_right||s_buf_active)return -7;
+ if(!s_bidi_known||s_bidi_at_wiper==print_range||s_bidi_right||s_buf_active)return -7;
+ if(print_range&&(!s_bidi_full_stroke||s_bidi_left_offset!=0))return -7;
  if(!motor_oc3_ready())return -17;
  if(motor_oc3_active())return PRINTER_OC3_STUCK;
  if(tph_mcu_set_head_power(0)!=BK_OK)return -8;
@@ -33,7 +34,12 @@ static int printer_waste_seek(uint32_t search_steps){
                                 2U*(PRINTER_CANVAS_RAMP_STEPS+50U);
  const uint32_t min_seek=(search_steps==PRINTER_OC3_PREP_SEARCH_STEPS)?
                            min_print_steps+PRINTER_PRINT_SHORTER_STEPS:PRINTER_SERVICE_SPAN_STEPS;
- if(s_buf_steps<min_seek){
+ if(print_range&&s_buf_steps!=search_steps){
+  os_printf("[WASTE_PRINT_RANGE] endpoint_mismatch steps=%lu expected=%lu no_ink\r\n",
+            (unsigned long)s_buf_steps,(unsigned long)search_steps);
+  result=PRINTER_OC3_NOT_FOUND;goto failed;
+ }
+ if(!print_range&&s_buf_steps<min_seek){
   os_printf("[WASTE_REFERENCE_REJECT] seek_steps=%lu below_minimum=%u no_ink\r\n",(unsigned long)s_buf_steps,(unsigned)min_seek);
   result=-7;goto failed;
  }
@@ -51,6 +57,10 @@ failed:
  printer_buffered_stop();s_waste_station_ready=0U;
  printer_bidirectional_abort();return result;
 }
+static int printer_waste_seek(uint32_t search_steps){
+ return printer_waste_seek_from(search_steps,false);
+}
+
 static int printer_waste_position(void){
  return printer_waste_seek(PRINTER_MAINTENANCE_SPAN_STEPS);
 }
@@ -67,6 +77,24 @@ static int printer_waste_park_for_preparation(void){
  printer_buffered_stop();
  carriage_verified_power_down();
  s_bidi_power=false;
+ return 0;
+}
+
+/* After the three flashing visits, move within the image stroke head-OFF
+ * and leave the carriage at PRINT_LEFT while paper advances. */
+static int printer_waste_print_range_round_trip(void){
+ if(!s_bidi_full_stroke||!s_bidi_known||!s_bidi_at_wiper||s_bidi_right)return -7;
+ int result=printer_buffered_leave_wiper();
+ if(result)return result;
+ const uint32_t steps=printer_buffered_print_span();
+ result=printer_waste_seek_from(steps,true);
+ if(result)return result;
+ s_waste_station_ready=0U;
+ result=printer_execute_buffered_line(NULL,0U);
+ if(result)return result;
+ printer_buffered_stop();
+ os_printf("[PAGE_PREP_PRINT_RANGE_DONE] steps_each=%lu parked=PRINT_LEFT head_OFF\r\n",
+           (unsigned long)steps);
  return 0;
 }
 
