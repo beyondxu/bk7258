@@ -95,6 +95,18 @@ static int printer_waste_fire_profile(const uint8_t *row,unsigned prespray){
  }
  if(!complete){result=-14;goto stop;}
  bk_gpio_set_output_high(PIN_BK_SYNC_OUT);
+ if(prespray){
+  /* HC32 powers off and audits the short scan before arming the status DMA.
+   * Wait here without clocking SPI or extending the firing interval. */
+  stage="status_ready";
+  const uint32_t released=(uint32_t)bk_aon_rtc_get_us();
+  for(unsigned polls=0;!bk_gpio_get_input(PIN_BK_READY_IN);++polls){
+   if(!motor_oc3_active()||polls>=500U||
+      (uint32_t)(bk_aon_rtc_get_us()-released)>=500000U)goto stop;
+   rtos_delay_milliseconds(1U);
+  }
+  if(!motor_oc3_active())goto stop;
+ }
  stage="status";
  if(tph_line_finish(&ticket)!=BK_OK)goto stop;
  os_printf("[WASTE_FIRED] token=%lu columns=%u period_us=%u U4_steps=0 paper_steps=0 ink_unverified\r\n",(unsigned long)ticket.token,PL_COLUMNS,(unsigned)period_us);

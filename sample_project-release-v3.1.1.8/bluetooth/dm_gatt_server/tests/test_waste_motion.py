@@ -10,7 +10,7 @@ h=ast.literal_eval(node);h=h[:h.index('int main(')]
 transport=(D/'tph_driver.c').read_text(encoding='latin1');transport=transport[transport.index('/* LBUFv1:'):]
 f=(D/'printer_bidirectional_print.h').read_text();finish=f[f.index('static int printer_bidirectional_finish(void)'):f.rindex('#endif')]
 h=h.replace('TRANSPORT',transport).replace('REAL_FINISH',finish)
-h=h.replace('static unsigned prior_step_period,', 'static unsigned stationary_run;\nstatic unsigned prior_step_period,')
+h=h.replace('static unsigned prior_step_period,', 'static unsigned stationary_run;static uint64_t audit_done_at;\nstatic unsigned prior_step_period,')
 h=h.replace('return now_us/32U*32U;', 'return stationary_run&&mode==47?0U:now_us/32U*32U;')
 h=h.replace('mode==29||mode==30)', 'mode==29||mode==30||mode==40||mode==43||mode==44||mode==45||mode==46||mode==47||mode==48)')
 h=h.replace('if(((mode==13', 'if((mode==51&&!oc3_events&&oc3_right_pulses==101U)||((mode==13')
@@ -29,6 +29,10 @@ h=h.replace('++cache.fired;++hc_fires;', '++cache.fired;++hc_fires;if(stationary
 h=h.replace('(int32_t)PRINTER_SERVICE_SPAN_STEPS','(int32_t)PRINTER_OC3_REFERENCE_STEPS')
 h=h.replace('assert(cache.period_us==PRINTER_CANVAS_COLUMN_US);', 'assert(cache.period_us==(cache.fire_profile==PL_FIRE_PRESPRAY?PL_PRESPRAY_PERIOD_US:PRINTER_CANVAS_COLUMN_US));')
 h=h.replace('pl_status(&cache,p);if(mode==55', 'pl_status(&cache,p);if(mode==57||mode==58){uint8_t*q=p;if(mode==57)q[10]&=~PL_CAP_PRESPRAY_FAST;else pl_put16(q+33,500U);pl_put32(q+96,pl_crc(q,96));}if(mode==55')
+h=h.replace('if(cache.fired==1180)cache.state=PL_DONE;',
+            'if(cache.fired==1180){cache.state=PL_DONE;audit_done_at=now_us+150000U;}')
+h=h.replace('return !sync_high&&(cache.state==PL_RUNNING',
+            'if(sync_high&&cache.state==PL_DONE&&(mode==60||(mode==59&&now_us<audit_done_at)))return 0U;return !sync_high&&(cache.state==PL_RUNNING')
 h+=r'''
 #include "printer_waste_motion.h"
 int main(int argc,char**argv){
@@ -53,6 +57,16 @@ int main(int argc,char**argv){
  assert(pos==(int32_t)PRINTER_OC3_REFERENCE_STEPS&&steps==s_blank_spi_steps[0]+s_blank_spi_steps[1]&&feeds==total_paper&&!timer_enabled&&sync_high);
  assert(now_us-before<900000U);
  if(requested==56){assert(rc==-13&&hc_fires>=10&&hc_fires<=27&&!s_waste_station_ready);printer_buffered_stop();free(row);puts("PASS optical release during firing aborts promptly");return 0;}
+ if(requested==59||requested==60){
+  assert(hc_fires==1180U);
+  if(requested==59)
+   assert(!rc&&s_waste_station_ready&&now_us>=audit_done_at);
+  else
+   assert(rc==-13&&!s_waste_station_ready&&now_us-before>=568000U&&now_us-before<610000U);
+  printer_buffered_stop();free(row);
+  puts("PASS delayed status succeeds after 150 ms and missing READY aborts after 500 ms without replay");
+  return 0;
+ }
  if(requested>=52){assert(rc==-13&&!hc_fires&&!s_waste_station_ready);printer_buffered_stop();free(row);puts("PASS missing capability/wrong prespray profile/pad rejected before ARM and fire");return 0;}
  if(mode==40){
   assert(!rc&&cache.state==PL_DONE&&cache.fired==1180&&hc_fires==1180&&s_waste_station_ready);
@@ -80,4 +94,4 @@ int main(int argc,char**argv){
 with tempfile.TemporaryDirectory() as tmp:
  t=Path(tmp);(t/'driver').mkdir();(t/'driver/timer.h').write_text('/* stub provided in test */\n');(t/'test.c').write_text(h)
  subprocess.run(['cc','-std=c99','-Wall','-Wextra','-Werror','-Wno-unused-function','-fsanitize=address,undefined','-I'+str(t),'-I'+str(D),'-I'+str(H),str(t/'test.c'),'-o',str(t/'test')],check=True)
- for mode in range(40,59):subprocess.run([str(t/'test'),str(mode)],check=True,env={**os.environ,'ASAN_OPTIONS':'detect_leaks=0'})
+ for mode in range(40,61):subprocess.run([str(t/'test'),str(mode)],check=True,env={**os.environ,'ASAN_OPTIONS':'detect_leaks=0'})
