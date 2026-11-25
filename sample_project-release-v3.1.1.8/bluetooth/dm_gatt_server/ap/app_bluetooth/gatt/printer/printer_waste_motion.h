@@ -1,23 +1,20 @@
 #ifndef PRINTER_WASTE_MOTION_H
 #define PRINTER_WASTE_MOTION_H
-/* User reports the optical endpoint itself is centered over the pad; the
- * former374-step retreat moved the head off it. Hold at OC3 for stationary
- * firing. Image endpoints/insets and the final wiper return remain unchanged.
- */
-/* GPIO24 supplies the physical anchor. Allow it to trigger slightly early
- * while retaining the calibrated step count as the hard travel limit. */
-#define PRINTER_OC3_PRINT_EARLY_STEPS 64U
-static bool printer_buffered_print_endpoint_matches(void){
- return (s_buf_error==0U||s_buf_error==3U)&&s_buf_steps<=s_buf_target&&
-      s_buf_target-s_buf_steps<=PRINTER_OC3_PRINT_EARLY_STEPS;
-}
+/* Validate the last visit against the preceding full seek. The calibrated
+ * target still caps travel even if the optical edge is later than expected. */
+#define PRINTER_OC3_PRINT_WINDOW_STEPS 64U
 static uint8_t s_waste_station_ready;
 static bool s_waste_pad_advanced;
+static uint32_t s_waste_last_full_seek;
+
 static int printer_waste_seek_from(uint32_t search_steps,bool print_range,bool advance){
  s_waste_pad_advanced=false;
  s_waste_station_ready=0U;
  if(!s_bidi_known||s_bidi_at_wiper==print_range||s_bidi_right||s_buf_active)return -7;
- if(print_range&&(!s_bidi_full_stroke||s_bidi_left_offset!=0))return -7;
+ if(print_range&&(!s_bidi_full_stroke||s_bidi_left_offset!=0||
+                 s_waste_last_full_seek<=PRINTER_PRINT_SHORTER_STEPS))return -7;
+ const uint32_t expected=print_range?s_waste_last_full_seek-PRINTER_PRINT_SHORTER_STEPS:0U;
+ if(advance&&!print_range)s_waste_last_full_seek=0U;
  if(!motor_oc3_ready())return -17;
  if(motor_oc3_active())return PRINTER_OC3_STUCK;
  if(tph_mcu_set_head_power(0)!=BK_OK)return -8;
@@ -43,14 +40,17 @@ static int printer_waste_seek_from(uint32_t search_steps,bool print_range,bool a
                                 2U*(PRINTER_CANVAS_RAMP_STEPS+32U);
  const uint32_t min_seek=(search_steps==PRINTER_OC3_PREP_SEARCH_STEPS)?
                            min_print_steps+PRINTER_PRINT_SHORTER_STEPS+PRINTER_PAD_PRINT_RETREAT_STEPS:PRINTER_SERVICE_SPAN_STEPS;
- if(print_range&&!printer_buffered_print_endpoint_matches()){
-  os_printf("[WASTE_PRINT_RANGE] endpoint_mismatch steps=%lu expected=%lu no_ink\r\n",
-            (unsigned long)s_buf_steps,(unsigned long)search_steps);
-  result=PRINTER_OC3_NOT_FOUND;goto failed;
+ const uint32_t seek_steps=s_buf_steps;
+ if(print_range){
+  const uint32_t difference=seek_steps>expected?seek_steps-expected:expected-seek_steps;
+  if(difference>PRINTER_OC3_PRINT_WINDOW_STEPS){
+   os_printf("[WASTE_PRINT_RANGE] endpoint_mismatch steps=%lu expected=%lu cap=%lu no_ink\r\n",
+             (unsigned long)seek_steps,(unsigned long)expected,(unsigned long)search_steps);
+   result=PRINTER_OC3_NOT_FOUND;goto failed;
+  }
+  os_printf("[WASTE_PRINT_RANGE] reanchor=GPIO24 steps=%lu expected=%lu cap=%lu\r\n",
+            (unsigned long)seek_steps,(unsigned long)expected,(unsigned long)search_steps);
  }
- if(print_range&&s_buf_steps!=search_steps)
-  os_printf("[WASTE_PRINT_RANGE] reanchor=GPIO24 steps=%lu nominal=%lu\r\n",
-            (unsigned long)s_buf_steps,(unsigned long)search_steps);
  if(!print_range&&s_buf_steps<min_seek){
   os_printf("[WASTE_REFERENCE_REJECT] seek_steps=%lu below_minimum=%u no_ink\r\n",(unsigned long)s_buf_steps,(unsigned)min_seek);
   result=-7;goto failed;
@@ -69,6 +69,7 @@ static int printer_waste_seek_from(uint32_t search_steps,bool print_range,bool a
   rtos_delay_milliseconds(20U);
   if(!motor_oc3_active()){result=PRINTER_OC3_NOT_FOUND;goto failed;}
   s_waste_pad_advanced=true;
+  if(!print_range)s_waste_last_full_seek=seek_steps;
  }
  s_waste_station_ready=1U;
  os_printf("[WASTE_POSITION] endpoint=%s advance_steps=%u settle_ms=20 gpio24_LOW motor_hold head_OFF\r\n",

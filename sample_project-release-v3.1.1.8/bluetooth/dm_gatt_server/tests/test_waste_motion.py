@@ -57,13 +57,30 @@ int main(int argc,char**argv){
   pos=PRINTER_OC3_REFERENCE_STEPS-PRINTER_OLD_SEAL_TO_OC3_STEPS;
   const int32_t seal=PRINTER_OC3_REFERENCE_STEPS-PRINTER_NEW_SEAL_TO_OC3_STEPS;
   for(unsigned visit=0;visit<2U;++visit){
+   const bool replay_early=(requested==66||requested==67)&&visit==1U;
+   if(replay_early)pos+=127; /* Hardware reaches the same optical point sooner. */
    const unsigned before=oc3_right_pulses;
    assert(!printer_waste_seek(PRINTER_OC3_PREP_SEARCH_STEPS)&&s_waste_pad_advanced);
    assert(s_buf_steps==187U&&pos==PRINTER_OC3_REFERENCE_STEPS+187);
-   assert(oc3_right_pulses-before==(visit?11441U:11254U));
+   assert(oc3_right_pulses-before==(replay_early?11314U:visit?11441U:11254U));
    assert(!printer_waste_park_for_preparation()&&pos==seal&&s_bidi_at_wiper);
   }
   assert(printer_buffered_full_return()==11254U&&printer_buffered_print_span()==10132U);
+  if(requested==66||requested==67){
+   assert(s_waste_last_full_seek==11127U);
+   pos+=requested==66?127:192;
+   int rc=printer_waste_seek_from_print_left();
+   if(requested==67){
+    assert(rc==PRINTER_OC3_NOT_FOUND&&!s_waste_station_ready&&!hc_fires);
+   }else{
+    assert(!rc&&s_waste_station_ready&&pos==PRINTER_OC3_REFERENCE_STEPS+187);
+    s_waste_station_ready=0U;
+    assert(!printer_waste_return_to_print_left()&&pos==seal+935);
+   }
+   free(row);
+   puts("PASS previous 11127-step seek reanchors 10192-step visit and rejects a 65-step mismatch");
+   return 0;
+  }
   if(requested==64){
    mode=64;
    assert(printer_waste_seek_from_print_left()==PRINTER_OC3_NOT_FOUND);
@@ -147,4 +164,4 @@ int main(int argc,char**argv){
 with tempfile.TemporaryDirectory() as tmp:
  t=Path(tmp);(t/'driver').mkdir();(t/'driver/timer.h').write_text('/* stub provided in test */\n');(t/'test.c').write_text(h)
  subprocess.run(['cc','-std=c99','-Wall','-Wextra','-Werror','-Wno-unused-function','-fsanitize=address,undefined','-I'+str(t),'-I'+str(D),'-I'+str(H),str(t/'test.c'),'-o',str(t/'test')],check=True)
- for mode in range(40,66):subprocess.run([str(t/'test'),str(mode)],check=True,env={**os.environ,'ASAN_OPTIONS':'detect_leaks=0'})
+ for mode in range(40,68):subprocess.run([str(t/'test'),str(mode)],check=True,env={**os.environ,'ASAN_OPTIONS':'detect_leaks=0'})
