@@ -22,8 +22,8 @@ static int printer_startup_prepare(unsigned for_page) {
         result=printer_run_prespray("PAGE",3U,true);
         if(result)return result;
         if(!s_bidi_known||s_bidi_at_wiper||s_bidi_right)return -7;
-        /* 11700 feed steps / 30 mm = 3900 steps for the provisional 10 mm. */
-        const uint32_t load_steps=3900U;
+        /* 11700 feed steps / 30 mm = 4290 steps for the provisional 11 mm. */
+        const uint32_t load_steps=4290U;
         uint32_t sent=0;
         result=motor_page_load_keep_power(load_steps,PRINTER_PAGE_FEED_DIRECTION,&sent);
         os_printf("[PAGE_PREP_LOAD] pulses=%lu/%lu code=%d head_OFF after_last_pad_visit carriage=PRINT_LEFT\r\n",
