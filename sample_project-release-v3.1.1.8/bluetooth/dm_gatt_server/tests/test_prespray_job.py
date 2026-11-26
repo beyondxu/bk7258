@@ -64,21 +64,21 @@ int main(int argc,char**argv){
   assert(!printer_run_prespray("PAGE",3U,true));
   assert(positioned==3U&&finished==3U&&off==3U&&!aborted&&!allocs&&!s_waste_station_ready);
   if(fault==13){
-   assert(fired==20U&&requested_rounds==800U&&pauses==17U);
-   assert(visit_rounds[0]==280U&&visit_rounds[1]==280U&&visit_rounds[2]==240U);
+   assert(fired==15U&&requested_rounds==600U&&pauses==12U);
+   assert(visit_rounds[0]==200U&&visit_rounds[1]==200U&&visit_rounds[2]==200U);
   }else if(fault==14){
    assert(fired==1U&&requested_rounds==5U&&!pauses);
    assert(!visit_rounds[0]&&!visit_rounds[1]&&visit_rounds[2]==5U);
   }else{
-   assert(fired==2U&&requested_rounds==50U&&!pauses);
-   assert(!visit_rounds[0]&&visit_rounds[1]==40U&&visit_rounds[2]==10U);
+   assert(fired==1U&&requested_rounds==40U&&!pauses);
+   assert(!visit_rounds[0]&&!visit_rounds[1]&&visit_rounds[2]==40U);
   }
   assert(!s_bidi_at_wiper&&!s_bidi_right);
   puts("PASS three pad visits with the expected dose and cache count");
   return 0;
  }
  int rc=printer_run_prespray("TEST",1U,false);assert(!allocs&&!s_waste_station_ready);
- if(!fault||fault>=10)assert(pauses==fired-1U&&!rc&&positioned==1&&fired==(fault==10?1U:fault==11?2U:20U)&&requested_rounds==(fault==10?5U:fault==11?50U:800U)&&finished==1&&!aborted&&s_bidi_at_wiper&&!s_bidi_right);
+ if(!fault||fault>=10)assert(pauses==fired-1U&&!rc&&positioned==1&&fired==(fault<=11&&fault>=10?1U:15U)&&requested_rounds==(fault==10?5U:fault==11?40U:600U)&&finished==1&&!aborted&&s_bidi_at_wiper&&!s_bidi_right);
  else if(fault>=5&&fault<=8)assert(rc<0&&!positioned&&!fired&&!finished&&!aborted);
  else {assert(rc<0&&aborted==1);if(fault==2)assert(!fired);if(fault==3)assert(!off&&!finished);}
  puts("PASS prespray:validate->pad->bounded finite rows->OFF->park;failures stop,no paper/no extra wipe");
