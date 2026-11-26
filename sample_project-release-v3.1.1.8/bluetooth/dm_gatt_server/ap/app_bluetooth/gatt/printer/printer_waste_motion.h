@@ -116,8 +116,15 @@ static int printer_waste_seek_from_print_left(void){
 static int printer_waste_return_to_print_left(void){
  const uint32_t steps=printer_buffered_print_span();
  if(!s_waste_pad_advanced)return -7;
- const uint32_t retreat=printer_buffered_optical_inset()+PRINTER_PAD_ADVANCE_STEPS;
- int result=printer_buffered_reposition(0U,retreat);
+ /* Complete the linkage travel only after the final flash has shut off.
+  * The extra pad advance does not redefine the flashing or print anchors. */
+ int result=printer_buffered_advance_past_oc3();
+ if(result)return result;
+ s_bidi_right_offset+=PRINTER_PAD_ADVANCE_STEPS;
+ os_printf("[PAGE_PREP_PAD_PUSH] extra_steps=%u total_past_gpio24=%u head_OFF\r\n",
+           PRINTER_PAD_ADVANCE_STEPS,2U*PRINTER_PAD_ADVANCE_STEPS);
+ const uint32_t retreat=(uint32_t)s_bidi_right_offset;
+ result=printer_buffered_reposition(0U,retreat);
  if(result)return result;
  if(motor_oc3_active()){printer_bidirectional_abort();return PRINTER_OC3_STUCK;}
  s_bidi_right_offset=0;

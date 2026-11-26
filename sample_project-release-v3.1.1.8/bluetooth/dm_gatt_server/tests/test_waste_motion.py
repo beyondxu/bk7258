@@ -34,9 +34,9 @@ h=h.replace('if(cache.fired==1180)cache.state=PL_DONE;',
 h=h.replace('return !sync_high&&(cache.state==PL_RUNNING',
             'if(sync_high&&cache.state==PL_DONE&&(mode==60||(mode==59&&now_us<audit_done_at)))return 0U;return !sync_high&&(cache.state==PL_RUNNING')
 h=h.replace('mode==48)&&oc3_level&&pos==(int32_t)PRINTER_OC3_REFERENCE_STEPS',
-            'mode==48||mode==63||mode==64||mode==65)&&oc3_level&&pos==(int32_t)PRINTER_OC3_REFERENCE_STEPS-(mode==63?32:mode==64?65:0)')
+            'mode==48||mode==63||mode==64||mode==65||mode==68)&&oc3_level&&pos==(int32_t)PRINTER_OC3_REFERENCE_STEPS-(mode==63?32:mode==64?65:0)')
 h=h.replace('if(pos>max_pos)max_pos=pos;',
-            'if(pos>max_pos)max_pos=pos;\n if(mode==65&&pos==(int32_t)PRINTER_OC3_REFERENCE_STEPS+40)oc3_level=1;')
+            'if(pos>max_pos)max_pos=pos;\n if((mode==65&&pos==(int32_t)PRINTER_OC3_REFERENCE_STEPS+40)||(mode==68&&pos==(int32_t)PRINTER_OC3_REFERENCE_STEPS+220))oc3_level=1;')
 h+=r'''
 #include "printer_waste_motion.h"
 int main(int argc,char**argv){
@@ -76,10 +76,19 @@ int main(int argc,char**argv){
     assert(!rc&&s_waste_station_ready&&pos==PRINTER_OC3_REFERENCE_STEPS+187);
     s_waste_station_ready=0U;
     assert(!printer_waste_return_to_print_left()&&pos==seal+935);
+    assert(max_pos==PRINTER_OC3_REFERENCE_STEPS+374);
    }
    free(row);
    puts("PASS previous 11127-step seek reanchors 10192-step visit and rejects a 65-step mismatch");
    return 0;
+  }
+  if(requested==68){
+   mode=68;
+   assert(!printer_waste_seek_from_print_left());
+   s_waste_station_ready=0U;
+   assert(printer_waste_return_to_print_left()!=0);
+   assert(pos==PRINTER_OC3_REFERENCE_STEPS+220&&!s_bidi_known&&!timer_enabled&&!total_paper);
+   free(row);puts("PASS GPIO24 release stops the extra linkage push before feeding");return 0;
   }
   if(requested==64){
    mode=64;
@@ -95,7 +104,8 @@ int main(int argc,char**argv){
    assert(!printer_waste_return_to_print_left());
    assert(pos==seal+935&&!s_bidi_at_wiper&&!s_bidi_right&&oc3_level);
    assert(s_buf_steps==10132U);
-   assert(oc3_right_pulses-right_before==(mode==63?11409U:11441U)); /* Seal to the extended pad, with a 32-step early edge in mode 63. */
+   assert(oc3_right_pulses-right_before==(mode==63?11596U:11628U));
+   assert(max_pos==PRINTER_OC3_REFERENCE_STEPS+374);
    assert(!hc_fires&&!total_paper&&!timer_enabled&&!s_buf_claimed);
    assert(!printer_buffered_park_at_wiper()&&pos==seal);
    free(row);
@@ -164,4 +174,4 @@ int main(int argc,char**argv){
 with tempfile.TemporaryDirectory() as tmp:
  t=Path(tmp);(t/'driver').mkdir();(t/'driver/timer.h').write_text('/* stub provided in test */\n');(t/'test.c').write_text(h)
  subprocess.run(['cc','-std=c99','-Wall','-Wextra','-Werror','-Wno-unused-function','-fsanitize=address,undefined','-I'+str(t),'-I'+str(D),'-I'+str(H),str(t/'test.c'),'-o',str(t/'test')],check=True)
- for mode in range(40,68):subprocess.run([str(t/'test'),str(mode)],check=True,env={**os.environ,'ASAN_OPTIONS':'detect_leaks=0'})
+ for mode in range(40,69):subprocess.run([str(t/'test'),str(mode)],check=True,env={**os.environ,'ASAN_OPTIONS':'detect_leaks=0'})
