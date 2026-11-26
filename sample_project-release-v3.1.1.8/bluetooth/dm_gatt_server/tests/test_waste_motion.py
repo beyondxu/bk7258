@@ -65,6 +65,22 @@ int main(int argc,char**argv){
  uint8_t*row=malloc(PL_ROW_BYTES);for(unsigned i=0;i<PL_ROW_BYTES;i++)row[i]=(i%100U<52U&&i/100U%9U<8U)?1U:0U;
  if(mode==49){assert(printer_waste_fire(row)==-7&&!hc_fires&&!oc3_right_pulses);free(row);return 0;}
  if(mode==42)oc3_level=0;
+ if(requested==70||requested==71){
+  const unsigned seek_steps=requested==70?10363U:11072U;
+  pos=PRINTER_OC3_REFERENCE_STEPS-seek_steps;
+  const int rc=printer_waste_seek(PRINTER_OC3_PREP_SEARCH_STEPS);
+  if(requested==70){
+   assert(rc==-7&&pos==PRINTER_OC3_REFERENCE_STEPS&&oc3_right_pulses==seek_steps);
+   assert(!s_waste_station_ready&&!s_bidi_known&&!boost&&!timer_enabled);
+  }else{
+   assert(!rc&&s_waste_station_ready&&s_waste_pad_advance==187U);
+   assert(pos==PRINTER_OC3_REFERENCE_STEPS+187&&oc3_right_pulses==seek_steps+187U);
+   assert(!printer_waste_park_for_preparation());
+   assert(pos==(int32_t)PRINTER_OC3_REFERENCE_STEPS-11254&&s_bidi_at_wiper);
+  }
+  assert(!hc_fires&&!total_paper);
+  free(row);puts("PASS boot seek rejects the 10363-step edge and accepts the 11072-step reference");return 0;
+ }
  if(requested==65){
   mode=65;
   assert(printer_waste_seek(PRINTER_OC3_PREP_SEARCH_STEPS)!=0);
@@ -203,4 +219,4 @@ int main(int argc,char**argv){
 with tempfile.TemporaryDirectory() as tmp:
  t=Path(tmp);(t/'driver').mkdir();(t/'driver/timer.h').write_text('/* stub provided in test */\n');(t/'test.c').write_text(h)
  subprocess.run(['cc','-std=c99','-Wall','-Wextra','-Werror','-Wno-unused-function','-fsanitize=address,undefined','-I'+str(t),'-I'+str(D),'-I'+str(H),str(t/'test.c'),'-o',str(t/'test')],check=True)
- for mode in range(40,70):subprocess.run([str(t/'test'),str(mode)],check=True,env={**os.environ,'ASAN_OPTIONS':'detect_leaks=0'})
+ for mode in range(40,72):subprocess.run([str(t/'test'),str(mode)],check=True,env={**os.environ,'ASAN_OPTIONS':'detect_leaks=0'})

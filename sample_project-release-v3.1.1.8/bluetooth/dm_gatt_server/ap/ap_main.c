@@ -8,6 +8,7 @@
 #include "dm_gatts.h"
 #include "tph_driver.h"
 #include "printer_diagnostics.h"
+#include "printer_canvas_geometry.h"
 #include "motor_sdk_driver.h"
 #include "ble_printer_service.h"
 
@@ -322,6 +323,12 @@ static void app_printer_task_entry(void *arg) {
     s_printer_link_ready = link_ready;
     os_printf("[PRINTER_LINK_STATE] ready=%u selftest_attempts=%d printing=%s\r\n",
               (unsigned)link_ready, retry, link_ready ? "ALLOWED" : "BLOCKED");
+#if PRINTER_SERVICE_PRINT && PRINTER_PRESPRAY
+    os_printf("[PRINTER_MOTION_PLAN] boot_seek_cap=%u boot_pad_advance_steps=%u page_short_rounds=%u page_short_steps=%u page_short_step_us=%u page_pad_advance_steps=%u print_step_us=%u print_column_us=%u\r\n",
+              PRINTER_OC3_PREP_SEARCH_STEPS, PRINTER_PAD_ADVANCE_STEPS,
+              PRINTER_PAGE_SHORT_ROUNDS, PRINTER_STARTUP_WIPE_STEPS, PRINTER_CANVAS_STEP_US,
+              PRINTER_PAGE_PAD_ADVANCE_STEPS, PRINTER_CANVAS_STEP_US, PRINTER_CANVAS_COLUMN_US);
+#endif
     if (!link_ready) {
         os_printf("[SYS] Check HC32 link before printing.\r\n");
     }
@@ -362,7 +369,7 @@ static void app_printer_task_entry(void *arg) {
         os_printf("[SYS] APP_SERVICE_BLACK_YELLOW_V1 margin_each=%lu print_steps=%lu span=%lu service_head_OFF black_then_yellow\r\n",
                   (unsigned long)PRINTER_SERVICE_MARGIN_STEPS, (unsigned long)PRINTER_SERVICE_BASE_STEPS, (unsigned long)PRINTER_SERVICE_SPAN_STEPS);
 #else
-        os_printf("[SYS] APP_SERVICE_CMY_PAD_1600_PRESPRAY_V55_requires_HC_prespray_58us_pad32 margin_each=%lu print_steps=%lu span=%lu actual_APP_CMY bands_24 alternating_direction HC_LBUFv1_required timer4_step_us82 start_period_us400 ramp_steps64 step_high_us27 nominal_low_us55 line_period_us673_requires_HC_min500 canvas_width_mm50_same_image_scale OC3_gpio24_active_LOW_irq_endpoint_step_cap_fallback boot_unknown_idle_prespray_1600 page_prespray_10_100_1600_RTC_before_load paired_S row_rounds40 prespray_period_us58 between_rows_ms5 no_TSR normal_drive legacy_long_clean_OFF print_span_seal_inset935_pad_inset187 boot_seek_cap11315 pad_advance187 seal_to_gpio11254 full_stroke11441 page_short_2x20mm_step120 page_full_visits2_then_print_range_visits1_page_pad_continuous748_then_load3900steps_10mm head_OFF no_column_waits blank_band_scans page_power_session U4_hold_phase_MS111 service_head_OFF\r\n",
+        os_printf("[SYS] APP_SERVICE_CMY_PAD_1600_PRESPRAY requires_HC_prespray_58us_pad32 margin_each=%lu print_steps=%lu span=%lu actual_APP_CMY bands_24 alternating_direction page_full_visits2_then_print_range_visits1 then_load3900steps_10mm\r\n",
                   (unsigned long)PRINTER_SERVICE_MARGIN_STEPS, (unsigned long)PRINTER_SERVICE_BASE_STEPS, (unsigned long)PRINTER_SERVICE_SPAN_STEPS);
 #endif
 #elif PRINTER_BLACK_PREFIX
