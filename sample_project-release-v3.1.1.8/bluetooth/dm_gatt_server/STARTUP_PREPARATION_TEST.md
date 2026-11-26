@@ -85,15 +85,16 @@ GPIO24 必须在扩展动作及闪喷时保持低电平。全行程标定为 114
 每次回同一密封停靠点，避免反复开机累积偏移。
 
 打印准备先在喷头关闭时做两次 3740 步小往返，再做三次闪喷往返。
-三次去程均在 GPIO24 触发后由同一个字车定时器连续送出额外 374 步，
+三次去程均在 GPIO24 触发后由同一个字车定时器连续送出额外 748 步（约 4 mm），
 到新海绵端点才停稳闪喷。前两次回密封侧，第三次从打印起点去海绵，
 GPIO24 到位窗口以上一次全程实测去程减 935 步为中心，允许偏差 64 步。
 第三次断墨返回打印起点，再一次进纸 3900 步，约 10 mm。
 `WASTE_MEASURED_STROKE` 报告实测全程，第三次补入从密封侧到打印
 起点的 935 步。密封回程使用固定的 GPIO24 基准，避免停靠点累积偏移。正式扫描
 保留距 GPIO24 的 187 步空间和密封侧 935 步的内缩。
-检查 `WASTE_POSITION endpoint=PAD_EXTENDED advance_steps=187`、
-`CARRIAGE_STROKE full_steps=11441` 和 `PRESPRAY_VISIT_DONE`。
+检查开机 `WASTE_POSITION ... advance_steps=187`、页面 `advance_steps=748`、
+开机 `CARRIAGE_STROKE full_steps=11441`、页面 `full_steps=12002`（标定值）
+和 `PRESPRAY_VISIT_DONE`。
 密封接触和新海绵位置的接墨情况需要实机确认。
 
 全行程、闪喷和正式打印在端点至少停留 1 秒才反向。闪喷、进纸和其它
