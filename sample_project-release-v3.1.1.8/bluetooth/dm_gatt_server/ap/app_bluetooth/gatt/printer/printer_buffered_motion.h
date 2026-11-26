@@ -233,7 +233,7 @@ stop:
  return result;
 }
 static int printer_execute_buffered_line(const uint8_t*columns,uint8_t direction){
- return printer_execute_buffered_line_at_speed(columns,direction,columns?PRINTER_CANVAS_STEP_US:PL_SERVICE_STEP_US);
+ return printer_execute_buffered_line_at_speed(columns,direction,columns?PRINTER_CANVAS_STEP_US:PRINTER_CANVAS_BLANK_STEP_US);
 }
 /* Head-OFF positioning between maintenance and print anchors. Never changes
  * the image stroke or its first-column timing. No SPI while the timer runs. */

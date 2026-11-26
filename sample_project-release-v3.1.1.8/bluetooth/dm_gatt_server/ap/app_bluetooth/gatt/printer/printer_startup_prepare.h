@@ -15,10 +15,10 @@ static int printer_startup_prepare(unsigned for_page) {
 #if PRINTER_BUFFERED_LINE && PRINTER_STARTUP_WIPE_STEPS > 0
         /* Run the short head-OFF carriage preparation before loading. */
         result=printer_buffered_short_round_trips(PRINTER_STARTUP_WIPE_STEPS,PRINTER_PAGE_SHORT_ROUNDS,
-                                                  PRINTER_CANVAS_STEP_US);
+                                                  PRINTER_PAGE_SHORT_STEP_US);
         if(result==PRINTER_OC3_RETURNED&&s_bidi_known&&s_bidi_at_wiper)
             result=printer_buffered_short_round_trips(PRINTER_STARTUP_WIPE_STEPS,PRINTER_PAGE_SHORT_ROUNDS,
-                                                  PRINTER_CANVAS_STEP_US);
+                                                  PRINTER_PAGE_SHORT_STEP_US);
         if (result) return result;
 #endif
 #if PRINTER_PRESPRAY
