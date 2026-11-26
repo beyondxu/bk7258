@@ -31,6 +31,7 @@ static int printer_waste_seek_from(uint32_t search_steps,bool print_range,uint32
  delay_us(50U);
  s_buf_oc3_extra=continuous?advance:0U;
  s_buf_oc3_reference=0U;
+ s_buf_oc3_high_samples=0U;
  s_buf_oc3_min=print_range?expected-PRINTER_OC3_PRINT_WINDOW_STEPS:min_seek;
  s_buf_oc3_max=print_range&&expected+PRINTER_OC3_PRINT_WINDOW_STEPS<search_steps?
                  expected+PRINTER_OC3_PRINT_WINDOW_STEPS:search_steps;
@@ -94,9 +95,9 @@ static int printer_waste_seek_from(uint32_t search_steps,bool print_range,uint32
  return 0;
 failed:
  if(continuous)
-  os_printf("[WASTE_CONTINUOUS_STOP] steps=%lu expected=%lu cap=%lu error=%lu\r\n",
+  os_printf("[WASTE_CONTINUOUS_STOP] steps=%lu expected=%lu cap=%lu error=%lu gpio24_high_samples=%u\r\n",
             (unsigned long)s_buf_steps,(unsigned long)expected,(unsigned long)search_steps,
-            (unsigned long)s_buf_error);
+            (unsigned long)s_buf_error,(unsigned)s_buf_oc3_high_samples);
  s_buf_oc3_extra=0U;
  printer_buffered_stop();s_waste_station_ready=0U;
  printer_bidirectional_abort();return result;

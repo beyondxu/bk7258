@@ -34,7 +34,23 @@ h=h.replace('if(cache.fired==1180)cache.state=PL_DONE;',
 h=h.replace('return !sync_high&&(cache.state==PL_RUNNING',
             'if(sync_high&&cache.state==PL_DONE&&(mode==60||(mode==59&&now_us<audit_done_at)))return 0U;return !sync_high&&(cache.state==PL_RUNNING')
 h=h.replace('mode==48)&&oc3_level&&pos==(int32_t)PRINTER_OC3_REFERENCE_STEPS',
-            'mode==48||mode==63||mode==64||mode==65||mode==68)&&oc3_level&&pos==(int32_t)PRINTER_OC3_REFERENCE_STEPS-(mode==63?32:mode==64?65:0)')
+            'mode==48||mode==63||mode==64||mode==65||mode==68||mode==69)&&oc3_level&&pos==(int32_t)PRINTER_OC3_REFERENCE_STEPS-(mode==63?32:mode==64?65:0)')
+h=h.replace('static void (*oc3_handler)(void);',
+            'static void (*oc3_handler)(void);\nstatic unsigned oc3_bounce_ticks,oc3_hold_ticks;')
+h=h.replace('if(mode!=21){assert(oc3_handler);oc3_handler();}',
+            'if(mode!=21){assert(oc3_handler);oc3_handler();}\n'
+            '   if(mode==69){oc3_level=1;oc3_bounce_ticks=2U;}')
+h=h.replace('callback(4);if(timer_enabled)next_bk=epoch+timer_period;',
+            '''const bool bouncing=oc3_bounce_ticks!=0U;
+   const unsigned steps_before=s_buf_steps;
+   callback(4);
+   if(bouncing){
+    assert(timer_enabled&&s_buf_steps==steps_before&&pos==PRINTER_OC3_REFERENCE_STEPS);
+    if(--oc3_bounce_ticks==0U)oc3_level=0;
+    ++oc3_hold_ticks;
+    have_step_rise=0;
+   }
+   if(timer_enabled)next_bk=epoch+timer_period;''')
 h=h.replace('if(pos>max_pos)max_pos=pos;',
             'if(pos>max_pos)max_pos=pos;\n if((mode==65&&pos==(int32_t)PRINTER_OC3_REFERENCE_STEPS+40)||(mode==68&&pos==(int32_t)PRINTER_OC3_REFERENCE_STEPS+220))oc3_level=1;')
 h=h.replace('static int bk_timer_start_us(', 'static unsigned timer_starts;\nstatic int bk_timer_start_us(')
@@ -63,6 +79,7 @@ int main(int argc,char**argv){
   for(unsigned visit=0;visit<2U;++visit){
    const bool replay_early=(requested==66||requested==67)&&visit==1U;
    if(replay_early)pos+=127; /* Hardware reaches the same optical point sooner. */
+   mode=requested==69&&visit==1U?69:40;
    const unsigned before=oc3_right_pulses,starts=timer_starts;
    assert(!printer_waste_seek_for_page()&&s_waste_pad_advance==748U);
    assert(s_waste_measured_full==s_buf_steps&&timer_starts==starts+1U);
@@ -71,6 +88,10 @@ int main(int argc,char**argv){
    assert(!printer_waste_park_for_preparation()&&pos==seal&&s_bidi_at_wiper);
   }
   assert(printer_buffered_full_return()==11254U&&printer_buffered_print_span()==10132U);
+  if(requested==69){
+   assert(oc3_hold_ticks==2U&&oc3_events==2U&&!hc_fires&&!timer_enabled);
+   free(row);puts("PASS brief GPIO24 release on the second visit holds STEP, then resumes the exact advance");return 0;
+  }
   if(requested==66||requested==67){
    assert(s_waste_last_full_seek==11127U);
    pos+=requested==66?127:192;
@@ -93,6 +114,7 @@ int main(int argc,char**argv){
    assert(printer_waste_seek_from_print_left()!=0);
    assert(!s_waste_station_ready);
    assert(pos==PRINTER_OC3_REFERENCE_STEPS+220&&!s_bidi_known&&!timer_enabled&&!total_paper);
+   assert(s_buf_oc3_high_samples==PRINTER_OC3_HIGH_CONFIRM_TICKS);
    free(row);puts("PASS GPIO24 release stops the extra linkage push before feeding");return 0;
   }
   if(requested==64){
@@ -181,4 +203,4 @@ int main(int argc,char**argv){
 with tempfile.TemporaryDirectory() as tmp:
  t=Path(tmp);(t/'driver').mkdir();(t/'driver/timer.h').write_text('/* stub provided in test */\n');(t/'test.c').write_text(h)
  subprocess.run(['cc','-std=c99','-Wall','-Wextra','-Werror','-Wno-unused-function','-fsanitize=address,undefined','-I'+str(t),'-I'+str(D),'-I'+str(H),str(t/'test.c'),'-o',str(t/'test')],check=True)
- for mode in range(40,69):subprocess.run([str(t/'test'),str(mode)],check=True,env={**os.environ,'ASAN_OPTIONS':'detect_leaks=0'})
+ for mode in range(40,70):subprocess.run([str(t/'test'),str(mode)],check=True,env={**os.environ,'ASAN_OPTIONS':'detect_leaks=0'})
