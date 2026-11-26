@@ -34,12 +34,13 @@ h=h.replace('if(cache.fired==1180)cache.state=PL_DONE;',
 h=h.replace('return !sync_high&&(cache.state==PL_RUNNING',
             'if(sync_high&&cache.state==PL_DONE&&(mode==60||(mode==59&&now_us<audit_done_at)))return 0U;return !sync_high&&(cache.state==PL_RUNNING')
 h=h.replace('mode==48)&&oc3_level&&pos==(int32_t)PRINTER_OC3_REFERENCE_STEPS',
-            'mode==48||mode==63||mode==64||mode==65||mode==68||mode==69)&&oc3_level&&pos==(int32_t)PRINTER_OC3_REFERENCE_STEPS-(mode==63?32:mode==64?65:0)')
+            'mode==48||mode==63||mode==64||mode==65||mode==68||mode==69||mode==72||mode==73)&&oc3_level&&pos==(int32_t)PRINTER_OC3_REFERENCE_STEPS-(mode==63?32:mode==64?65:0)')
 h=h.replace('static void (*oc3_handler)(void);',
             'static void (*oc3_handler)(void);\nstatic unsigned oc3_bounce_ticks,oc3_hold_ticks;')
 h=h.replace('if(mode!=21){assert(oc3_handler);oc3_handler();}',
             'if(mode!=21){assert(oc3_handler);oc3_handler();}\n'
-            '   if(mode==69){oc3_level=1;oc3_bounce_ticks=2U;}')
+            '   if(mode==69||mode==72){oc3_level=1;oc3_bounce_ticks=mode==69?2U:12U;}\n'
+            '   if(mode==73)oc3_level=1;')
 h=h.replace('callback(4);if(timer_enabled)next_bk=epoch+timer_period;',
             '''const bool bouncing=oc3_bounce_ticks!=0U;
    const unsigned steps_before=s_buf_steps;
@@ -93,7 +94,7 @@ int main(int argc,char**argv){
   pos=PRINTER_OC3_REFERENCE_STEPS-PRINTER_OLD_SEAL_TO_OC3_STEPS;
   const int32_t seal=PRINTER_OC3_REFERENCE_STEPS-PRINTER_NEW_SEAL_TO_OC3_STEPS;
   for(unsigned visit=0;visit<2U;++visit){
-   const bool replay_early=(requested==66||requested==67)&&visit==1U;
+   const bool replay_early=(requested==66||requested==67||requested>=72)&&visit==1U;
    if(replay_early)pos+=127; /* Hardware reaches the same optical point sooner. */
    mode=requested==69&&visit==1U?69:40;
    const unsigned before=oc3_right_pulses,starts=timer_starts;
@@ -107,6 +108,22 @@ int main(int argc,char**argv){
   if(requested==69){
    assert(oc3_hold_ticks==2U&&oc3_events==2U&&!hc_fires&&!timer_enabled);
    free(row);puts("PASS brief GPIO24 release on the second visit holds STEP, then resumes the exact advance");return 0;
+  }
+  if(requested==72||requested==73){
+   pos+=127; /* Replay the short measured span on the final visit. */
+   mode=requested;
+   int rc=printer_waste_seek_from_print_left();
+   if(requested==72){
+    assert(!rc&&s_waste_station_ready&&oc3_hold_ticks==12U);
+    assert(s_buf_oc3_reference==10192U&&pos==PRINTER_OC3_REFERENCE_STEPS+560);
+    assert(!printer_waste_return_to_print_left()&&pos==seal+935);
+   }else{
+    assert(rc==-14&&!s_waste_station_ready&&!s_bidi_known);
+    assert(!s_buf_oc3_reference&&s_buf_steps==10192U&&pos==PRINTER_OC3_REFERENCE_STEPS);
+    assert(s_buf_oc3_high_samples>3U&&now_us-s_buf_oc3_high_since>=2000U);
+   }
+   assert(!total_paper&&!hc_fires&&!timer_enabled);
+   free(row);puts("PASS last-visit GPIO24 pause resumes on recovery or stops on sustained HIGH");return 0;
   }
   if(requested==66||requested==67){
    assert(s_waste_last_full_seek==11127U);
@@ -130,7 +147,7 @@ int main(int argc,char**argv){
    assert(printer_waste_seek_from_print_left()!=0);
    assert(!s_waste_station_ready);
    assert(pos==PRINTER_OC3_REFERENCE_STEPS+220&&!s_bidi_known&&!timer_enabled&&!total_paper);
-   assert(s_buf_oc3_high_samples==PRINTER_OC3_HIGH_CONFIRM_TICKS);
+   assert(s_buf_oc3_high_samples>3U&&now_us-s_buf_oc3_high_since>=2000U);
    free(row);puts("PASS GPIO24 release stops the extra linkage push before feeding");return 0;
   }
   if(requested==64){
@@ -219,4 +236,4 @@ int main(int argc,char**argv){
 with tempfile.TemporaryDirectory() as tmp:
  t=Path(tmp);(t/'driver').mkdir();(t/'driver/timer.h').write_text('/* stub provided in test */\n');(t/'test.c').write_text(h)
  subprocess.run(['cc','-std=c99','-Wall','-Wextra','-Werror','-Wno-unused-function','-fsanitize=address,undefined','-I'+str(t),'-I'+str(D),'-I'+str(H),str(t/'test.c'),'-o',str(t/'test')],check=True)
- for mode in range(40,72):subprocess.run([str(t/'test'),str(mode)],check=True,env={**os.environ,'ASAN_OPTIONS':'detect_leaks=0'})
+ for mode in range(40,74):subprocess.run([str(t/'test'),str(mode)],check=True,env={**os.environ,'ASAN_OPTIONS':'detect_leaks=0'})

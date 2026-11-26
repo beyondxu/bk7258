@@ -96,9 +96,10 @@ static int printer_waste_seek_from(uint32_t search_steps,bool print_range,uint32
  return 0;
 failed:
  if(continuous)
-  os_printf("[WASTE_CONTINUOUS_STOP] steps=%lu expected=%lu cap=%lu error=%lu gpio24_high_samples=%u\r\n",
+  os_printf("[WASTE_CONTINUOUS_STOP] steps=%lu expected=%lu cap=%lu error=%lu gpio24_high_samples=%u reference_steps=%lu confirm_us=%u\r\n",
             (unsigned long)s_buf_steps,(unsigned long)expected,(unsigned long)search_steps,
-            (unsigned long)s_buf_error,(unsigned)s_buf_oc3_high_samples);
+            (unsigned long)s_buf_error,(unsigned)s_buf_oc3_high_samples,
+            (unsigned long)s_buf_oc3_reference,PRINTER_OC3_HIGH_CONFIRM_US);
  s_buf_oc3_extra=0U;
  printer_buffered_stop();s_waste_station_ready=0U;
  printer_bidirectional_abort();return result;

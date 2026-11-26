@@ -10,7 +10,7 @@
 #define PRINTER_OC3_RETURNED (-15)
 #define PRINTER_OC3_STUCK (-16)
 #define PRINTER_OC3_NOT_FOUND (-18)
-#define PRINTER_OC3_HIGH_CONFIRM_TICKS 3U
+#define PRINTER_OC3_HIGH_CONFIRM_US 2000U
 /* RIGHT may be the optical service endpoint or the inset print endpoint. */
 static int32_t s_bidi_right_offset;
 static uint32_t s_bidi_full_stroke;
@@ -42,6 +42,7 @@ static uint32_t s_buf_short_step_us;
 static volatile bool s_buf_past_oc3;
 static volatile uint32_t s_buf_oc3_extra,s_buf_oc3_min,s_buf_oc3_max,s_buf_oc3_reference;
 static volatile uint8_t s_buf_oc3_high_samples;
+static uint32_t s_buf_oc3_high_since;
 static volatile uint32_t s_buf_sync_us;
 static volatile uint64_t s_buf_endpoint_us;
 static volatile uint8_t s_buf_endpoint_direction,s_buf_endpoint_seen;
@@ -88,6 +89,7 @@ static void printer_buffered_oc3_stop(void){
 }
 static void printer_buffered_tick(timer_id_t id){
  if(id!=PL_MOTOR_TIMER||!s_buf_active)return;
+ const uint32_t now=(uint32_t)bk_aon_rtc_get_us();
  bool hold_for_oc3=false;
  if(s_buf_oc3_extra){
   const bool optical_low=motor_oc3_active();
@@ -97,7 +99,8 @@ static void printer_buffered_tick(timer_id_t id){
    }
    if(!optical_low){
     /* Hold at the current step while confirming a brief GPIO24 release. */
-    if(++s_buf_oc3_high_samples>=PRINTER_OC3_HIGH_CONFIRM_TICKS){
+    if(s_buf_oc3_high_samples++==0U)s_buf_oc3_high_since=now;
+    if(now-s_buf_oc3_high_since>=PRINTER_OC3_HIGH_CONFIRM_US){
      s_buf_error=4U;s_buf_active=0U;(void)bk_timer_stop(id);return;
     }
     hold_for_oc3=true;
@@ -116,7 +119,6 @@ static void printer_buffered_tick(timer_id_t id){
   }
   if(!s_buf_past_oc3&&s_buf_direction&&motor_oc3_active()){printer_buffered_oc3_stop();return;}
  }
- uint32_t now=(uint32_t)bk_aon_rtc_get_us();
  uint32_t gap=now-s_buf_last_irq;
  if(s_buf_steps&&gap>s_buf_period*2U+96U){s_buf_error=1U;s_buf_active=0U;(void)bk_timer_stop(id);return;}
  if(gap>s_buf_max_gap)s_buf_max_gap=gap;
