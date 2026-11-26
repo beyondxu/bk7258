@@ -9,30 +9,25 @@ static uint32_t s_waste_pad_advance;
 static uint32_t s_waste_measured_full;
 static uint32_t s_waste_last_full_seek;
 
-/* An early boot edge cannot establish the seal position. Retrace only the
- * counted outward travel, checking that GPIO24 releases near the edge. */
-static int printer_waste_retreat_from_early_boot_edge(uint32_t outward_steps){
- if(!outward_steps)return -7;
- int result=printer_buffered_set_direction(0U); /* Wait for the endpoint hold. */
- if(result)return result;
- if(!motor_oc3_active()){
-  os_printf("[BOOT_EARLY_EDGE_RETREAT] steps=0 gpio24_released_before_move printing_BLOCKED\r\n");
-  return -7;
+/* Clear an asserted switch at boot so the outward seek always finds its edge. */
+static int printer_waste_release_boot_reference(void){
+ const uint32_t limit=PRINTER_PAGE_PAD_ADVANCE_STEPS+PRINTER_PAD_ADVANCE_STEPS;
+ s_buf_seek_oc3_release=true;
+ int result=printer_buffered_reposition_at_speed(0U,limit,PRINTER_WIPE_STEP_US);
+ s_buf_seek_oc3_release=false;
+ printer_buffered_stop();
+ if(!result){
+  rtos_delay_milliseconds(20U);
+  if(motor_oc3_active())result=PRINTER_OC3_STUCK;
  }
- uint32_t release_steps=outward_steps<PRINTER_PAD_ADVANCE_STEPS?outward_steps:PRINTER_PAD_ADVANCE_STEPS;
- s_bidi_known=true; /* Temporary permission for bounded head-OFF repositioning. */
- result=printer_buffered_reposition(0U,release_steps);
- if(!result&&motor_oc3_active())result=PRINTER_OC3_STUCK;
- if(!result&&outward_steps>release_steps)
-  result=printer_buffered_reposition(0U,outward_steps-release_steps);
- if(!result&&motor_oc3_active())result=PRINTER_OC3_STUCK;
- os_printf("[BOOT_EARLY_EDGE_RETREAT] step_cap=%lu release_check_steps=%lu code=%d printing_BLOCKED\r\n",
-           (unsigned long)outward_steps,(unsigned long)release_steps,result);
- return result?result:-7; /* Arrival at the starting count is not homing. */
+ os_printf("[BOOT_PAD_RELEASE] steps=%lu cap=%lu code=%d head_OFF\r\n",
+           (unsigned long)s_buf_steps,(unsigned long)limit,result);
+ return result;
 }
 
 static int printer_waste_seek_from(uint32_t search_steps,bool print_range,uint32_t advance){
  const bool continuous=advance==PRINTER_PAGE_PAD_ADVANCE_STEPS;
+ const bool boot=advance==PRINTER_PAD_ADVANCE_STEPS;
  s_waste_pad_advance=0U;
  s_waste_station_ready=0U;
  if(!s_bidi_known||s_bidi_at_wiper==print_range||s_bidi_right||s_buf_active)return -7;
@@ -46,7 +41,11 @@ static int printer_waste_seek_from(uint32_t search_steps,bool print_range,uint32
  const uint32_t min_seek=(search_steps==PRINTER_OC3_PREP_SEARCH_STEPS)?
                            min_print_steps+PRINTER_PRINT_SHORTER_STEPS+PRINTER_PAD_PRINT_RETREAT_STEPS:PRINTER_SERVICE_SPAN_STEPS;
  if(!motor_oc3_ready())return -17;
- if(motor_oc3_active())return PRINTER_OC3_STUCK;
+ if(motor_oc3_active()){
+  if(!boot)return PRINTER_OC3_STUCK;
+  int release=printer_waste_release_boot_reference();
+  if(release){printer_bidirectional_abort();return release;}
+ }
  if(tph_mcu_set_head_power(0)!=BK_OK)return -8;
  if(printer_buffered_claim())return -14;
  if(printer_bidi_power_up()!=0)return -8;
@@ -89,11 +88,9 @@ static int printer_waste_seek_from(uint32_t search_steps,bool print_range,uint32
   os_printf("[WASTE_PRINT_RANGE] reanchor=GPIO24 steps=%lu expected=%lu cap=%lu\r\n",
             (unsigned long)seek_steps,(unsigned long)expected,(unsigned long)search_steps);
  }
- if(!print_range&&seek_steps<min_seek){
+ if(!boot&&!print_range&&seek_steps<min_seek){
   os_printf("[WASTE_REFERENCE_REJECT] seek_steps=%lu below_minimum=%u no_ink\r\n",(unsigned long)s_buf_steps,(unsigned)min_seek);
-  result=search_steps==PRINTER_OC3_PREP_SEARCH_STEPS&&!continuous?
-      printer_waste_retreat_from_early_boot_edge(seek_steps):-7;
-  goto failed;
+  result=-7;goto failed;
  }
  os_printf("[WASTE_REFERENCE] OC3_LOW seek_steps=%lu head_OFF\r\n",(unsigned long)s_buf_steps);
  s_oc3_hit=0U;s_buf_error=0U;
@@ -102,6 +99,8 @@ static int printer_waste_seek_from(uint32_t search_steps,bool print_range,uint32
  /* Timer is stopped but U4 remains enabled to hold its microstep position. */
  rtos_delay_milliseconds(20U);
  if(!motor_oc3_active()){result=PRINTER_OC3_NOT_FOUND;goto failed;}
+ if(boot)os_printf("[BOOT_PAD_HOME] gpio_steps=%lu cap=%lu gpio24_LOW\r\n",
+                    (unsigned long)seek_steps,(unsigned long)search_steps);
  if(advance){
   if(!continuous){
    result=printer_buffered_advance_past_oc3();
@@ -151,8 +150,11 @@ static int printer_waste_park_for_preparation(void){
  os_printf("[CARRIAGE_STROKE] full_steps=%lu print_steps=%lu seal_inset=%u pad_inset=%u\r\n",
            (unsigned long)return_steps,(unsigned long)printer_buffered_print_span(),
            PRINTER_PRINT_SHORTER_STEPS,(unsigned)printer_buffered_optical_inset()+s_waste_pad_advance);
+ if(s_waste_pad_advance==PRINTER_PAD_ADVANCE_STEPS)
+  s_buf_oc3_release_limit=PRINTER_PAD_ADVANCE_STEPS+PRINTER_PAD_ADVANCE_STEPS;
  int result=printer_buffered_return_from_reference(return_steps,
              printer_buffered_optical_inset()+s_waste_pad_advance,PRINTER_FULL_TRAVEL_STEP_US);
+ s_buf_oc3_release_limit=0U;
  if(result!=PRINTER_OC3_RETURNED)return result;
  printer_buffered_stop();
  carriage_verified_power_down();

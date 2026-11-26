@@ -42,6 +42,8 @@ static uint8_t s_buf_ink,s_buf_claimed;
 static uint32_t s_buf_cruise_step_us;
 static uint32_t s_buf_short_step_us;
 static volatile bool s_buf_past_oc3;
+static bool s_buf_seek_oc3_release;
+static uint32_t s_buf_oc3_release_limit;
 static volatile uint32_t s_buf_oc3_extra,s_buf_oc3_min,s_buf_oc3_max,s_buf_oc3_reference;
 static volatile uint8_t s_buf_oc3_high_samples;
 static uint32_t s_buf_oc3_high_since;
@@ -91,6 +93,13 @@ static void printer_buffered_oc3_stop(void){
 static void printer_buffered_tick(timer_id_t id){
  if(id!=PL_MOTOR_TIMER||!s_buf_active)return;
  const uint32_t now=(uint32_t)bk_aon_rtc_get_us();
+ if(!s_buf_direction&&s_buf_seek_oc3_release&&!motor_oc3_active()){
+  printer_buffered_record_endpoint(bk_aon_rtc_get_us());
+  s_buf_active=0U;(void)bk_timer_stop(id);return;
+ }
+ if(!s_buf_direction&&s_buf_oc3_release_limit&&s_buf_steps>=s_buf_oc3_release_limit&&motor_oc3_active()){
+  s_buf_error=4U;s_buf_active=0U;(void)bk_timer_stop(id);return;
+ }
  bool hold_for_oc3=false;
  if(s_buf_oc3_extra){
   const bool optical_low=motor_oc3_active();
@@ -265,7 +274,7 @@ static int printer_buffered_reposition_at_speed(uint8_t direction,uint32_t steps
  }
  (void)bk_timer_stop(PL_MOTOR_TIMER);
  if(direction&&!s_buf_past_oc3&&motor_oc3_active()){s_oc3_hit=1U;goto failed;}
- if(s_buf_error||s_buf_steps!=steps)goto failed;
+ if(s_buf_error||(s_buf_steps!=steps&&!(s_buf_seek_oc3_release&&!motor_oc3_active())))goto failed;
  s_bidi_known=true;return 0;
 failed:
  if(s_oc3_hit&&!s_oc3_returning)

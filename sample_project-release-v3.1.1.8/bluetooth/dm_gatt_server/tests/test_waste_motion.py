@@ -14,7 +14,9 @@ h=h.replace('static unsigned prior_step_period,', 'static unsigned stationary_ru
 h=h.replace('return now_us/32U*32U;', 'return stationary_run&&mode==47?0U:now_us/32U*32U;')
 h=h.replace('mode==29||mode==30)', 'mode==29||mode==30||mode==40||mode==43||mode==44||mode==45||mode==46||mode==47||mode==48)')
 h=h.replace('if(((mode==13', 'if((mode==51&&!oc3_events&&oc3_right_pulses==101U)||((mode==13')
-h=h.replace('mode!=18&&mode!=24)', 'mode!=18&&mode!=24&&mode!=43&&mode!=75)')
+h=h.replace('if(++oc3_left_edges>=8&&mode!=18&&mode!=24)oc3_level=1;',
+            'if(mode==77 && !oc3_events){if(pos<(int32_t)PRINTER_OC3_REFERENCE_STEPS)oc3_level=1;}\n'
+            '  else if(++oc3_left_edges>=8&&mode!=18&&mode!=24&&mode!=43&&mode!=75&&mode!=78)oc3_level=1;')
 h=h.replace('if(cache.state==PL_ARMED){', 'if(cache.state==PL_ARMED&&mode!=45){')
 h=h.replace('assert(timer_enabled);assert(pos==', 'assert(timer_enabled||stationary_run);if(stationary_run)assert(!timer_enabled&&pos==(int32_t)PRINTER_OC3_REFERENCE_STEPS);else assert(pos==')
 h=h.replace('if(mode!=4){', 'if(stationary_run){assert(!timer_enabled&&pos==(int32_t)PRINTER_OC3_REFERENCE_STEPS);}else if(mode!=4){')
@@ -34,7 +36,7 @@ h=h.replace('if(cache.fired==1180)cache.state=PL_DONE;',
 h=h.replace('return !sync_high&&(cache.state==PL_RUNNING',
             'if(sync_high&&cache.state==PL_DONE&&(mode==60||(mode==59&&now_us<audit_done_at)))return 0U;return !sync_high&&(cache.state==PL_RUNNING')
 h=h.replace('mode==48)&&oc3_level&&pos==(int32_t)PRINTER_OC3_REFERENCE_STEPS',
-            'mode==48||mode==63||mode==64||mode==65||mode==68||mode==69||mode==72||mode==73||mode==75||mode==76)&&oc3_level&&pos==(int32_t)PRINTER_OC3_REFERENCE_STEPS-(mode==63?32:mode==64?65:0)')
+            'mode==48||mode==63||mode==64||mode==65||mode==68||mode==69||mode==72||mode==73||mode==75||mode==76||mode==77)&&oc3_level&&pos==(int32_t)PRINTER_OC3_REFERENCE_STEPS-(mode==63?32:mode==64?65:0)')
 h=h.replace('static void (*oc3_handler)(void);',
             'static void (*oc3_handler)(void);\nstatic unsigned oc3_bounce_ticks,oc3_hold_ticks;')
 h=h.replace('if(mode!=21){assert(oc3_handler);oc3_handler();}',
@@ -66,28 +68,45 @@ int main(int argc,char**argv){
  uint8_t*row=malloc(PL_ROW_BYTES);for(unsigned i=0;i<PL_ROW_BYTES;i++)row[i]=(i%100U<52U&&i/100U%9U<8U)?1U:0U;
  if(mode==49){assert(printer_waste_fire(row)==-7&&!hc_fires&&!oc3_right_pulses);free(row);return 0;}
  if(mode==42)oc3_level=0;
- if(requested==70||requested==71||requested>=74){
-  const unsigned seek_steps=requested==70?10363U:requested==71?11072U:10879U;
-  pos=PRINTER_OC3_REFERENCE_STEPS-seek_steps;
+ if(requested==77||requested==78||requested==79){
+  mode=requested;
+  if(requested!=79){pos=PRINTER_OC3_REFERENCE_STEPS+560;oc3_level=0;}
   const int32_t start_pos=pos;
-  if(requested>=75)mode=requested;
   const int rc=printer_waste_seek(PRINTER_OC3_PREP_SEARCH_STEPS);
-  if(requested!=71){
-   const unsigned reverse_steps=requested==75?187U:requested==76?0U:seek_steps;
-   assert(rc==(requested==75?PRINTER_OC3_STUCK:-7));
-   assert(pos==(int32_t)PRINTER_OC3_REFERENCE_STEPS-(int32_t)reverse_steps);
-   assert(pos>=start_pos&&oc3_right_pulses==seek_steps&&s_blank_spi_steps[0]==reverse_steps);
+  if(requested==77){
+   assert(!rc&&s_waste_station_ready&&s_waste_last_full_seek==1U);
+   assert(s_blank_spi_steps[0]==561U&&pos==PRINTER_OC3_REFERENCE_STEPS+187);
+   assert(!printer_waste_park_for_preparation()&&pos==(int32_t)PRINTER_OC3_REFERENCE_STEPS-11254);
+  }else if(requested==78){
+   assert(rc==PRINTER_OC3_STUCK&&pos==start_pos-747&&!oc3_right_pulses);
+  }else{
+   assert(rc==PRINTER_OC3_NOT_FOUND&&oc3_right_pulses==PRINTER_OC3_PREP_SEARCH_STEPS);
+   assert(!s_blank_spi_steps[0]);
+  }
+  assert(!hc_fires&&!total_paper&&!timer_enabled&&!boost&&!s_buf_seek_oc3_release);
+  free(row);puts("PASS initial LOW re-home and bounded stuck/missing optical failures");return 0;
+ }
+ if(requested==70||requested==71||requested>=74){
+  const unsigned seek_steps=requested==70?10363U:requested==71?11072U:requested==80?307U:10879U;
+  pos=PRINTER_OC3_REFERENCE_STEPS-seek_steps;
+  if(requested==75||requested==76)mode=requested;
+  const int rc=printer_waste_seek(PRINTER_OC3_PREP_SEARCH_STEPS);
+  if(requested==76){
+   assert(rc==PRINTER_OC3_NOT_FOUND&&pos==PRINTER_OC3_REFERENCE_STEPS&&oc3_right_pulses==seek_steps);
    assert(!s_waste_station_ready&&!s_bidi_known&&!boost&&!timer_enabled);
   }else{
    assert(!rc&&s_waste_station_ready&&s_waste_pad_advance==187U);
-   assert(full_travel_edges[1]>10000U&&!full_travel_edges[0]);
    assert(pos==PRINTER_OC3_REFERENCE_STEPS+187&&oc3_right_pulses==seek_steps+187U);
-   assert(!printer_waste_park_for_preparation());
-   assert(full_travel_edges[0]>10000U);
-   assert(pos==(int32_t)PRINTER_OC3_REFERENCE_STEPS-11254&&s_bidi_at_wiper);
+   if(requested==75){
+    assert(printer_waste_park_for_preparation()==-14&&!s_bidi_known&&s_blank_spi_steps[0]==374U);
+   }else{
+    assert(!printer_waste_park_for_preparation()&&full_travel_edges[0]>10000U);
+    assert(pos==(int32_t)PRINTER_OC3_REFERENCE_STEPS-11254&&s_bidi_at_wiper);
+   }
+   assert(!s_buf_oc3_release_limit);
   }
   assert(!hc_fires&&!total_paper);
-  free(row);puts("PASS normal boot reference and bounded retreat after an early edge");return 0;
+  free(row);puts("PASS arbitrary boot origin, transient edge rejection and bounded return");return 0;
  }
  if(requested==65){
   mode=65;
@@ -247,4 +266,4 @@ int main(int argc,char**argv){
 with tempfile.TemporaryDirectory() as tmp:
  t=Path(tmp);(t/'driver').mkdir();(t/'driver/timer.h').write_text('/* stub provided in test */\n');(t/'test.c').write_text(h)
  subprocess.run(['cc','-std=c99','-Wall','-Wextra','-Werror','-Wno-unused-function','-fsanitize=address,undefined','-I'+str(t),'-I'+str(D),'-I'+str(H),str(t/'test.c'),'-o',str(t/'test')],check=True)
- for mode in range(40,77):subprocess.run([str(t/'test'),str(mode)],check=True,env={**os.environ,'ASAN_OPTIONS':'detect_leaks=0'})
+ for mode in range(40,81):subprocess.run([str(t/'test'),str(mode)],check=True,env={**os.environ,'ASAN_OPTIONS':'detect_leaks=0'})
