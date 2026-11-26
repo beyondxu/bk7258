@@ -11,18 +11,18 @@ static uint64_t bk_aon_rtc_get_us(void){return now;}
 #include "printer_ink_idle.h"
 int main(void){
  uint64_t idle;unsigned known;
- assert(printer_prespray_plan(0,&idle,&known)==600&&!known);
+ assert(printer_prespray_plan(0,&idle,&known)==120&&!known);
  printer_prespray_note_ink(); /* A timestamp of zero is valid. */
  for(unsigned i=0;i<6;++i){
   const uint64_t gaps[]={0,179999999,180000000,899999999,900000000,UINT64_C(5000000000)};
-  const unsigned rounds[]={5,5,40,40,600,600};
+  const unsigned rounds[]={5,5,40,40,120,120};
   assert(printer_prespray_plan(gaps[i],&idle,&known)==rounds[i]&&known&&idle==gaps[i]);
  }
  now=UINT64_C(5000000000);printer_prespray_note_ink();
  assert(printer_prespray_plan(now+1,&idle,&known)==5&&known&&idle==1);
- assert(printer_prespray_plan(now-1,&idle,&known)==600&&!known);
+ assert(printer_prespray_plan(now-1,&idle,&known)==120&&!known);
  assert(printer_prespray_plan(now+UINT64_C(180000000),&idle,&known)==40&&known);
- puts("PASS RTC policy: unknown=600, <3min=5, 3..15min=40, >=15min=600; 64-bit, zero timestamp, rollback");
+ puts("PASS RTC policy: unknown=120, <3min=5, 3..15min=40, >=15min=120; 64-bit, zero timestamp, rollback");
 }
 '''
 with tempfile.TemporaryDirectory() as t:
