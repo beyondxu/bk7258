@@ -80,8 +80,10 @@ int main(int argc,char**argv){
    assert(!s_waste_station_ready&&!s_bidi_known&&!boost&&!timer_enabled);
   }else{
    assert(!rc&&s_waste_station_ready&&s_waste_pad_advance==187U);
+   assert(full_travel_edges[1]>10000U&&!full_travel_edges[0]);
    assert(pos==PRINTER_OC3_REFERENCE_STEPS+187&&oc3_right_pulses==seek_steps+187U);
    assert(!printer_waste_park_for_preparation());
+   assert(full_travel_edges[0]>10000U);
    assert(pos==(int32_t)PRINTER_OC3_REFERENCE_STEPS-11254&&s_bidi_at_wiper);
   }
   assert(!hc_fires&&!total_paper);
@@ -103,11 +105,13 @@ int main(int argc,char**argv){
    if(replay_early)pos+=127; /* Hardware reaches the same optical point sooner. */
    mode=requested==69&&visit==1U?69:40;
    const unsigned before=oc3_right_pulses,starts=timer_starts;
+   const unsigned outbound_edges=full_travel_edges[1],return_edges=full_travel_edges[0];
    assert(!printer_waste_seek_for_page()&&s_waste_pad_advance==560U);
    assert(s_waste_measured_full==s_buf_steps&&timer_starts==starts+1U);
    assert(pos==PRINTER_OC3_REFERENCE_STEPS+560);
    assert(oc3_right_pulses-before==(replay_early?11687U:visit?11814U:11627U));
    assert(!printer_waste_park_for_preparation()&&pos==seal&&s_bidi_at_wiper);
+   assert(full_travel_edges[1]-outbound_edges>10000U&&full_travel_edges[0]-return_edges>10000U);
   }
   assert(printer_buffered_full_return()==11254U&&printer_buffered_print_span()==10132U);
   if(requested==69){
@@ -165,10 +169,12 @@ int main(int argc,char**argv){
    mode=requested==63?63:40;
    const unsigned right_before=oc3_right_pulses;
    const unsigned starts=timer_starts;
+   const unsigned outbound_edges=full_travel_edges[1],return_edges=full_travel_edges[0];
    assert(!printer_waste_seek_from_print_left()&&s_waste_station_ready&&!oc3_level);
    assert(timer_starts==starts+2U); /* relocation and one continuous seek */
    s_waste_station_ready=0U;
    assert(!printer_waste_return_to_print_left());
+   assert(full_travel_edges[1]-outbound_edges>10000U&&full_travel_edges[0]-return_edges>9900U);
    assert(pos==seal+935&&!s_bidi_at_wiper&&!s_bidi_right&&oc3_level);
    assert(s_buf_steps==10132U);
    assert(oc3_right_pulses-right_before==(mode==63?11782U:11814U));

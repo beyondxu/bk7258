@@ -12,7 +12,7 @@
 #define PRINTER_CANVAS_COLUMN_US 632U
 #define PRINTER_CANVAS_X_PITCH_CENTI_UM 4388U
 #define PRINTER_CANVAS_COLUMNS 1180U
-#if PRINTER_CANVAS_STEP_HIGH_US >= PRINTER_CANVAS_STEP_US
+#if PRINTER_CANVAS_STEP_HIGH_US >= PRINTER_CANVAS_STEP_US || PRINTER_CANVAS_STEP_HIGH_US >= PRINTER_FULL_TRAVEL_STEP_US
 #error STEP high time must leave a low interval
 #endif
 /* Mirror the first/last timed column around the configured print-stroke midpoint.

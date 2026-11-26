@@ -33,6 +33,7 @@ static printer_line_cache_t cache;
 static uint64_t now_us,next_bk,next_hc,step_rise_us;
 static unsigned prior_step_period,have_step_rise,slow_wipe_edges,page_short_edges,image_cruise_edges,fast_edges;
 static unsigned short_trip_pulses[2];
+static unsigned full_travel_edges[2];
 static unsigned timer_enabled,timer_period,timer_reserved,boost,step,dir,sync_high=1,mode,hc_fires,irq_stall;
 static int32_t pos,max_pos;
 static unsigned oc3_level=1,oc3_events,oc3_left_edges,oc3_right_pulses;
@@ -66,6 +67,7 @@ static void up(unsigned p){
  assert(p==19&&boost&&!step);
  if(test_wipe_profile())++short_trip_pulses[dir];
  if(have_step_rise&&prior_step_period==82U&&timer_period==82U){assert(now_us-step_rise_us==82U);++fast_edges;}
+ if(have_step_rise&&prior_step_period==68U&&timer_period==68U){assert(now_us-step_rise_us==68U);++full_travel_edges[dir];}
  if(have_step_rise&&prior_step_period==164U&&timer_period==164U){assert(now_us-step_rise_us==164U);++slow_wipe_edges;}
  if(have_step_rise&&prior_step_period==77U&&timer_period==77U){
   assert(now_us-step_rise_us==77U);
@@ -111,7 +113,7 @@ static uint32_t bk_timer_get_period(timer_id_t id){assert(id==4);return timer_re
 static int bk_timer_stop(timer_id_t id){assert(id==4);timer_enabled=0;return 0;}
 static int bk_timer_cancel(timer_id_t id){assert(id==4&&!timer_enabled);timer_reserved=0;return 0;}
 static int bk_timer_start_us(timer_id_t id,unsigned period,timer_isr_t cb){assert(id==4&&!timer_enabled);assert(period==400U);timer_period=period;timer_reserved=period;callback=cb;timer_enabled=1;next_bk=now_us+period;return 0;}
-static int bk_timer_set_period_us(timer_id_t id,unsigned period){assert(id==4&&timer_enabled);assert(period>=77U&&period<=400U);timer_period=period;timer_reserved=period;return 0;}
+static int bk_timer_set_period_us(timer_id_t id,unsigned period){assert(id==4&&timer_enabled);assert(period>=68U&&period<=400U);timer_period=period;timer_reserved=period;return 0;}
 static void rtos_delay_milliseconds(unsigned n){assert(n==1);advance(mode==5?7000U:1000U);}
 static int printer_bidi_power_up(void){boost=1;s_bidi_power=true;return 0;}
 static void printer_bidirectional_abort(void);
@@ -197,6 +199,7 @@ int main(int argc,char**argv){
   assert(PRINTER_OC3_BOOT_RETURN_STEPS==PRINTER_OC3_PREP_RETURN_STEPS);
   assert(PRINTER_OC3_FINAL_RETURN_STEPS==11221U&&PRINTER_OC3_BOOT_RETURN_STEPS==11315U);
   assert(!printer_buffered_boot_round_trip());
+  assert(full_travel_edges[0]>10000U&&full_travel_edges[1]>10000U);
   assert(s_buf_steps==11315U&&pos==-468&&s_bidi_at_wiper);
   assert(!printer_startup_prepare(1U)&&pos==0&&total_paper==4212);
   assert(!printer_execute_buffered_line(row,1)&&pos==10473);
@@ -297,6 +300,7 @@ int main(int argc,char**argv){
  if(mode==6){
   assert(!printer_startup_prepare(1U));
   assert(short_trip_pulses[0]==3740U&&short_trip_pulses[1]==3740U);
+  assert(!full_travel_edges[0]&&!full_travel_edges[1]);
   assert(page_short_edges>7000U&&!slow_wipe_edges&&!image_cruise_edges);
   assert(s_bidi_known&&!hc_fires&&!timer_enabled&&sync_high);
 #if PRINTER_STARTUP_LOAD_STEPS > 0
@@ -324,7 +328,9 @@ int main(int argc,char**argv){
   assert(!printer_buffered_park_at_wiper()&&pos==-(int32_t)PRINTER_MAINTENANCE_EXTRA_STEPS&&s_buf_steps==PRINTER_MAINTENANCE_EXTRA_STEPS);
   assert(!printer_buffered_leave_wiper()&&pos==0);
   assert(!printer_execute_buffered_line(NULL,1)&&pos==(int32_t)PRINTER_SERVICE_SPAN_STEPS);
+  const unsigned return_edges=full_travel_edges[0];
   assert(!printer_bidirectional_finish()&&pos==-(int32_t)PRINTER_MAINTENANCE_EXTRA_STEPS&&s_buf_steps==PRINTER_SERVICE_SPAN_STEPS+PRINTER_MAINTENANCE_EXTRA_STEPS&&!boost);
+  assert(full_travel_edges[0]-return_edges>10000U);
   assert(!printer_buffered_leave_wiper()&&pos==0);printer_buffered_stop();
  }else if(mode==4){assert(rc==-14&&!s_bidi_known&&s_buf_steps==3000&&!timer_enabled&&pos==3000);}
  else {assert(rc==(mode==3?-14:-13));assert(pos==0&&!s_blank_spi_steps[0]&&!s_blank_spi_steps[1]&&!timer_enabled&&!hc_fires);}

@@ -324,10 +324,10 @@ static void app_printer_task_entry(void *arg) {
     os_printf("[PRINTER_LINK_STATE] ready=%u selftest_attempts=%d printing=%s\r\n",
               (unsigned)link_ready, retry, link_ready ? "ALLOWED" : "BLOCKED");
 #if PRINTER_SERVICE_PRINT && PRINTER_PRESPRAY
-    os_printf("[PRINTER_MOTION_PLAN] boot_seek_cap=%u boot_pad_advance_steps=%u page_short_rounds=%u page_short_steps=%u page_short_step_us=%u page_pad_advance_steps=%u print_step_us=%u print_column_us=%u\r\n",
+    os_printf("[PRINTER_MOTION_PLAN] boot_seek_cap=%u boot_pad_advance_steps=%u page_short_rounds=%u page_short_steps=%u page_short_step_us=%u page_pad_advance_steps=%u print_step_us=%u print_column_us=%u full_travel_step_us=%u\r\n",
               PRINTER_OC3_PREP_SEARCH_STEPS, PRINTER_PAD_ADVANCE_STEPS,
               PRINTER_PAGE_SHORT_ROUNDS, PRINTER_STARTUP_WIPE_STEPS, PRINTER_CANVAS_STEP_US,
-              PRINTER_PAGE_PAD_ADVANCE_STEPS, PRINTER_CANVAS_STEP_US, PRINTER_CANVAS_COLUMN_US);
+              PRINTER_PAGE_PAD_ADVANCE_STEPS, PRINTER_CANVAS_STEP_US, PRINTER_CANVAS_COLUMN_US, PRINTER_FULL_TRAVEL_STEP_US);
 #endif
     if (!link_ready) {
         os_printf("[SYS] Check HC32 link before printing.\r\n");

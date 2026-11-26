@@ -59,6 +59,8 @@ static int printer_waste_seek_from(uint32_t search_steps,bool print_range,uint32
  s_buf_oc3_max=print_range&&expected+PRINTER_OC3_PRINT_WINDOW_STEPS<search_steps?
                  expected+PRINTER_OC3_PRINT_WINDOW_STEPS:search_steps;
  s_buf_target=search_steps;s_buf_direction=1U;s_buf_ink=0U;s_buf_sync=0U;
+ const uint32_t cruise_step_us=advance?PRINTER_FULL_TRAVEL_STEP_US:PL_SERVICE_STEP_US;
+ s_buf_cruise_step_us=cruise_step_us;
  s_oc3_hit=0U;s_buf_steps=0U;s_buf_error=0U;s_buf_max_gap=0U;s_buf_cruise_max_gap=0U;
  s_buf_period=printer_buffered_period(0U);s_buf_last_irq=(uint32_t)bk_aon_rtc_get_us();
  uint32_t begin=s_buf_last_irq;s_bidi_known=false;
@@ -111,8 +113,8 @@ static int printer_waste_seek_from(uint32_t search_steps,bool print_range,uint32
   s_waste_pad_advance=advance;
   if(!print_range)s_waste_last_full_seek=seek_steps;
   s_waste_measured_full=seek_steps+advance+(print_range?PRINTER_PRINT_SHORTER_STEPS:0U);
-  os_printf("[WASTE_MEASURED_STROKE] gpio_steps=%lu advance_steps=%lu measured_full_steps=%lu continuous=%u\r\n",
-            (unsigned long)seek_steps,(unsigned long)advance,(unsigned long)s_waste_measured_full,continuous);
+  os_printf("[WASTE_MEASURED_STROKE] gpio_steps=%lu advance_steps=%lu measured_full_steps=%lu continuous=%u cruise_step_us=%u\r\n",
+            (unsigned long)seek_steps,(unsigned long)advance,(unsigned long)s_waste_measured_full,continuous,(unsigned)cruise_step_us);
  }
  s_waste_station_ready=1U;
  os_printf("[WASTE_POSITION] endpoint=%s advance_steps=%u settle_ms=20 gpio24_LOW motor_hold head_OFF\r\n",
@@ -150,7 +152,7 @@ static int printer_waste_park_for_preparation(void){
            (unsigned long)return_steps,(unsigned long)printer_buffered_print_span(),
            PRINTER_PRINT_SHORTER_STEPS,(unsigned)printer_buffered_optical_inset()+s_waste_pad_advance);
  int result=printer_buffered_return_from_reference(return_steps,
-             printer_buffered_optical_inset()+s_waste_pad_advance);
+             printer_buffered_optical_inset()+s_waste_pad_advance,PRINTER_FULL_TRAVEL_STEP_US);
  if(result!=PRINTER_OC3_RETURNED)return result;
  printer_buffered_stop();
  carriage_verified_power_down();
@@ -175,7 +177,7 @@ static int printer_waste_return_to_print_left(void){
  if(motor_oc3_active()){printer_bidirectional_abort();return PRINTER_OC3_STUCK;}
  s_bidi_right_offset=0;
  os_printf("[PAGE_PREP_PAD_RETREAT] steps=%lu toward=SEAL head_OFF\r\n",(unsigned long)retreat);
- result=printer_execute_buffered_line(NULL,0U);
+ result=printer_execute_buffered_line_at_speed(NULL,0U,PRINTER_FULL_TRAVEL_STEP_US);
  if(result)return result;
  printer_buffered_stop();
  os_printf("[PAGE_PREP_LAST_VISIT_DONE] steps_each=%lu parked=PRINT_LEFT head_OFF\r\n",

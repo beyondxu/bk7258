@@ -112,7 +112,7 @@ static int printer_bidirectional_finish(void) {
     if (!s_bidi_known)return -7;
     if (!s_bidi_power)return 0;
 #if PRINTER_BUFFERED_LINE
-    int result=printer_buffered_park_at_wiper();
+    int result=printer_buffered_park_at_wiper_at_speed(PRINTER_FULL_TRAVEL_STEP_US);
     if(result)return result;
     printer_buffered_stop();
 #else
