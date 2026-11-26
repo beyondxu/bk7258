@@ -3,7 +3,7 @@
 #include <driver/timer.h>
 #include "printer_canvas_geometry.h"
 #define PL_MOTOR_TIMER TIMER_ID4
-#define PL_STEP_PERIOD_US PRINTER_CANVAS_STEP_US
+#define PL_SERVICE_STEP_US 82U
 /* V32: shorten the measured slow endpoint phase; keep cruise and ramps. */
 #define PL_START_PERIOD_US 400U
 #define PL_RAMP_STEPS 64U
@@ -64,7 +64,13 @@ static int printer_buffered_set_direction(uint8_t direction){
  return 0;
 }
 static uint32_t printer_buffered_ramp_steps(void){return s_buf_ink?PRINTER_CANVAS_RAMP_STEPS:PL_RAMP_STEPS;}
-static uint32_t printer_buffered_period(uint32_t i){uint32_t ramp=printer_buffered_ramp_steps();uint32_t cruise=s_buf_short_step_us?s_buf_short_step_us:PL_STEP_PERIOD_US;uint32_t edge=i<s_buf_target-1U-i?i:s_buf_target-1U-i;return edge<ramp?PL_START_PERIOD_US-(PL_START_PERIOD_US-cruise)*edge/ramp:cruise;}
+static uint32_t printer_buffered_period(uint32_t i){
+ uint32_t ramp=printer_buffered_ramp_steps();
+ uint32_t cruise=s_buf_ink?PRINTER_CANVAS_STEP_US:PL_SERVICE_STEP_US;
+ if(s_buf_short_step_us)cruise=s_buf_short_step_us;
+ uint32_t edge=i<s_buf_target-1U-i?i:s_buf_target-1U-i;
+ return edge<ramp?PL_START_PERIOD_US-(PL_START_PERIOD_US-cruise)*edge/ramp:cruise;
+}
 static void printer_buffered_stop(void){
  s_buf_active=0U;
  if(s_buf_claimed){(void)bk_timer_stop(PL_MOTOR_TIMER);(void)bk_timer_cancel(PL_MOTOR_TIMER);s_buf_claimed=0U;}
@@ -212,7 +218,7 @@ static int printer_execute_buffered_line(const uint8_t*columns,uint8_t direction
  if(!direction)s_bidi_left_offset=0;
  s_bidi_at_wiper=!direction&&s_bidi_left_offset==printer_buffered_seal_offset();
  if(optical_end){s_oc3_hit=0U;s_buf_error=0U;os_printf("[OC3_ENDPOINT] gpio=24 print_row_complete next=LEFT no_page_failure\r\n");}
- os_printf("[BUFFERED_SCAN] direction=%s blank=%u code=0 pulses=%lu columns=%lu prepare_us=%lu motion_us=%lu cruise_step_us=%u step_high_us=%u max_irq_gap_us=%lu cruise_max_gap_us=%lu one_start_SYNC ink_position_unverified\r\n",direction?"RIGHT":"LEFT",columns?0U:1U,(unsigned long)s_buf_steps,(unsigned long)s_blank_spi_columns,(unsigned long)prepare_us,(unsigned long)(bk_aon_rtc_get_us()-begin),PL_STEP_PERIOD_US,PRINTER_CANVAS_STEP_HIGH_US,(unsigned long)s_buf_max_gap,(unsigned long)s_buf_cruise_max_gap);
+ os_printf("[BUFFERED_SCAN] direction=%s blank=%u code=0 pulses=%lu columns=%lu prepare_us=%lu motion_us=%lu cruise_step_us=%u step_high_us=%u max_irq_gap_us=%lu cruise_max_gap_us=%lu one_start_SYNC ink_position_unverified\r\n",direction?"RIGHT":"LEFT",columns?0U:1U,(unsigned long)s_buf_steps,(unsigned long)s_blank_spi_columns,(unsigned long)prepare_us,(unsigned long)(bk_aon_rtc_get_us()-begin),columns?PRINTER_CANVAS_STEP_US:PL_SERVICE_STEP_US,PRINTER_CANVAS_STEP_HIGH_US,(unsigned long)s_buf_max_gap,(unsigned long)s_buf_cruise_max_gap);
  return 0;
 stop:
  printer_buffered_stop();

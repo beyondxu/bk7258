@@ -3,6 +3,7 @@
 /* Validate the last visit against the preceding full seek. The calibrated
  * target still caps travel even if the optical edge is later than expected. */
 #define PRINTER_OC3_PRINT_WINDOW_STEPS 64U
+#define PRINTER_WASTE_CLEAN_COLUMN_US 673U
 static uint8_t s_waste_station_ready;
 static uint32_t s_waste_pad_advance;
 static uint32_t s_waste_measured_full;
@@ -163,7 +164,7 @@ static int printer_waste_fire_profile(const uint8_t *row,unsigned prespray){
  if(!row||!s_waste_station_ready||!s_bidi_known||!s_bidi_right||s_bidi_at_wiper||s_bidi_right_offset!=(int32_t)(printer_buffered_optical_inset()+s_waste_pad_advance)||s_buf_active||s_buf_claimed||!motor_oc3_active())return -7;
  tph_line_ticket_t ticket={0};int result=-13;
  const char *stage="prepare";
- const uint32_t period_us=prespray?PL_PRESPRAY_PERIOD_US:PRINTER_CANVAS_COLUMN_US;
+ const uint32_t period_us=prespray?PL_PRESPRAY_PERIOD_US:PRINTER_WASTE_CLEAN_COLUMN_US;
  if((prespray?tph_line_prepare_prespray(row,period_us,&ticket):tph_line_prepare(row,period_us,&ticket))!=BK_OK)goto stop;
  if(!motor_oc3_active()){
   os_printf("[WASTE_POSITION_LOST] stage=BEFORE_SYNC GPIO24_released no_fire\r\n");

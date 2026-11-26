@@ -1,5 +1,6 @@
 #ifndef PRINTER_STARTUP_PREPARE_H
 #define PRINTER_STARTUP_PREPARE_H
+#include "printer_canvas_geometry.h"
 /* Counted LEFT origin is still required. No sensor homing is implied. */
 static int printer_startup_prepare(unsigned for_page) {
     if (!s_bidi_known || s_bidi_right) return -7;
@@ -14,10 +15,10 @@ static int printer_startup_prepare(unsigned for_page) {
 #if PRINTER_BUFFERED_LINE && PRINTER_STARTUP_WIPE_STEPS > 0
         /* Run the short head-OFF carriage preparation before loading. */
         result=printer_buffered_short_round_trips(PRINTER_STARTUP_WIPE_STEPS,PRINTER_STARTUP_WIPE_ROUNDS,
-                                                  PRINTER_PAGE_SHORT_STEP_US);
+                                                  PRINTER_CANVAS_STEP_US);
         if(result==PRINTER_OC3_RETURNED&&s_bidi_known&&s_bidi_at_wiper)
             result=printer_buffered_short_round_trips(PRINTER_STARTUP_WIPE_STEPS,PRINTER_STARTUP_WIPE_ROUNDS,
-                                                  PRINTER_PAGE_SHORT_STEP_US);
+                                                  PRINTER_CANVAS_STEP_US);
         if (result) return result;
 #endif
 #if PRINTER_PRESPRAY

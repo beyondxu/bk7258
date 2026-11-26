@@ -27,7 +27,7 @@ h=h.replace('static void rtos_delay_milliseconds(unsigned n){assert(n==1);advanc
 h=h.replace('pl_status(&cache,p);if(mode==52', 'pl_status(&cache,p);if(mode==55&&cache.state==PL_READY)oc3_level=1;if(mode==52')
 h=h.replace('++cache.fired;++hc_fires;', '++cache.fired;++hc_fires;if(stationary_run&&mode==56&&hc_fires==10U)oc3_level=1;')
 h=h.replace('(int32_t)PRINTER_SERVICE_SPAN_STEPS','(int32_t)PRINTER_OC3_REFERENCE_STEPS')
-h=h.replace('assert(cache.period_us==PRINTER_CANVAS_COLUMN_US);', 'assert(cache.period_us==(cache.fire_profile==PL_FIRE_PRESPRAY?PL_PRESPRAY_PERIOD_US:PRINTER_CANVAS_COLUMN_US));')
+h=h.replace('assert(cache.period_us==PRINTER_CANVAS_COLUMN_US);', 'assert(cache.period_us==(cache.fire_profile==PL_FIRE_PRESPRAY?PL_PRESPRAY_PERIOD_US:673U));')
 h=h.replace('pl_status(&cache,p);if(mode==55', 'pl_status(&cache,p);if(mode==57||mode==58){uint8_t*q=p;if(mode==57)q[10]&=~PL_CAP_PRESPRAY_FAST;else pl_put16(q+33,500U);pl_put32(q+96,pl_crc(q,96));}if(mode==55')
 h=h.replace('if(cache.fired==1180)cache.state=PL_DONE;',
             'if(cache.fired==1180){cache.state=PL_DONE;audit_done_at=now_us+150000U;}')
@@ -81,10 +81,10 @@ int main(int argc,char**argv){
    if(replay_early)pos+=127; /* Hardware reaches the same optical point sooner. */
    mode=requested==69&&visit==1U?69:40;
    const unsigned before=oc3_right_pulses,starts=timer_starts;
-   assert(!printer_waste_seek_for_page()&&s_waste_pad_advance==748U);
+   assert(!printer_waste_seek_for_page()&&s_waste_pad_advance==654U);
    assert(s_waste_measured_full==s_buf_steps&&timer_starts==starts+1U);
-   assert(pos==PRINTER_OC3_REFERENCE_STEPS+748);
-   assert(oc3_right_pulses-before==(replay_early?11875U:visit?12002U:11815U));
+   assert(pos==PRINTER_OC3_REFERENCE_STEPS+654);
+   assert(oc3_right_pulses-before==(replay_early?11781U:visit?11908U:11721U));
    assert(!printer_waste_park_for_preparation()&&pos==seal&&s_bidi_at_wiper);
   }
   assert(printer_buffered_full_return()==11254U&&printer_buffered_print_span()==10132U);
@@ -99,11 +99,11 @@ int main(int argc,char**argv){
    if(requested==67){
     assert(rc!=0&&!s_waste_station_ready&&!hc_fires);
    }else{
-    assert(!rc&&s_waste_station_ready&&pos==PRINTER_OC3_REFERENCE_STEPS+748);
-    assert(s_waste_measured_full==11875U);
+    assert(!rc&&s_waste_station_ready&&pos==PRINTER_OC3_REFERENCE_STEPS+654);
+    assert(s_waste_measured_full==11781U);
     s_waste_station_ready=0U;
     assert(!printer_waste_return_to_print_left()&&pos==seal+935);
-    assert(max_pos==PRINTER_OC3_REFERENCE_STEPS+748);
+    assert(max_pos==PRINTER_OC3_REFERENCE_STEPS+654);
    }
    free(row);
    puts("PASS previous 11127-step seek reanchors 10192-step visit and rejects a 65-step mismatch");
@@ -133,8 +133,8 @@ int main(int argc,char**argv){
    assert(!printer_waste_return_to_print_left());
    assert(pos==seal+935&&!s_bidi_at_wiper&&!s_bidi_right&&oc3_level);
    assert(s_buf_steps==10132U);
-   assert(oc3_right_pulses-right_before==(mode==63?11970U:12002U));
-   assert(max_pos==PRINTER_OC3_REFERENCE_STEPS+748);
+   assert(oc3_right_pulses-right_before==(mode==63?11876U:11908U));
+   assert(max_pos==PRINTER_OC3_REFERENCE_STEPS+654);
    assert(!hc_fires&&!total_paper&&!timer_enabled&&!s_buf_claimed);
    assert(!printer_buffered_park_at_wiper()&&pos==seal);
    free(row);

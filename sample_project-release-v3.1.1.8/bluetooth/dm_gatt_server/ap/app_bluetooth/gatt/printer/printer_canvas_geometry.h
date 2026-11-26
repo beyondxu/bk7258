@@ -6,11 +6,10 @@
  * 1180 transport columns include CMY horizontal offset compensation. At this
  * pitch the actual APP canvas is 1139 columns, approximately 50mm wide.
  * APP white margins are image pixels and must not be cropped. */
-/* V31: match the sample scope estimate:82us period,27us HIGH,55us LOW.
- * Column673us rounds985*82/120; baseline pitch error is -0.0124%. */
-#define PRINTER_CANVAS_STEP_US 82U
+/* Preserve the canvas pitch: 632us rounds the previous 673us * 77 / 82. */
+#define PRINTER_CANVAS_STEP_US 77U
 #define PRINTER_CANVAS_STEP_HIGH_US 27U
-#define PRINTER_CANVAS_COLUMN_US 673U
+#define PRINTER_CANVAS_COLUMN_US 632U
 #define PRINTER_CANVAS_X_PITCH_CENTI_UM 4388U
 #define PRINTER_CANVAS_COLUMNS 1180U
 #if PRINTER_CANVAS_STEP_HIGH_US >= PRINTER_CANVAS_STEP_US

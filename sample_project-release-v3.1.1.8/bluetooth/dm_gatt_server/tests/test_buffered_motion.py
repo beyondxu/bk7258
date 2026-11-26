@@ -31,7 +31,7 @@ typedef int bk_err_t;typedef int timer_id_t;typedef void(*timer_isr_t)(timer_id_
 #define os_printf printf
 static printer_line_cache_t cache;
 static uint64_t now_us,next_bk,next_hc,step_rise_us;
-static unsigned prior_step_period,have_step_rise,slow_wipe_edges,page_short_edges,fast_edges;
+static unsigned prior_step_period,have_step_rise,slow_wipe_edges,page_short_edges,image_cruise_edges,fast_edges;
 static unsigned timer_enabled,timer_period,timer_reserved,boost,step,dir,sync_high=1,mode,hc_fires,irq_stall;
 static int32_t pos,max_pos;
 static unsigned oc3_level=1,oc3_events,oc3_left_edges,oc3_right_pulses;
@@ -65,7 +65,10 @@ static void up(unsigned p){
  assert(p==19&&boost&&!step);
  if(have_step_rise&&prior_step_period==82U&&timer_period==82U){assert(now_us-step_rise_us==82U);++fast_edges;}
  if(have_step_rise&&prior_step_period==164U&&timer_period==164U){assert(now_us-step_rise_us==164U);++slow_wipe_edges;}
- if(have_step_rise&&prior_step_period==120U&&timer_period==120U){assert(now_us-step_rise_us==120U);++page_short_edges;}
+ if(have_step_rise&&prior_step_period==77U&&timer_period==77U){
+  assert(now_us-step_rise_us==77U);
+  if(test_wipe_profile())++page_short_edges;else ++image_cruise_edges;
+ }
  prior_step_period=timer_period;have_step_rise=1;step_rise_us=now_us;step=1;pos+=dir?1:-1;
  if(pos>max_pos)max_pos=pos;
  assert(pos>=(int32_t)PRINTER_OC3_REFERENCE_STEPS-(int32_t)PRINTER_OC3_PREP_RETURN_STEPS-23&&pos<=(int32_t)PRINTER_OC3_PREP_SEARCH_STEPS);
@@ -106,7 +109,7 @@ static uint32_t bk_timer_get_period(timer_id_t id){assert(id==4);return timer_re
 static int bk_timer_stop(timer_id_t id){assert(id==4);timer_enabled=0;return 0;}
 static int bk_timer_cancel(timer_id_t id){assert(id==4&&!timer_enabled);timer_reserved=0;return 0;}
 static int bk_timer_start_us(timer_id_t id,unsigned period,timer_isr_t cb){assert(id==4&&!timer_enabled);assert(period==400U);timer_period=period;timer_reserved=period;callback=cb;timer_enabled=1;next_bk=now_us+period;return 0;}
-static int bk_timer_set_period_us(timer_id_t id,unsigned period){assert(id==4&&timer_enabled);assert(period>=82U&&period<=400U);timer_period=period;timer_reserved=period;return 0;}
+static int bk_timer_set_period_us(timer_id_t id,unsigned period){assert(id==4&&timer_enabled);assert(period>=77U&&period<=400U);timer_period=period;timer_reserved=period;return 0;}
 static void rtos_delay_milliseconds(unsigned n){assert(n==1);advance(mode==5?7000U:1000U);}
 static int printer_bidi_power_up(void){boost=1;s_bidi_power=true;return 0;}
 static void printer_bidirectional_abort(void);
@@ -180,9 +183,9 @@ int main(int argc,char**argv){
   printer_buffered_stop();free(row);puts("PASS wipe optical recovery restores fast positioning profile");return 0;
  }
  if(mode==29){
-  assert(PRINTER_CANVAS_STEP_US==82U&&PRINTER_CANVAS_COLUMN_US==673U);
+  assert(PRINTER_CANVAS_STEP_US==77U&&PRINTER_CANVAS_COLUMN_US==632U);
   assert(PL_START_PERIOD_US==400U&&PL_RAMP_STEPS==64U&&PRINTER_CANVAS_RAMP_STEPS==64U);
-  assert(PRINTER_CANVAS_STEP_HIGH_US==27U&&PRINTER_CANVAS_STEP_US-PRINTER_CANVAS_STEP_HIGH_US==55U);
+  assert(PRINTER_CANVAS_STEP_HIGH_US==27U&&PRINTER_CANVAS_STEP_US-PRINTER_CANVAS_STEP_HIGH_US==50U);
   /* Whole-microsecond column rounding stays within0.1% of the old pitch. */
   int32_t pitch_error=(int32_t)(PRINTER_CANVAS_COLUMN_US*120U)-(int32_t)(PRINTER_CANVAS_STEP_US*985U);
   assert(pitch_error>-(int32_t)PRINTER_CANVAS_STEP_US&&pitch_error<(int32_t)PRINTER_CANVAS_STEP_US);
@@ -197,6 +200,7 @@ int main(int argc,char**argv){
   assert(!printer_startup_prepare(1U)&&pos==0&&total_paper==4212);
   assert(!printer_execute_buffered_line(row,1)&&pos==10473);
   assert(!printer_execute_buffered_line(row,0)&&pos==0);
+  assert(image_cruise_edges>20000U);
   assert(!printer_bidirectional_finish()&&pos==-374);
   free(row);puts("PASS unified service11221, print10473, each endpoint inset374, feed unchanged");return 0;
  }
@@ -291,7 +295,7 @@ int main(int argc,char**argv){
  }
  if(mode==6){
   assert(!printer_startup_prepare(1U));
-  assert(page_short_edges>14000U&&!slow_wipe_edges);
+  assert(page_short_edges>14000U&&!slow_wipe_edges&&!image_cruise_edges);
   assert(s_bidi_known&&!hc_fires&&!timer_enabled&&sync_high);
 #if PRINTER_STARTUP_LOAD_STEPS > 0
   assert(load_calls==6&&total_paper==4212&&pos==0&&!s_bidi_right&&!s_bidi_at_wiper);
