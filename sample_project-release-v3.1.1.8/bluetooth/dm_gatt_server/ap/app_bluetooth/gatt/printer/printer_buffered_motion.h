@@ -36,7 +36,8 @@ static int printer_buffered_leave_wiper(void);
 static int printer_buffered_park_at_wiper(void);
 static volatile uint32_t s_buf_active,s_buf_steps,s_buf_sync,s_buf_error,s_buf_last_irq,s_buf_max_gap,s_buf_cruise_max_gap,s_buf_period,s_buf_target,s_buf_lead;
 static volatile uint8_t s_buf_direction;
-static uint8_t s_buf_ink,s_buf_claimed,s_buf_wipe_profile;
+static uint8_t s_buf_ink,s_buf_claimed;
+static uint32_t s_buf_short_step_us;
 static volatile bool s_buf_past_oc3;
 static volatile uint32_t s_buf_oc3_extra,s_buf_oc3_min,s_buf_oc3_max,s_buf_oc3_reference;
 static volatile uint32_t s_buf_sync_us;
@@ -61,7 +62,7 @@ static int printer_buffered_set_direction(uint8_t direction){
  return 0;
 }
 static uint32_t printer_buffered_ramp_steps(void){return s_buf_ink?PRINTER_CANVAS_RAMP_STEPS:PL_RAMP_STEPS;}
-static uint32_t printer_buffered_period(uint32_t i){uint32_t ramp=printer_buffered_ramp_steps();uint32_t cruise=s_buf_wipe_profile?PRINTER_WIPE_STEP_US:PL_STEP_PERIOD_US;uint32_t edge=i<s_buf_target-1U-i?i:s_buf_target-1U-i;return edge<ramp?PL_START_PERIOD_US-(PL_START_PERIOD_US-cruise)*edge/ramp:cruise;}
+static uint32_t printer_buffered_period(uint32_t i){uint32_t ramp=printer_buffered_ramp_steps();uint32_t cruise=s_buf_short_step_us?s_buf_short_step_us:PL_STEP_PERIOD_US;uint32_t edge=i<s_buf_target-1U-i?i:s_buf_target-1U-i;return edge<ramp?PL_START_PERIOD_US-(PL_START_PERIOD_US-cruise)*edge/ramp:cruise;}
 static void printer_buffered_stop(void){
  s_buf_active=0U;
  if(s_buf_claimed){(void)bk_timer_stop(PL_MOTOR_TIMER);(void)bk_timer_cancel(PL_MOTOR_TIMER);s_buf_claimed=0U;}
@@ -112,7 +113,7 @@ static void printer_buffered_tick(timer_id_t id){
  if(s_buf_steps==s_buf_target){
   if(s_buf_oc3_extra&&!s_buf_oc3_reference&&(s_oc3_hit||motor_oc3_active()))
    return; /* Resolve an edge on the last search pulse at the next tick. */
-  if(s_buf_wipe_profile)s_buf_endpoint_seen=0U;
+  if(s_buf_short_step_us)s_buf_endpoint_seen=0U;
   else printer_buffered_record_endpoint(bk_aon_rtc_get_us());
   s_buf_active=0U;(void)bk_timer_stop(id);return;
  }
@@ -294,14 +295,13 @@ static int printer_buffered_boot_round_trip(void){
  os_printf("[OC3_NOT_FOUND] stage=BOOT search_cap=%u gpio24=%u stopped_no_blind_return\r\n",PRINTER_OC3_BOOT_SEARCH_STEPS,(unsigned)!motor_oc3_active());
  printer_bidirectional_abort();return PRINTER_OC3_NOT_FOUND;
 }
-/* Two head-OFF wipe excursions, entirely within the counted full stroke.
- * The motor timer is shared with normal printing; no SPI in any pulse loop. */
-static int printer_buffered_wipe(uint32_t excursion,uint32_t rounds){
+/* Head-OFF short round trips within the counted full stroke. */
+static int printer_buffered_short_round_trips(uint32_t excursion,uint32_t rounds,uint32_t cruise_step_us){
  if(!s_bidi_known||!s_bidi_at_wiper||s_bidi_right||s_buf_active||!excursion||excursion>=PRINTER_MAINTENANCE_SPAN_STEPS||!rounds||rounds>2U)return -7;
  if(tph_mcu_set_head_power(0)!=BK_OK)return -8;
  if(printer_buffered_claim())return -14;
  if(printer_bidi_power_up()!=0)return -8;
- s_buf_wipe_profile=1U;
+ s_buf_short_step_us=cruise_step_us;
  s_bidi_known=false; /* do not expose the short-leg turnaround as an endpoint */
  for(uint32_t leg=0;leg<rounds*2U;++leg){
   uint32_t direction=(leg&1U)?0U:1U;
@@ -320,16 +320,19 @@ static int printer_buffered_wipe(uint32_t excursion,uint32_t rounds){
   (void)bk_timer_stop(PL_MOTOR_TIMER);
   if(direction&&!s_buf_past_oc3&&motor_oc3_active()){s_oc3_hit=1U;goto failed;}
   if(s_buf_error||s_buf_steps!=excursion)goto failed;
-  os_printf("[WIPER_LEG] direction=%s pulses=%lu cruise_step_us=%u head_OFF contact_unverified\r\n",direction?"AWAY_FROM_LEFT":"BACK_TO_LEFT",(unsigned long)s_buf_steps,PRINTER_WIPE_STEP_US);
+  os_printf("[WIPER_LEG] direction=%s pulses=%lu cruise_step_us=%u head_OFF contact_unverified\r\n",direction?"AWAY_FROM_LEFT":"BACK_TO_LEFT",(unsigned long)s_buf_steps,(unsigned)cruise_step_us);
  }
- s_buf_wipe_profile=0U;
+ s_buf_short_step_us=0U;
  s_bidi_known=true;s_bidi_right=false;
  if(motor_oc3_active()){s_bidi_known=false;printer_bidirectional_abort();return PRINTER_OC3_STUCK;}
  return 0;
 failed:
- printer_buffered_stop();s_buf_wipe_profile=0U;
+ printer_buffered_stop();s_buf_short_step_us=0U;
  if(s_oc3_hit&&!s_oc3_returning)return printer_buffered_oc3_return(printer_buffered_full_return());
  printer_bidirectional_abort();return -14;
+}
+static inline int printer_buffered_wipe(uint32_t excursion,uint32_t rounds){
+ return printer_buffered_short_round_trips(excursion,rounds,PRINTER_WIPE_STEP_US);
 }
 #if !PRINTER_PRESPRAY
 /* A normal optical endpoint halts U4 but does not cancel the current 1.8mm

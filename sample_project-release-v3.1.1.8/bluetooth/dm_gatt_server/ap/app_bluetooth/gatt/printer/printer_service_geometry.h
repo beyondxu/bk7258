@@ -26,8 +26,9 @@
 #define PRINTER_OC3_FINAL_RETURN_STEPS PRINTER_MAINTENANCE_SPAN_STEPS
 #define PRINTER_OC3_TRAVEL_LIMIT_STEPS PRINTER_MAINTENANCE_SPAN_STEPS
 #define PRINTER_MAINTENANCE_EXTRA_STEPS PRINTER_PRINT_ENDPOINT_INSET_STEPS
-/* V33: only the two small head-OFF wipe round trips use half cruise speed. */
+/* Explicit cleaning keeps the earlier half-speed cruise. */
 #define PRINTER_WIPE_STEP_US 164U
+#define PRINTER_PAGE_SHORT_STEP_US 120U
 /* Only the legacy head-OFF service trial uses these speed parameters. */
 #define PRINTER_SERVICE_START_LOW_US 3000U
 #define PRINTER_SERVICE_CRUISE_LOW_US 600U

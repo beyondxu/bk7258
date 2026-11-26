@@ -12,10 +12,12 @@ static int printer_startup_prepare(unsigned for_page) {
         result=printer_bidi_power_up();
         if (result) return result;
 #if PRINTER_BUFFERED_LINE && PRINTER_STARTUP_WIPE_STEPS > 0
-        /* Wipe before loading: no nozzle may fire while paper is uncovered. */
-        result=printer_buffered_wipe(PRINTER_STARTUP_WIPE_STEPS,PRINTER_STARTUP_WIPE_ROUNDS);
+        /* Run the short head-OFF carriage preparation before loading. */
+        result=printer_buffered_short_round_trips(PRINTER_STARTUP_WIPE_STEPS,PRINTER_STARTUP_WIPE_ROUNDS,
+                                                  PRINTER_PAGE_SHORT_STEP_US);
         if(result==PRINTER_OC3_RETURNED&&s_bidi_known&&s_bidi_at_wiper)
-            result=printer_buffered_wipe(PRINTER_STARTUP_WIPE_STEPS,PRINTER_STARTUP_WIPE_ROUNDS);
+            result=printer_buffered_short_round_trips(PRINTER_STARTUP_WIPE_STEPS,PRINTER_STARTUP_WIPE_ROUNDS,
+                                                  PRINTER_PAGE_SHORT_STEP_US);
         if (result) return result;
 #endif
 #if PRINTER_PRESPRAY
