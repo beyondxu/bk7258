@@ -25,9 +25,9 @@ static int printer_run_prespray(const char *reason,unsigned visits,bool finish_a
         const unsigned remaining_visits=visits-visit;
         const unsigned remaining=rounds-sent;
         const unsigned rows=(remaining+PRINTER_PRESPRAY_ROW_ROUNDS-1U)/PRINTER_PRESPRAY_ROW_ROUNDS;
+        /* Save short doses for the last visits so each cache is used once. */
         unsigned dose=rows>=remaining_visits?
-            ((rows+remaining_visits-1U)/remaining_visits)*PRINTER_PRESPRAY_ROW_ROUNDS:
-            (remaining+remaining_visits-1U)/remaining_visits;
+            ((rows+remaining_visits-1U)/remaining_visits)*PRINTER_PRESPRAY_ROW_ROUNDS:0U;
         if(dose>remaining) dose=remaining;
         const unsigned end=sent+dose;
         const bool print_range=finish_at_print_left&&visit+1U==visits;
@@ -48,8 +48,8 @@ static int printer_run_prespray(const char *reason,unsigned visits,bool finish_a
         s_waste_station_ready=0U;
         result=print_range?printer_waste_return_to_print_left():printer_waste_park_for_preparation();
         if(result)goto stop;
-        os_printf("[PRESPRAY_VISIT_DONE] visit=%u/%u rounds=%u/%u parked=%s\r\n",
-                  visit+1U,visits,sent,rounds,print_range?"PRINT_LEFT":"SEAL");
+        os_printf("[PRESPRAY_VISIT_DONE] visit=%u/%u rounds=%u/%u visit_rounds=%u parked=%s\r\n",
+                  visit+1U,visits,sent,rounds,dose,print_range?"PRINT_LEFT":"SEAL");
     }
     os_printf("[PRESPRAY_DONE] reason=%s stationary_cache_rows=%u parked=%s no_paper_feed recovery_unverified\r\n",
               reason,batches,finish_at_print_left?"PRINT_LEFT":"SEAL");

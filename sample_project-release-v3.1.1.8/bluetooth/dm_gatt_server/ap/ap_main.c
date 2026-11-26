@@ -369,7 +369,7 @@ static void app_printer_task_entry(void *arg) {
         os_printf("[SYS] APP_SERVICE_BLACK_YELLOW_V1 margin_each=%lu print_steps=%lu span=%lu service_head_OFF black_then_yellow\r\n",
                   (unsigned long)PRINTER_SERVICE_MARGIN_STEPS, (unsigned long)PRINTER_SERVICE_BASE_STEPS, (unsigned long)PRINTER_SERVICE_SPAN_STEPS);
 #else
-        os_printf("[SYS] APP_SERVICE_CMY_PAD_1600_PRESPRAY requires_HC_prespray_58us_pad32 margin_each=%lu print_steps=%lu span=%lu actual_APP_CMY bands_24 alternating_direction page_full_visits2_then_print_range_visits1 then_load3900steps_10mm\r\n",
+        os_printf("[SYS] APP_SERVICE_CMY_PAD_PRESPRAY requires_HC_prespray_58us_pad32 margin_each=%lu print_steps=%lu span=%lu actual_APP_CMY bands_24 alternating_direction page_full_visits2_then_print_range_visits1 then_load3900steps_10mm\r\n",
                   (unsigned long)PRINTER_SERVICE_MARGIN_STEPS, (unsigned long)PRINTER_SERVICE_BASE_STEPS, (unsigned long)PRINTER_SERVICE_SPAN_STEPS);
 #endif
 #elif PRINTER_BLACK_PREFIX
