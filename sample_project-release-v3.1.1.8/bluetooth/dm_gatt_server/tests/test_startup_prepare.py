@@ -20,7 +20,6 @@ h=r'''
 #define PRINTER_STARTUP_LOAD_STEPS 702U
 #define PRINTER_STARTUP_LOAD_ROUNDS 3U
 #define PRINTER_STARTUP_WIPE_STEPS 3740U
-#define PRINTER_STARTUP_WIPE_ROUNDS 2U
 #define PRINTER_BUFFERED_LINE 1
 #define PRINTER_PAGE_FEED_DIRECTION 0
 #define os_printf printf
@@ -47,7 +46,7 @@ static int printer_buffered_load_while_moving(unsigned steps,unsigned dir){
 static int tph_line_probe(void){return mode==11?-1:0;}
 static int printer_buffered_short_round_trips(unsigned steps,unsigned rounds,unsigned cruise_step_us){
  assert(cruise_step_us==77U);
- assert(!s_bidi_right&&steps==3740&&rounds==2);
+ assert(!s_bidi_right&&steps==3740&&rounds==1);
  assert(!strcmp(trace,wipe_calls?"PW":"P"));++wipe_calls;record('W');
  if(mode==15&&wipe_calls==1)return PRINTER_OC3_RETURNED;
  return mode==1?-14:mode==4?-8:0;
@@ -113,7 +112,6 @@ page = r'''
 #define PRINTER_BUFFERED_LINE 1
 #define PRINTER_PRESPRAY 1
 #define PRINTER_STARTUP_WIPE_STEPS 3740U
-#define PRINTER_STARTUP_WIPE_ROUNDS 2U
 #define PRINTER_PAGE_FEED_DIRECTION 0U
 #define PRINTER_OC3_RETURNED (-15)
 #define BK_OK 0
@@ -124,7 +122,7 @@ static int tph_line_probe(void){assert(stage++==0U);return 0;}
 static int printer_bidi_power_up(void){assert(stage++==1U);return 0;}
 static int printer_buffered_short_round_trips(unsigned steps,unsigned rounds,unsigned cruise_step_us){
  assert(cruise_step_us==77U);
- assert(stage++==2U&&steps==3740U&&rounds==2U&&s_bidi_at_wiper&&!s_bidi_right);
+ assert(stage++==2U&&steps==3740U&&rounds==1U&&s_bidi_at_wiper&&!s_bidi_right);
  return fault==4U?-14:0;
 }
 static int printer_run_prespray(const char *reason,unsigned visits,bool finish_at_print_left){

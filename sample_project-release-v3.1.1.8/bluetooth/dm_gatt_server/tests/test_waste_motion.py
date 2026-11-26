@@ -81,10 +81,10 @@ int main(int argc,char**argv){
    if(replay_early)pos+=127; /* Hardware reaches the same optical point sooner. */
    mode=requested==69&&visit==1U?69:40;
    const unsigned before=oc3_right_pulses,starts=timer_starts;
-   assert(!printer_waste_seek_for_page()&&s_waste_pad_advance==654U);
+   assert(!printer_waste_seek_for_page()&&s_waste_pad_advance==560U);
    assert(s_waste_measured_full==s_buf_steps&&timer_starts==starts+1U);
-   assert(pos==PRINTER_OC3_REFERENCE_STEPS+654);
-   assert(oc3_right_pulses-before==(replay_early?11781U:visit?11908U:11721U));
+   assert(pos==PRINTER_OC3_REFERENCE_STEPS+560);
+   assert(oc3_right_pulses-before==(replay_early?11687U:visit?11814U:11627U));
    assert(!printer_waste_park_for_preparation()&&pos==seal&&s_bidi_at_wiper);
   }
   assert(printer_buffered_full_return()==11254U&&printer_buffered_print_span()==10132U);
@@ -99,11 +99,11 @@ int main(int argc,char**argv){
    if(requested==67){
     assert(rc!=0&&!s_waste_station_ready&&!hc_fires);
    }else{
-    assert(!rc&&s_waste_station_ready&&pos==PRINTER_OC3_REFERENCE_STEPS+654);
-    assert(s_waste_measured_full==11781U);
+    assert(!rc&&s_waste_station_ready&&pos==PRINTER_OC3_REFERENCE_STEPS+560);
+    assert(s_waste_measured_full==11687U);
     s_waste_station_ready=0U;
     assert(!printer_waste_return_to_print_left()&&pos==seal+935);
-    assert(max_pos==PRINTER_OC3_REFERENCE_STEPS+654);
+    assert(max_pos==PRINTER_OC3_REFERENCE_STEPS+560);
    }
    free(row);
    puts("PASS previous 11127-step seek reanchors 10192-step visit and rejects a 65-step mismatch");
@@ -133,8 +133,8 @@ int main(int argc,char**argv){
    assert(!printer_waste_return_to_print_left());
    assert(pos==seal+935&&!s_bidi_at_wiper&&!s_bidi_right&&oc3_level);
    assert(s_buf_steps==10132U);
-   assert(oc3_right_pulses-right_before==(mode==63?11876U:11908U));
-   assert(max_pos==PRINTER_OC3_REFERENCE_STEPS+654);
+   assert(oc3_right_pulses-right_before==(mode==63?11782U:11814U));
+   assert(max_pos==PRINTER_OC3_REFERENCE_STEPS+560);
    assert(!hc_fires&&!total_paper&&!timer_enabled&&!s_buf_claimed);
    assert(!printer_buffered_park_at_wiper()&&pos==seal);
    free(row);
