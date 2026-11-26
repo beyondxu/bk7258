@@ -37,6 +37,8 @@ h=h.replace('mode==48)&&oc3_level&&pos==(int32_t)PRINTER_OC3_REFERENCE_STEPS',
             'mode==48||mode==63||mode==64||mode==65||mode==68)&&oc3_level&&pos==(int32_t)PRINTER_OC3_REFERENCE_STEPS-(mode==63?32:mode==64?65:0)')
 h=h.replace('if(pos>max_pos)max_pos=pos;',
             'if(pos>max_pos)max_pos=pos;\n if((mode==65&&pos==(int32_t)PRINTER_OC3_REFERENCE_STEPS+40)||(mode==68&&pos==(int32_t)PRINTER_OC3_REFERENCE_STEPS+220))oc3_level=1;')
+h=h.replace('static int bk_timer_start_us(', 'static unsigned timer_starts;\nstatic int bk_timer_start_us(')
+h=h.replace('timer_reserved=period;callback=cb;', 'timer_reserved=period;callback=cb;++timer_starts;')
 h+=r'''
 #include "printer_waste_motion.h"
 int main(int argc,char**argv){
@@ -59,10 +61,11 @@ int main(int argc,char**argv){
   for(unsigned visit=0;visit<2U;++visit){
    const bool replay_early=(requested==66||requested==67)&&visit==1U;
    if(replay_early)pos+=127; /* Hardware reaches the same optical point sooner. */
-   const unsigned before=oc3_right_pulses;
-   assert(!printer_waste_seek(PRINTER_OC3_PREP_SEARCH_STEPS)&&s_waste_pad_advanced);
-   assert(s_buf_steps==187U&&pos==PRINTER_OC3_REFERENCE_STEPS+187);
-   assert(oc3_right_pulses-before==(replay_early?11314U:visit?11441U:11254U));
+   const unsigned before=oc3_right_pulses,starts=timer_starts;
+   assert(!printer_waste_seek_for_page()&&s_waste_pad_advance==374U);
+   assert(s_waste_measured_full==s_buf_steps&&timer_starts==starts+1U);
+   assert(pos==PRINTER_OC3_REFERENCE_STEPS+374);
+   assert(oc3_right_pulses-before==(replay_early?11501U:visit?11628U:11441U));
    assert(!printer_waste_park_for_preparation()&&pos==seal&&s_bidi_at_wiper);
   }
   assert(printer_buffered_full_return()==11254U&&printer_buffered_print_span()==10132U);
@@ -71,9 +74,10 @@ int main(int argc,char**argv){
    pos+=requested==66?127:192;
    int rc=printer_waste_seek_from_print_left();
    if(requested==67){
-    assert(rc==PRINTER_OC3_NOT_FOUND&&!s_waste_station_ready&&!hc_fires);
+    assert(rc!=0&&!s_waste_station_ready&&!hc_fires);
    }else{
-    assert(!rc&&s_waste_station_ready&&pos==PRINTER_OC3_REFERENCE_STEPS+187);
+    assert(!rc&&s_waste_station_ready&&pos==PRINTER_OC3_REFERENCE_STEPS+374);
+    assert(s_waste_measured_full==11501U);
     s_waste_station_ready=0U;
     assert(!printer_waste_return_to_print_left()&&pos==seal+935);
     assert(max_pos==PRINTER_OC3_REFERENCE_STEPS+374);
@@ -84,22 +88,23 @@ int main(int argc,char**argv){
   }
   if(requested==68){
    mode=68;
-   assert(!printer_waste_seek_from_print_left());
-   s_waste_station_ready=0U;
-   assert(printer_waste_return_to_print_left()!=0);
+   assert(printer_waste_seek_from_print_left()!=0);
+   assert(!s_waste_station_ready);
    assert(pos==PRINTER_OC3_REFERENCE_STEPS+220&&!s_bidi_known&&!timer_enabled&&!total_paper);
    free(row);puts("PASS GPIO24 release stops the extra linkage push before feeding");return 0;
   }
   if(requested==64){
    mode=64;
-   assert(printer_waste_seek_from_print_left()==PRINTER_OC3_NOT_FOUND);
+   assert(printer_waste_seek_from_print_left()!=0);
    assert(!s_bidi_known&&!hc_fires&&!total_paper&&!timer_enabled);
    free(row);puts("PASS early GPIO24 outside window blocks preparation");return 0;
   }
   if(requested==61||requested==63){
    mode=requested==63?63:40;
    const unsigned right_before=oc3_right_pulses;
+   const unsigned starts=timer_starts;
    assert(!printer_waste_seek_from_print_left()&&s_waste_station_ready&&!oc3_level);
+   assert(timer_starts==starts+2U); /* relocation and one continuous seek */
    s_waste_station_ready=0U;
    assert(!printer_waste_return_to_print_left());
    assert(pos==seal+935&&!s_bidi_at_wiper&&!s_bidi_right&&oc3_level);

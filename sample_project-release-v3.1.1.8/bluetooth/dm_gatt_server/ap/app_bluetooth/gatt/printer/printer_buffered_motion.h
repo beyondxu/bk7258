@@ -38,6 +38,7 @@ static volatile uint32_t s_buf_active,s_buf_steps,s_buf_sync,s_buf_error,s_buf_l
 static volatile uint8_t s_buf_direction;
 static uint8_t s_buf_ink,s_buf_claimed,s_buf_wipe_profile;
 static volatile bool s_buf_past_oc3;
+static volatile uint32_t s_buf_oc3_extra,s_buf_oc3_min,s_buf_oc3_max,s_buf_oc3_reference;
 static volatile uint32_t s_buf_sync_us;
 static volatile uint64_t s_buf_endpoint_us;
 static volatile uint8_t s_buf_endpoint_direction,s_buf_endpoint_seen;
@@ -70,6 +71,7 @@ static void printer_buffered_stop(void){
  * reversal and SPI power-OFF acknowledgement run later in task context. */
 static void printer_buffered_oc3_stop(void){
  if(!s_buf_active||!s_buf_direction||s_oc3_returning||s_buf_past_oc3)return;
+ if(s_buf_oc3_extra){s_oc3_hit=1U;return;}
  printer_buffered_record_endpoint(bk_aon_rtc_get_us());
  s_oc3_hit=1U;s_buf_error=3U;s_buf_active=0U;
  (void)bk_timer_stop(PL_MOTOR_TIMER);
@@ -77,10 +79,25 @@ static void printer_buffered_oc3_stop(void){
 }
 static void printer_buffered_tick(timer_id_t id){
  if(id!=PL_MOTOR_TIMER||!s_buf_active)return;
- if(s_buf_past_oc3&&!motor_oc3_active()){
-  s_buf_error=4U;s_buf_active=0U;(void)bk_timer_stop(id);return;
+ if(s_buf_oc3_extra){
+  const bool optical_low=motor_oc3_active();
+  if(s_buf_oc3_reference||(s_oc3_hit||optical_low)){
+   if(!optical_low||(!s_buf_oc3_reference&&
+       (s_buf_steps<s_buf_oc3_min||s_buf_steps>s_buf_oc3_max))){
+    s_buf_error=4U;s_buf_active=0U;(void)bk_timer_stop(id);return;
+   }
+   if(!s_buf_oc3_reference){
+    /* Count completed pulses, including one interrupted by the GPIO edge. */
+    s_buf_oc3_reference=s_buf_steps;
+    s_buf_target=s_buf_steps+s_buf_oc3_extra;
+   }
+  }
+ }else{
+  if(s_buf_past_oc3&&!motor_oc3_active()){
+   s_buf_error=4U;s_buf_active=0U;(void)bk_timer_stop(id);return;
+  }
+  if(!s_buf_past_oc3&&s_buf_direction&&motor_oc3_active()){printer_buffered_oc3_stop();return;}
  }
- if(!s_buf_past_oc3&&s_buf_direction&&motor_oc3_active()){printer_buffered_oc3_stop();return;}
  uint32_t now=(uint32_t)bk_aon_rtc_get_us();
  uint32_t gap=now-s_buf_last_irq;
  if(s_buf_steps&&gap>s_buf_period*2U+96U){s_buf_error=1U;s_buf_active=0U;(void)bk_timer_stop(id);return;}
@@ -93,6 +110,8 @@ static void printer_buffered_tick(timer_id_t id){
  ++s_buf_steps;++s_blank_spi_steps[s_buf_direction?1:0];
  if(!s_buf_active)return; /* OC3 may interrupt an already-started STEP high pulse */
  if(s_buf_steps==s_buf_target){
+  if(s_buf_oc3_extra&&!s_buf_oc3_reference&&(s_oc3_hit||motor_oc3_active()))
+   return; /* Resolve an edge on the last search pulse at the next tick. */
   if(s_buf_wipe_profile)s_buf_endpoint_seen=0U;
   else printer_buffered_record_endpoint(bk_aon_rtc_get_us());
   s_buf_active=0U;(void)bk_timer_stop(id);return;
@@ -197,9 +216,10 @@ static int printer_buffered_reposition(uint8_t direction,uint32_t steps){
  if((direction&&s_oc3_reposition_return==PRINTER_OC3_BOOT_RETURN_STEPS)||
     (!direction&&s_oc3_returning))
   limit=PRINTER_OC3_PREP_SEARCH_STEPS;
- if(!direction&&s_oc3_returning&&steps==PRINTER_NEW_FULL_STROKE_STEPS&&
-    s_bidi_full_stroke==PRINTER_NEW_SEAL_TO_OC3_STEPS)
-  limit=PRINTER_NEW_FULL_STROKE_STEPS;
+ if(!direction&&s_oc3_returning&&s_bidi_full_stroke==PRINTER_NEW_SEAL_TO_OC3_STEPS&&
+    (steps==PRINTER_NEW_FULL_STROKE_STEPS||
+     steps==PRINTER_NEW_SEAL_TO_OC3_STEPS+PRINTER_PAGE_PAD_ADVANCE_STEPS))
+  limit=steps;
  if(!s_bidi_known||s_buf_active||direction>1U||!steps||steps>limit)return -7;
  if(tph_mcu_set_head_power(0)!=BK_OK)return -8;
  if(printer_buffered_claim())return -14;

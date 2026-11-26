@@ -31,7 +31,9 @@ static int printer_run_prespray(const char *reason,unsigned visits,bool finish_a
         if(dose>remaining) dose=remaining;
         const unsigned end=sent+dose;
         const bool print_range=finish_at_print_left&&visit+1U==visits;
-        result=print_range?printer_waste_seek_from_print_left():printer_waste_seek(PRINTER_OC3_PREP_SEARCH_STEPS);
+        if(print_range)result=printer_waste_seek_from_print_left();
+        else if(finish_at_print_left)result=printer_waste_seek_for_page();
+        else result=printer_waste_seek(PRINTER_OC3_PREP_SEARCH_STEPS);
         if(result)goto stop;
         for(;sent<end;){
             unsigned chunk=end-sent;if(chunk>PRINTER_PRESPRAY_ROW_ROUNDS)chunk=PRINTER_PRESPRAY_ROW_ROUNDS;

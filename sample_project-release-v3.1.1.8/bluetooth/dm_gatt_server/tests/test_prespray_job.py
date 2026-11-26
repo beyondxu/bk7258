@@ -32,6 +32,7 @@ static int printer_waste_seek(unsigned steps){
  if(fault==2)return -18;
  s_bidi_at_wiper=false;s_bidi_right=true;s_waste_station_ready=1;return 0;
 }
+static int printer_waste_seek_for_page(void){return printer_waste_seek(11315U);}
 static int printer_waste_seek_from_print_left(void){
  assert(finished==2U);
  return printer_waste_seek(11315U);
