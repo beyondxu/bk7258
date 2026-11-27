@@ -151,7 +151,7 @@ static int printer_run_full_page(const uint8_t *bin, uint32_t length) {
     os_printf("[PAGE_BAND_PLAN] rows=%u bands=%lu base_feed_192=%u cumulative_fractional_feed no_duplicate_pixels\r\n",
               (unsigned)PRINTER_PAGE_BAND_ROWS, (unsigned long)bands, (unsigned)PRINTER_PAGE_FEED_STEPS);
 #if PRINTER_PAGE_INTERLACE
-    os_printf("[PAGE_INTERLACE] v2 mask=coordinate_hash window=192 blocks=8 S1_S4 exact_once leading_edge_adaptive unchanged_feed_and_pulses\r\n");
+    os_printf("[PAGE_INTERLACE] v3 mask=coordinate_hash balance=S1_S4 window=192 blocks=8 exact_once leading_edge_adaptive\r\n");
 #endif
     os_printf("[PAGE_PLAN] source=1180x1476 output=%lux%lu swaths=%lu columns=1180 max_delay=%lu pitch=%lu y_pitch=4233 direction=%ld feed_steps=%u transform=%u color_mode=%u CANDIDATE_FEED aspect_fit\r\n",
               (unsigned long)page.width, (unsigned long)page.height, (unsigned long)bands,

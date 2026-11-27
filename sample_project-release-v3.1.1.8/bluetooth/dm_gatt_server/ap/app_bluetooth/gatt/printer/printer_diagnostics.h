@@ -112,10 +112,9 @@
 #ifndef PRINTER_PAGE_BAND_ROWS
 #define PRINTER_PAGE_BAND_ROWS 24U
 #endif
-/* Comparison baseline: normal pages use physical rows0..23 (S1 only).
- * Keep interlacing available as an opt-in trial; automatic boot cleaning stays OFF. */
+/* Normal pages distribute dots among the eligible S sections. */
 #ifndef PRINTER_PAGE_INTERLACE
-#define PRINTER_PAGE_INTERLACE 0
+#define PRINTER_PAGE_INTERLACE (PRINTER_PAGE_BAND_ROWS == 24U && PRINTER_MAP_REVERSE_Y == 0 && PRINTER_PAGE_COLOR_MODE == 1)
 #endif
 #ifndef PRINTER_PAGE_ONLY_SWATH
 #define PRINTER_PAGE_ONLY_SWATH (-1) /* diagnostic covers all physical rows */

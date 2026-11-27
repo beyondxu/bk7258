@@ -91,7 +91,8 @@ static int tph_fire_raw_column_bytes(const uint8_t*p){
   unsigned source_x=(400U+ch)*1119U/1180U;
 #if PRINTER_PAGE_INTERLACE
   unsigned y=expected_band*24U+row,choices=y/24U+1U;if(choices>8U)choices=8U;
-  if(row/24U!=printer_interlace_block(source_x,y,choices))continue;
+  printer_interlace_choices_t eligible=printer_interlace_choices(cfg.first_nozzle+y%24U,24U,choices);
+  if(row/24U!=printer_interlace_block(source_x,y,&eligible))continue;
   if(mode==5 && y/24U!=0U && y/24U!=2U && y/24U!=41U)continue;
 #endif
   unsigned x=source_x+route.delay_columns;

@@ -103,16 +103,19 @@ static int render_band(const printer_page_t *page, uint32_t first_row, uint32_t 
         if (y>=page->height) continue;
         printer_map_route_t route;
         if (printer_map_route(ch,row,&cfg,&route)) return -1;
-        uint32_t choices = y / rows + 1U;
-        if (choices > 192U / rows) choices = 192U / rows;
+        printer_interlace_choices_t choices;
+        if (interlace) {
+            uint32_t eligible = y / rows + 1U;
+            if (eligible > 192U / rows) eligible = 192U / rows;
+            choices = printer_interlace_choices(cfg.first_nozzle + y % rows, rows, eligible);
+        }
         for (uint32_t x=0;x<page->width;++x) {
             const uint8_t *p=page->planes+ch*page->width*page->stride+x*page->stride;
             /* Assign each source pixel to one eligible nozzle block, shared
              * by CMY and both scan directions. y = paper_origin + nozzle_row.
              * Leading rows have fewer eligible blocks; no extra feed/margin.
              */
-            if (interlace && row / rows != printer_interlace_block(x, y, choices)) continue;
-            if (bit(p,y)) {
+            if (bit(p,y) && (!interlace || row / rows == printer_interlace_block(x, y, &choices))) {
                 uint32_t dx=(reverse?page->width-1U-x:x)+route.delay_columns;
                 columns[dx*100U+route.slot]|=(uint8_t)route.mask;
                 ++dots[ch];
