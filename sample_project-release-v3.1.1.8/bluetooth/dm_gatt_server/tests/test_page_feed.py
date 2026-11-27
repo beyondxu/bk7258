@@ -9,6 +9,7 @@ h=r'''
 #include <assert.h>
 #include <stdint.h>
 #include <stddef.h>
+#include "printer_service_geometry.h"
 typedef int bk_err_t;
 #define BK_OK 0
 #define BK_FAIL -1
@@ -54,20 +55,21 @@ int main(void){uint32_t sent;assert(!motor_page_feed(3170,0,&sent));assert(sent=
  assert(sent==702&&pulses==before+702&&boost&&!high&&dir==0);
  assert(clock_us-load_start>1000000U&&clock_us-load_start<2000000U);
  before=pulses;load_start=clock_us;
- assert(!motor_page_load_keep_power(3900,0,&sent));
- assert(sent==3900&&pulses==before+3900&&boost&&!high&&dir==0);
- assert(clock_us-load_start>4400000U&&clock_us-load_start<4800000U);
+ assert(!motor_page_load_keep_power(6240,0,&sent));
+ assert(sent==6240&&pulses==before+6240&&boost&&!high&&dir==0);
+ assert(clock_us-load_start>6800000U&&clock_us-load_start<7300000U);
  before=pulses;
- assert(motor_page_load_keep_power(5001,0,&sent)==-1&&!sent);
+ assert(motor_page_load_keep_power(6241,0,&sent)==-1&&!sent);
  assert(motor_page_load_keep_power(0,0,&sent)==-1&&!sent);
  assert(motor_page_load_keep_power(780,2,&sent)==-1&&!sent);
  assert(motor_page_load_keep_power(780,0,NULL)==-1);
  assert(pulses==before&&boost_calls==calls&&inits==old_inits&&boost&&u4_off_calls==old_u4_off);
+ assert(motor_page_load_keep_power_guarded(5001,0,&sent,allow_17_steps)==BK_FAIL&&!sent);
  assert(motor_page_load_keep_power_guarded(3900,0,&sent,allow_17_steps)==BK_FAIL);
  assert(sent==17&&pulses==before+17&&!high&&boost&&u4_off_calls==old_u4_off);
 }
 '''.replace('FUNC',func)
 with tempfile.TemporaryDirectory() as tmp:
  p=Path(tmp);(p/'test.c').write_text(h)
- subprocess.run(['cc','-std=c99','-Wall','-Wextra','-Werror',str(p/'test.c'),'-o',str(p/'test')],check=True)
+ subprocess.run(['cc','-std=c99','-Wall','-Wextra','-Werror','-I',str(src.parent),str(p/'test.c'),'-o',str(p/'test')],check=True)
  subprocess.run([str(p/'test')],check=True)

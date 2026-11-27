@@ -819,7 +819,7 @@ bk_err_t motor_page_feed_fast_keep_power(uint32_t steps, uint8_t direction, uint
 /* Loading uses the conservative feed ramp; U4 retains its endpoint phase.
  * Separate from row feed so a loading offset cannot stretch the image. */
 bk_err_t motor_page_load_keep_power(uint32_t steps, uint8_t direction, uint32_t *sent) {
-    return motor_paper_move_keep_power(steps,direction,sent,5000U,3000U,1000U,250U,NULL);
+    return motor_paper_move_keep_power(steps,direction,sent,PRINTER_PAGE_PRELOAD_STEPS,3000U,1000U,250U,NULL);
 }
 
 /* Stop U5 as soon as the concurrently running carriage reports a fault. */

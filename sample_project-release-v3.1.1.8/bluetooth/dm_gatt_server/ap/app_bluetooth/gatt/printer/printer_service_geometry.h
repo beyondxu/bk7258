@@ -10,6 +10,7 @@
 #define PRINTER_PAGE_PAD_ADVANCE_STEPS (4U*PRINTER_PAD_ADVANCE_STEPS-2U*PRINTER_HALF_MM_STEPS) /* ~3 mm past GPIO24 */
 #define PRINTER_PAGE_SHORT_ROUNDS 1U
 #define PRINTER_PAGE_SHORT_STEP_US 77U
+#define PRINTER_PAGE_PRELOAD_STEPS 6240U /* 16 mm at 11700 steps per 30 mm */
 #define PRINTER_FULL_TRAVEL_STEP_US 68U /* 82/68 = 1.206 times the previous cruise speed */
 /* Last successful page seek measured 11067 steps from the old seal to GPIO24. */
 #define PRINTER_OLD_SEAL_TO_OC3_STEPS 11067U
